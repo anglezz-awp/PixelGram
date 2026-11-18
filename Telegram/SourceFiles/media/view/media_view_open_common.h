@@ -156,6 +156,13 @@ public:
 		return _showDrawButton;
 	}
 
+	[[nodiscard]] QRect sourceRect() const {
+		return _sourceRect;
+	}
+	void setSourceRect(QRect rect) {
+		_sourceRect = rect;
+	}
+
 private:
 	Window::SessionController *_controller = nullptr;
 	DocumentData *_document = nullptr;
@@ -174,6 +181,7 @@ private:
 	std::shared_ptr<Data::GroupCall> _call;
 	QString _callLinkSlug;
 	MsgId _callJoinMessageId = 0;
+	QRect _sourceRect;
 
 };
 

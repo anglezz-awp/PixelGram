@@ -1,3 +1,4 @@
+#include "history/view/history_view_element.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -1777,10 +1778,14 @@ SessionController::SessionController(
 	}
 	style::PaletteChanged(
 	) | rpl::on_next([=] {
+		pushDefaultChatBackground();
 		for (auto &[key, value] : _customChatThemes) {
 			if (!key.theme.id) {
 				value.theme.reset();
 			}
+		}
+		if (widget()) {
+			widget()->update();
 		}
 	}, _lifetime);
 
@@ -3613,13 +3618,17 @@ void SessionController::openPhoto(
 	if (openPhotoExternal(photo, origin, item)) {
 		return;
 	}
-	_window->openInMediaView(Media::View::OpenRequest(
+	auto photoReq = Media::View::OpenRequest(
 		this,
 		photo,
 		item,
 		message.topicRootId,
 		message.monoforumPeerId,
-		message.showDrawButton));
+		message.showDrawButton);
+	if (item && item->mainView()) {
+		photoReq.setSourceRect(item->mainView()->delegate()->elementGlobalRect(item->mainView()));
+	}
+	_window->openInMediaView(std::move(photoReq));
 }
 
 void SessionController::openPhoto(
@@ -3674,7 +3683,7 @@ void SessionController::openDocument(
 			: timestamp
 			? (timestamp * crl::time(1000))
 			: crl::time();
-		_window->openInMediaView(OpenRequest(
+		auto docReq = OpenRequest(
 			this,
 			document,
 			item,
@@ -3682,7 +3691,11 @@ void SessionController::openDocument(
 			message.monoforumPeerId,
 			false,
 			usedTimestamp,
-			message.showDrawButton));
+			message.showDrawButton);
+		if (item && item->mainView()) {
+			docReq.setSourceRect(item->mainView()->delegate()->elementGlobalRect(item->mainView()));
+		}
+		_window->openInMediaView(std::move(docReq));
 		return;
 	}
 	Data::ResolveDocument(
@@ -3854,16 +3867,18 @@ void SessionController::clearPeerThemeOverride(not_null<PeerData*> peer) {
 void SessionController::pushDefaultChatBackground() {
 	const auto background = Theme::Background();
 	const auto &paper = background->paper();
+	const auto isUserChosenWallPaper = Data::IsCustomWallPaper(paper)
+		|| (Data::IsCloudWallPaper(paper) && !Data::IsDefaultWallPaper(paper));
 	_defaultChatTheme->setBackground({
-		.prepared = background->prepared(),
-		.preparedForTiled = background->preparedForTiled(),
-		.gradientForFill = background->gradientForFill(),
-		.colorForFill = background->colorForFill(),
-		.colors = paper.backgroundColors(),
-		.patternOpacity = paper.patternOpacity(),
-		.gradientRotation = paper.gradientRotation(),
-		.isPattern = paper.isPattern(),
-		.tile = background->tile(),
+		.prepared = isUserChosenWallPaper ? background->prepared() : QImage(),
+		.preparedForTiled = isUserChosenWallPaper ? background->preparedForTiled() : QImage(),
+		.gradientForFill = isUserChosenWallPaper ? background->gradientForFill() : QImage(),
+		.colorForFill = isUserChosenWallPaper ? background->colorForFill() : std::make_optional(st::windowBg->c),
+		.colors = isUserChosenWallPaper ? paper.backgroundColors() : std::vector<QColor>{ st::windowBg->c },
+		.patternOpacity = isUserChosenWallPaper ? paper.patternOpacity() : 0.0,
+		.gradientRotation = isUserChosenWallPaper ? paper.gradientRotation() : 0,
+		.isPattern = isUserChosenWallPaper ? paper.isPattern() : false,
+		.tile = isUserChosenWallPaper ? background->tile() : false,
 	});
 	const auto &cloud = background->themeObject().cloud;
 	auto bubbles = Ui::ChatThemeBubblesData();

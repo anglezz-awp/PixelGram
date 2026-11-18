@@ -1,3 +1,5 @@
+#include "media/view/media_view_overlay_widget.h"
+#include "data/data_user.h"
 #include "history/view/history_view_element.h"
 #include "history/history.h"
 #include "history/history_item.h"
@@ -387,7 +389,66 @@ void Controller::finishFirstShow() {
 						PixelGram::ApplyM3Scheme(seed, Window::Theme::IsNightMode());
 					}
 				}
-				if (parts.contains(u"settings"_q)) {
+				if (parts.contains(u"mediaview"_q)) {
+					if (const auto session = sessionController()) {
+						PhotoData *targetPhoto = nullptr;
+						FullMsgId targetMsgId;
+						for (const auto &row : session->session().data().chatsList()->indexed()->all()) {
+							if (const auto h = row->key().history()) {
+								for (auto it = h->blocks.rbegin(); it != h->blocks.rend(); ++it) {
+									for (auto mit = (*it)->messages.rbegin(); mit != (*it)->messages.rend(); ++mit) {
+										if (const auto media = (*mit)->data()->media()) {
+											if (const auto photo = media->photo()) {
+												targetPhoto = photo;
+												targetMsgId = (*mit)->data()->fullId();
+												session->showPeerHistory(h->peer);
+												break;
+											}
+										}
+									}
+									if (targetPhoto) break;
+								}
+							}
+							if (targetPhoto) break;
+						}
+						if (!targetPhoto) {
+							for (const auto &row : session->session().data().chatsList()->indexed()->all()) {
+								if (const auto user = row->key().peer()->asUser()) {
+									if (const auto photoId = user->userpicPhotoId()) {
+										if (const auto photo = session->session().data().photo(photoId)) {
+											targetPhoto = photo;
+											break;
+										}
+									}
+								}
+							}
+						}
+						if (targetPhoto) {
+							QTimer::singleShot(500, [=] {
+								if (targetMsgId) {
+									session->openPhoto(targetPhoto, { targetMsgId });
+								} else {
+									session->openPhoto(targetPhoto, session->session().data().peer(session->session().userPeerId()));
+								}
+							});
+						}
+					}
+					QTimer::singleShot(2500, [=] {
+						if (const auto mv = Core::App().mediaView()) {
+							const auto img = mv->grabForScreenshot();
+							img.save(outPath);
+						} else {
+							QImage img(_widget.size(), QImage::Format_ARGB32_Premultiplied);
+							img.fill(Qt::transparent);
+							_widget.render(&img);
+							img.save(outPath);
+						}
+						if (parts.contains(u"quit"_q)) {
+							QTimer::singleShot(500, [] { Core::Quit(); });
+						}
+					});
+					return;
+				} else if (parts.contains(u"settings"_q)) {
 					if (const auto session = sessionController()) {
 						session->showSettings();
 						if (parts.contains(u"bottom"_q)) {

@@ -130,6 +130,7 @@ public:
 	void toggleFullScreen(bool fullscreen);
 
 	void notifyFileDialogShown(bool shown);
+	[[nodiscard]] QImage grabForScreenshot();
 
 	void clearSession();
 
@@ -496,6 +497,7 @@ private:
 	[[nodiscard]] int finalContentRotation() const;
 	[[nodiscard]] QRect finalContentRect() const;
 	[[nodiscard]] ContentGeometry contentGeometry() const;
+	[[nodiscard]] float64 backgroundOpacity() const;
 	[[nodiscard]] ContentGeometry storiesContentGeometry(
 		const Stories::ContentLayout &layout,
 		float64 scale = 1.) const;
@@ -730,6 +732,11 @@ private:
 
 	ContentGeometry _oldGeometry;
 	Ui::Animations::Simple _geometryAnimation;
+	QImage _backgroundBlurImage;
+	QRect _fromChatRect;
+	bool _isClosingAnimation = false;
+	QRectF _closeFromRect;
+	QRectF _closeToRect;
 	rpl::lifetime _screenGeometryLifetime;
 	std::unique_ptr<QObject> _applicationEventFilter;
 

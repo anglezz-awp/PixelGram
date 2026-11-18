@@ -714,6 +714,10 @@ bool Application::isActiveForTrayMenu() const {
 	});
 }
 
+Media::View::OverlayWidget *Application::mediaView() const {
+	return _mediaView.get();
+}
+
 bool Application::hideMediaView() {
 	if (_mediaView
 		&& _mediaView->isFullScreen()

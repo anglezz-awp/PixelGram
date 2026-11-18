@@ -75,15 +75,27 @@ void OverlayWidget::RendererSW::paintFallback(
 }
 
 void OverlayWidget::RendererSW::paintBackground() {
+	const auto opacity = _owner->backgroundOpacity();
+	if (!_owner->_backgroundBlurImage.isNull()) {
+		if (opacity < 1.) {
+			_p->setOpacity(opacity);
+		}
+		_p->drawImage(QRect(0, 0, _owner->width(), _owner->height()), _owner->_backgroundBlurImage);
+		if (opacity < 1.) {
+			_p->setOpacity(1.);
+		}
+		return;
+	}
 	const auto region = _owner->opaqueContentShown()
 		? (*_clip - _owner->finalContentRect())
 		: *_clip;
 
 	const auto m = _p->compositionMode();
 	_p->setCompositionMode(QPainter::CompositionMode_Source);
-	const auto &bg = _owner->_fullScreenVideo
+	auto bg = (_owner->_fullScreenVideo
 		? st::mediaviewVideoBg
-		: st::mediaviewBg;
+		: st::mediaviewBg)->c;
+	bg.setAlphaF(bg.alphaF() * opacity);
 	for (const auto &rect : region) {
 		_p->fillRect(rect, bg);
 	}

@@ -655,6 +655,10 @@ void OverlayWidget::RendererRhi::releaseResources() {
 	}
 	_texturePool.clear();
 
+	delete _bgBlurTexture;
+	_bgBlurTexture = nullptr;
+	_bgBlurCacheKey = 0;
+
 	delete _imagePipeline;
 	_imagePipeline = nullptr;
 	delete _imageBlendPipeline;
@@ -738,17 +742,14 @@ void OverlayWidget::RendererRhi::releaseResources() {
 }
 
 QColor OverlayWidget::RendererRhi::rhiClearColor() {
-	if (_owner->_hideWorkaround) {
+	if (!_owner->_backgroundBlurImage.isNull()) {
 		return QColor(0, 0, 0, 0);
-	} else if (_owner->_fullScreenVideo) {
-		return st::mediaviewVideoBg->c;
-	} else {
-		return st::mediaviewBg->c;
 	}
+	return clearColor().value_or(QColor(0, 0, 0, 0));
 }
 
 std::optional<QColor> OverlayWidget::RendererRhi::clearColor() {
-	if (_owner->_hideWorkaround) {
+	if (_owner->_hideWorkaround || !_owner->_backgroundBlurImage.isNull()) {
 		return QColor(0, 0, 0, 0);
 	} else if (_owner->_fullScreenVideo) {
 		return st::mediaviewVideoBg->c;

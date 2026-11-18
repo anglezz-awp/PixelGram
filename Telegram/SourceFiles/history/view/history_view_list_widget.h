@@ -543,6 +543,7 @@ public:
 		not_null<const Element*> view,
 		int localTop) override;
 	void elementCancelUpload(const FullMsgId &context) override;
+	QRect elementGlobalRect(not_null<const Element*> view) override;
 	void elementShowTooltip(
 		const TextWithEntities &text,
 		Fn<void()> hiddenCallback) override;

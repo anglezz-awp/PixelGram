@@ -1,3 +1,9 @@
+#include "settings/pixelgram_settings.h"
+#include "ui/image/image_prepare.h"
+#include "window/window_controller.h"
+#include "mainwidget.h"
+#include "history/view/history_view_element.h"
+#include "history/history_item.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -2710,6 +2716,19 @@ OverlayWidget::ContentGeometry OverlayWidget::contentGeometry() const {
 			toRectRotated.height(),
 			toRectRotated.width())
 		: toRectRotated;
+	if (_isClosingAnimation) {
+		const auto progress = _geometryAnimation.value(1.);
+		const auto fromRect = _closeFromRect;
+		const auto toRectFinal = _closeToRect;
+		const auto useRect = QRectF(
+			fromRect.x() + (toRectFinal.x() - fromRect.x()) * progress,
+			fromRect.y() + (toRectFinal.y() - fromRect.y()) * progress,
+			fromRect.width() + (toRectFinal.width() - fromRect.width()) * progress,
+			fromRect.height() + (toRectFinal.height() - fromRect.height()) * progress
+		);
+		const auto opacity = std::clamp(1. - progress, 0., 1.);
+		return { useRect, toRotation, opacity };
+	}
 	if (!_geometryAnimation.animating()) {
 		return { toRect, toRotation, controlsOpacity };
 	}
@@ -3167,12 +3186,56 @@ void OverlayWidget::showSaveMsgFile() {
 	File::ShowInFolder(_saveMsgFilename);
 }
 
+QImage OverlayWidget::grabForScreenshot() {
+	const auto w = std::max(width(), 100);
+	const auto h = std::max(height(), 100);
+	QImage result(w, h, QImage::Format_ARGB32_Premultiplied);
+	result.fill(Qt::transparent);
+	Painter p(&result);
+	RendererSW sw(this);
+	sw.paintFallback(p, QRegion(QRect(0, 0, w, h)), Ui::GL::Backend::Raster);
+	return result;
+}
+
+float64 OverlayWidget::backgroundOpacity() const {
+	if (_isClosingAnimation) {
+		return std::clamp(1. - _geometryAnimation.value(1.), 0., 1.);
+	} else if (_geometryAnimation.animating()) {
+		return std::clamp(_geometryAnimation.value(1.) * 1.5, 0., 1.);
+	}
+	return 1.;
+}
+
 void OverlayWidget::close() {
 	if (isHidden()) {
 		return;
 	}
-	hide();
-	_helper->clearState();
+	if (_isClosingAnimation) {
+		_geometryAnimation.stop();
+		_isClosingAnimation = false;
+		hide();
+		_backgroundBlurImage = QImage();
+		_helper->clearState();
+		return;
+	}
+	_isClosingAnimation = true;
+	_closeFromRect = contentGeometry().rect;
+	_closeToRect = _fromChatRect.isValid()
+		? QRectF(_fromChatRect)
+		: QRectF(_x + _w / 2. - 20, _y + _h / 2. - 20, 40, 40);
+	_geometryAnimation.stop();
+	_geometryAnimation.start(
+		[=] { _widget->update(); },
+		0.,
+		1.,
+		260,
+		anim::easeOutCirc);
+	_geometryAnimation.setFinishedCallback([=] {
+		_isClosingAnimation = false;
+		hide();
+		_backgroundBlurImage = QImage();
+		_helper->clearState();
+	});
 }
 
 void OverlayWidget::minimize() {
@@ -4548,6 +4611,9 @@ not_null<QWidget*> OverlayWidget::widget() const {
 }
 
 void OverlayWidget::hide() {
+	_geometryAnimation.stop();
+	_isClosingAnimation = false;
+	_backgroundBlurImage = QImage();
 	clearBeforeHide();
 	applyHideWindowWorkaround();
 	_window->hide();
@@ -4591,6 +4657,42 @@ void OverlayWidget::show(OpenRequest request) {
 	const auto contextTopicRootId = request.topicRootId();
 	const auto contextMonoforumPeerId = request.monoforumPeerId();
 	_drawButtonEnabled = request.showDrawButton();
+
+	_openedFrom = request.controller() ? base::make_weak(&request.controller()->window()) : nullptr;
+	const auto window = _openedFrom.get();
+	if (window && PixelGram::CurrentConfig().blurMediaBackground) {
+		if (const auto winWidget = window->widget()) {
+			const auto snapshot = winWidget->grab();
+			if (!snapshot.isNull()) {
+				const auto smallSize = QSize(
+					std::max(snapshot.width() / 6, 1),
+					std::max(snapshot.height() / 6, 1));
+				auto small = snapshot.scaled(smallSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation).toImage();
+				auto blurred = Images::BlurLargeImage(std::move(small), 16);
+				auto ready = blurred.scaled(snapshot.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+				{
+					QPainter p(&ready);
+					p.fillRect(ready.rect(), QColor(0, 0, 0, 128));
+				}
+				_backgroundBlurImage = std::move(ready);
+			}
+		}
+	} else {
+		_backgroundBlurImage = QImage();
+	}
+
+	if (request.sourceRect().isValid()) {
+		_fromChatRect = QRect(_widget->mapFromGlobal(request.sourceRect().topLeft()), request.sourceRect().size());
+	} else if (contextItem && contextItem->mainView()) {
+		const auto g = contextItem->mainView()->delegate()->elementGlobalRect(contextItem->mainView());
+		if (g.isValid()) {
+			_fromChatRect = QRect(_widget->mapFromGlobal(g.topLeft()), g.size());
+		} else {
+			_fromChatRect = QRect();
+		}
+	} else {
+		_fromChatRect = QRect();
+	}
 	if (!request.continueStreaming() && !request.startTime() && !_reShow) {
 		if (_message && (_message == contextItem)) {
 			return close();
@@ -5024,6 +5126,19 @@ void OverlayWidget::displayFinished(anim::activation activation) {
 	} else {
 		activate();
 	}
+
+	_isClosingAnimation = false;
+	const auto fromRect = _fromChatRect.isValid()
+		? QRectF(_fromChatRect)
+		: QRectF(_x + _w / 2. - 20, _y + _h / 2. - 20, 40, 40);
+	_oldGeometry = { fromRect, 0. };
+	_geometryAnimation.stop();
+	_geometryAnimation.start(
+		[=] { _widget->update(); },
+		0.,
+		1.,
+		350,
+		anim::easeOutBack);
 }
 
 void OverlayWidget::showAndActivate() {

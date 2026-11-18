@@ -152,6 +152,8 @@ private:
 	QRhiBuffer *_uniformBuffer = nullptr;
 	QRhiSampler *_sampler = nullptr;
 	QRhiTexture *_placeholderTexture = nullptr;
+	QRhiTexture *_bgBlurTexture = nullptr;
+	quint64 _bgBlurCacheKey = 0;
 
 	QRhiGraphicsPipeline *_imagePipeline = nullptr;
 	QRhiGraphicsPipeline *_imageBlendPipeline = nullptr;

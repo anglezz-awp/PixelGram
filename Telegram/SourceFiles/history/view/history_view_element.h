@@ -139,6 +139,9 @@ public:
 		not_null<const Element*> view,
 		int localTop) = 0;
 	virtual void elementCancelUpload(const FullMsgId &context) = 0;
+	virtual QRect elementGlobalRect(not_null<const Element*> view) {
+		return QRect();
+	}
 	virtual void elementShowTooltip(
 		const TextWithEntities &text,
 		Fn<void()> hiddenCallback) = 0;
@@ -208,6 +211,9 @@ public:
 		not_null<const Element*> view,
 		int localTop) override;
 	void elementCancelUpload(const FullMsgId &context) override;
+	QRect elementGlobalRect(not_null<const Element*> view) override {
+		return QRect();
+	}
 	void elementShowTooltip(
 		const TextWithEntities &text,
 		Fn<void()> hiddenCallback) override;

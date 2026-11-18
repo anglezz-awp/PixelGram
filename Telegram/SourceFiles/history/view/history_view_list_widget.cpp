@@ -2779,6 +2779,14 @@ bool ListWidget::elementScrollToLocalY(
 	return true;
 }
 
+QRect ListWidget::elementGlobalRect(not_null<const Element*> view) {
+	const auto top = itemTop(view);
+	const auto inner = view->innerGeometry();
+	const auto local = inner.translated(0, top);
+	const auto visible = local.intersected(rect());
+	return mapToGlobal(visible.isEmpty() ? local : visible);
+}
+
 void ListWidget::elementCancelUpload(const FullMsgId &context) {
 	if (const auto item = session().data().message(context)) {
 		_delegate->listCancelUploadLayer(item);
@@ -3662,13 +3670,15 @@ void ListWidget::paintUserpics(
 		// paint the userpic if it intersects the painted rect
 		if (userpicTop + st::msgPhotoSize > clip.top()) {
 			const auto item = view->data();
+			const auto photoLeft = st::historyPhotoLeft;
+
 			const auto shift = context.gestureHorizontal.visualTranslationFor(
 				item->id.bare);
 			if (shift) {
 				p.translate(shift, 0);
 				update(
 					QRect(
-						st::historyPhotoLeft + std::min(shift, 0),
+						photoLeft + std::min(shift, 0),
 						userpicTop,
 						st::msgPhotoSize + std::abs(shift),
 						st::msgPhotoSize));
@@ -3679,7 +3689,7 @@ void ListWidget::paintUserpics(
 					from,
 					validateVideoUserpic(from),
 					_userpics[from],
-					st::historyPhotoLeft,
+					photoLeft,
 					userpicTop,
 					view->width(),
 					st::msgPhotoSize,
@@ -3688,7 +3698,7 @@ void ListWidget::paintUserpics(
 				if (info->customUserpic.empty()) {
 					info->emptyUserpic.paintCircle(
 						p,
-						st::historyPhotoLeft,
+						photoLeft,
 						userpicTop,
 						view->width(),
 						st::msgPhotoSize);
@@ -3697,7 +3707,7 @@ void ListWidget::paintUserpics(
 					const auto valid = info->paintCustomUserpic(
 						p,
 						userpic,
-						st::historyPhotoLeft,
+						photoLeft,
 						userpicTop,
 						view->width(),
 						st::msgPhotoSize);
@@ -5693,13 +5703,7 @@ void ListWidget::mouseActionUpdate() {
 					dateWidth += st::msgServicePadding.left() + st::msgServicePadding.right();
 					auto dateLeft = st::msgServiceMargin.left();
 					auto maxwidth = view->width();
-					if (_isChatWide) {
-						maxwidth = std::min(
-							maxwidth,
-							int32(st::msgMaxWidth
-								+ 2 * st::msgPhotoSkip
-								+ 2 * st::msgMargin.left()));
-					}
+					// no narrow column clamping
 					auto widthForDate = maxwidth - st::msgServiceMargin.left() - st::msgServiceMargin.left();
 
 					dateLeft += (widthForDate - dateWidth) / 2;
@@ -5734,13 +5738,7 @@ void ListWidget::mouseActionUpdate() {
 					}
 					auto barLeft = st::msgServiceMargin.left();
 					auto maxwidth = view->width();
-					if (_isChatWide) {
-						maxwidth = std::min(
-							maxwidth,
-							int32(st::msgMaxWidth
-								+ 2 * st::msgPhotoSkip
-								+ 2 * st::msgMargin.left()));
-					}
+					// no narrow column clamping
 					auto widthForBar = maxwidth - st::msgServiceMargin.left() - st::msgServiceMargin.left();
 
 					barLeft += (widthForBar - barWidth) / 2;
@@ -5767,9 +5765,10 @@ void ListWidget::mouseActionUpdate() {
 			dragState = view->textState(itemPoint, request);
 			_overItemExact = session().data().message(dragState.itemId);
 			lnkhost = view;
+			const auto photoLeft = st::historyPhotoLeft;
 			if (!dragState.link
-				&& itemPoint.x() >= st::historyPhotoLeft
-				&& itemPoint.x() < st::historyPhotoLeft + st::msgPhotoSize) {
+				&& itemPoint.x() >= photoLeft
+				&& itemPoint.x() < photoLeft + st::msgPhotoSize) {
 				if (view->hasFromPhoto()) {
 					enumerateUserpics([&](not_null<Element*> view, int userpicTop) {
 						// stop enumeration if the userpic is below our point
