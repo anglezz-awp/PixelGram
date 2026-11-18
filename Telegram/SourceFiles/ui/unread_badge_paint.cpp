@@ -180,7 +180,9 @@ QRect PaintUnreadBadge(
 
 	const auto textTop = st.textTop ? st.textTop : (unreadRectHeight - st.font->height) / 2;
 	p.setFont(st.font);
-	p.setPen(st.active
+	p.setPen(st.muted
+		? st::dialogsArchiveFg
+		: st.active
 		? st::dialogsUnreadFgActive
 		: st.selected
 		? st::dialogsUnreadFgOver

@@ -1,0 +1,587 @@
+Key	M3Role	Alpha	Description
+windowBg	surface	255	Window base background
+windowFg	onSurface	255	Window base text
+windowBgOver	surfaceContainerHigh	255	Window hover background
+windowBgRipple	onSurface	30	Window ripple effect
+windowFgOver	onSurface	255	Window hover text
+windowSubTextFg	onSurfaceVariant	255	Window secondary text
+windowSubTextFgOver	onSurfaceVariant	255	Window hover secondary text
+windowBoldFg	onSurface	255	Window bold text
+windowBoldFgOver	onSurface	255	Window hover bold text
+windowBgActive	primary	255	Active area fill
+windowFgActive	onPrimary	255	Text on active area
+windowActiveTextFg	primary	255	Active accent text / online
+windowShadowFg	shadow	100	Window shadow
+windowShadowFgFallback	outlineVariant	255	Window shadow fallback without alpha
+shadowFg	shadow	24	Standard shadow
+slideFadeOutBg	scrim	60	Slide animation fade out
+slideFadeOutShadowFg	shadow	100	Slide animation shadow
+imageBg	surfaceContainerLowest	255	Image placeholder background
+imageBgTransparent	surfaceContainer	255	Transparent image background
+activeButtonBg	primary	255	Primary button background
+activeButtonBgOver	primary	255	Primary button hover background
+activeButtonBgRipple	onPrimary	40	Primary button ripple
+activeButtonFg	onPrimary	255	Primary button text
+activeButtonFgOver	onPrimary	255	Primary button hover text
+activeButtonSecondaryFg	onPrimary	255	Primary button secondary text
+activeButtonSecondaryFgOver	onPrimary	255	Primary button secondary hover text
+activeLineFg	primary	255	Active input line focus
+activeLineFgError	error	255	Input line error focus
+lightButtonBg	secondaryContainer	255	Tonal button background
+lightButtonBgOver	secondaryContainer	255	Tonal button hover background
+lightButtonBgRipple	onSecondaryContainer	40	Tonal button ripple
+lightButtonFg	onSecondaryContainer	255	Tonal button text
+lightButtonFgOver	onSecondaryContainer	255	Tonal button hover text
+attentionButtonFg	onErrorContainer	255	Destructive button text
+attentionButtonFgOver	onErrorContainer	255	Destructive button hover text
+attentionButtonBgOver	errorContainer	255	Destructive button hover background
+attentionButtonBgRipple	onErrorContainer	40	Destructive button ripple
+menuBg	surfaceContainer	255	Popup menu background
+menuBgOver	surfaceContainerHigh	255	Popup menu item hover background
+menuBgRipple	onSurface	30	Popup menu ripple
+menuIconFg	onSurfaceVariant	255	Popup menu icon
+menuIconFgOver	onSurface	255	Popup menu hover icon
+menuSubmenuArrowFg	onSurfaceVariant	255	Submenu arrow indicator
+menuFgDisabled	outline	255	Disabled menu item text
+menuSeparatorFg	outlineVariant	255	Menu separator line
+scrollBarBg	onSurfaceVariant	83	Scrollbar thumb
+scrollBarBgOver	onSurfaceVariant	122	Scrollbar thumb hover
+scrollBg	outlineVariant	26	Scrollbar track
+scrollBgOver	outlineVariant	44	Scrollbar track hover
+smallCloseIconFg	onSurfaceVariant	255	Small close icon
+smallCloseIconFgOver	onSurface	255	Small close icon hover
+radialFg	primary	255	Radial loader line
+radialBg	scrim	86	Radial loader track background
+placeholderFg	outline	255	Input field placeholder text
+placeholderFgActive	outline	255	Focused input placeholder text
+inputBorderFg	outlineVariant	255	Standard input border
+filterInputBorderFg	primary	255	Rounded filter input border
+filterInputActiveBg	surfaceContainerHigh	255	Filter input active background
+filterInputInactiveBg	surfaceContainer	255	Filter input inactive background
+checkboxFg	outline	255	Checkbox border
+botKbBg	surfaceContainerHigh	255	Bot keyboard standard button background
+botKbDownBg	surfaceContainerHighest	255	Bot keyboard button pressed
+botKbColor	onSurface	255	Bot keyboard standard button text
+botKbPrimaryBg	primaryContainer	204	Bot keyboard Primary button background
+botKbDangerBg	errorContainer	204	Bot keyboard Danger button background
+botKbSuccessBg	tertiaryContainer	204	Bot keyboard Success button background
+botKbInlinePrimaryBg	primaryContainer	179	Inline bot keyboard Primary button background
+botKbInlineDangerBg	errorContainer	179	Inline bot keyboard Danger button background
+botKbInlineSuccessBg	tertiaryContainer	179	Inline bot keyboard Success button background
+sliderBgInactive	surfaceContainerHighest	255	Slider track inactive
+sliderBgActive	primary	255	Slider track active
+tooltipBg	inverseSurface	255	Tooltip background
+tooltipFg	inverseOnSurface	255	Tooltip text
+tooltipBorderFg	outlineVariant	255	Tooltip border
+titleShadow	shadow	3	Title bar shadow line
+titleBg	surfaceContainer	255	Title bar inactive background
+titleBgActive	surfaceContainer	255	Title bar active background
+titleButtonBg	surfaceContainer	255	Title button inactive background
+titleButtonFg	onSurfaceVariant	255	Title button inactive icon
+titleButtonBgOver	surfaceContainerHigh	255	Title button hover background
+titleButtonFgOver	onSurface	255	Title button hover icon
+titleButtonBgActive	surfaceContainer	255	Title button active background
+titleButtonFgActive	onSurfaceVariant	255	Title button active icon
+titleButtonBgActiveOver	surfaceContainerHigh	255	Title button active hover background
+titleButtonFgActiveOver	onSurface	255	Title button active hover icon
+titleButtonCloseBg	surfaceContainer	255	Close button inactive background
+titleButtonCloseFg	onSurfaceVariant	255	Close button inactive icon
+titleButtonCloseBgOver	error	255	Close button hover background
+titleButtonCloseFgOver	onError	255	Close button hover icon
+titleButtonCloseBgActive	surfaceContainer	255	Close button active background
+titleButtonCloseFgActive	onSurfaceVariant	255	Close button active icon
+titleButtonCloseBgActiveOver	error	255	Close button active hover background
+titleButtonCloseFgActiveOver	onError	255	Close button active hover icon
+titleFg	onSurfaceVariant	255	Title bar inactive text
+titleFgActive	onSurface	255	Title bar active text
+trayCounterBg	error	255	System tray unread badge background
+trayCounterBgMute	outline	255	System tray muted unread badge background
+trayCounterFg	onError	255	System tray unread badge text
+trayCounterBgMacInvert	onSurface	255	macOS inverted tray counter background
+trayCounterFgMacInvert	surface	1	macOS inverted tray counter text
+layerBg	scrim	127	Modal backdrop dark scrim overlay
+cancelIconFg	onSurfaceVariant	255	Cancel/close action icon
+cancelIconFgOver	onSurface	255	Cancel/close action icon hover
+boxBg	surfaceContainer	255	Dialog box card background
+boxTextFg	onSurface	255	Dialog box primary text
+boxTextFgGood	tertiary	255	Dialog box success text
+boxTextFgError	error	255	Dialog box error text
+boxTitleFg	onSurface	255	Dialog box title text
+boxSearchBg	surfaceContainerHigh	255	Dialog box search field background
+boxTitleAdditionalFg	onSurfaceVariant	255	Dialog box subtitle/counter
+boxTitleCloseFg	onSurfaceVariant	255	Dialog box close button icon
+boxTitleCloseFgOver	onSurface	255	Dialog box close button icon hover
+boxDividerBg	outlineVariant	255	Dialog box divider line
+boxDividerFg	outlineVariant	255	Dialog box divider foreground
+paymentsTipActive	primary	255	Payment tip amount selected pill
+membersAboutLimitFg	error	255	Group participant count reached limit warning
+contactsBg	surface	255	Contacts dialog background
+contactsBgOver	surfaceContainerHigh	255	Contacts row hover background
+contactsNameFg	onSurface	255	Contact display name
+contactsStatusFg	onSurfaceVariant	255	Contact last seen / status text
+contactsStatusFgOver	onSurfaceVariant	255	Contact status hover text
+contactsStatusFgOnline	primary	255	Contact online status text
+photoCropFadeBg	scrim	127	Avatar photo cropper darkened backdrop
+photoCropPointFg	onSurface	127	Avatar photo cropper handle dot
+callArrowFg	primary	255	Call history incoming arrow
+callArrowMissedFg	error	255	Call history missed arrow
+introBg	surface	255	Welcome/Login intro screen background
+introTitleFg	onSurface	255	Intro screen title text
+introDescriptionFg	onSurfaceVariant	255	Intro screen description text
+introCoverTopBg	primary	255	Intro illustration top gradient
+introCoverBottomBg	primaryContainer	255	Intro illustration bottom gradient
+introCoverIconsFg	onPrimary	255	Intro illustration icon
+introCoverPlaneTrace	onPrimary	105	Paper airplane trace
+introCoverPlaneInner	onPrimary	255	Paper airplane inner wing
+introCoverPlaneOuter	onPrimary	255	Paper airplane outer wing
+introCoverPlaneTop	onPrimary	255	Paper airplane top ridge
+dialogsMenuIconFg	onSurfaceVariant	255	Main hamburger menu icon
+dialogsMenuIconFgOver	onSurface	255	Main menu icon hover
+dialogsBg	surface	255	Chat list background
+dialogsNameFg	onSurface	255	Chat title text
+dialogsChatIconFg	onSurfaceVariant	255	Chat type icon (group/channel)
+dialogsDateFg	onSurfaceVariant	255	Chat last message timestamp
+dialogsTextFg	onSurfaceVariant	255	Chat last message preview text
+dialogsTextFgService	primary	255	Chat last message service text
+dialogsDraftFg	error	255	Draft label text in chat list
+dialogsVerifiedIconBg	primary	255	Verified badge background
+dialogsVerifiedIconFg	onPrimary	255	Verified badge checkmark
+dialogsSendingIconFg	onSurfaceVariant	255	Outgoing message sending clock icon
+dialogsSentIconFg	primary	255	Outgoing message sent double checkmark
+dialogsUnreadBg	primary	255	Unread badge background
+dialogsUnreadBgMuted	secondaryContainer	255	Muted chat unread badge background
+dialogsUnreadFg	onPrimary	255	Unread badge counter text
+dialogsArchiveFg	onSecondaryContainer	255	Archive folder icon and title text
+dialogsOnlineBadgeFg	primary	255	User online status dot indicator in chat list
+dialogsScamFg	error	255	Scam warning text in chat list
+dialogsBgOver	surfaceContainerHigh	255	Chat row hover background
+dialogsNameFgOver	onSurface	255	Chat row hover title text
+dialogsChatIconFgOver	onSurface	255	Chat row hover icon
+dialogsDateFgOver	onSurfaceVariant	255	Chat row hover timestamp
+dialogsTextFgOver	onSurfaceVariant	255	Chat row hover preview text
+dialogsTextFgServiceOver	primary	255	Chat row hover service text
+dialogsDraftFgOver	error	255	Chat row hover draft label
+dialogsVerifiedIconBgOver	primary	255	Chat row hover verified background
+dialogsVerifiedIconFgOver	onPrimary	255	Chat row hover verified icon
+dialogsSendingIconFgOver	onSurface	255	Chat row hover sending clock
+dialogsSentIconFgOver	primary	255	Chat row hover sent checkmark
+dialogsUnreadBgOver	primary	255	Chat row hover unread badge
+dialogsUnreadBgMutedOver	secondaryContainer	255	Chat row hover muted badge
+dialogsUnreadFgOver	onPrimary	255	Chat row hover unread text
+dialogsArchiveFgOver	onSecondaryContainer	255	Archive folder hover icon and text
+dialogsScamFgOver	error	255	Scam warning hover text
+dialogsBgActive	secondaryContainer	255	Selected active chat pill background
+dialogsNameFgActive	onSecondaryContainer	255	Selected active chat title text
+dialogsChatIconFgActive	onSecondaryContainer	255	Selected active chat type icon
+dialogsDateFgActive	onSecondaryContainer	255	Selected active chat timestamp
+dialogsTextFgActive	onSecondaryContainer	255	Selected active chat message preview
+dialogsTextFgServiceActive	primary	255	Selected active chat service text
+dialogsDraftFgActive	error	255	Selected active chat draft label
+dialogsVerifiedIconBgActive	primary	255	Selected active chat verified badge
+dialogsVerifiedIconFgActive	onPrimary	255	Selected active chat verified checkmark
+dialogsSendingIconFgActive	onSecondaryContainer	153	Selected active chat sending clock
+dialogsSentIconFgActive	onSecondaryContainer	255	Selected active chat sent checkmark
+dialogsUnreadBgActive	primary	255	Selected active chat unread badge
+dialogsUnreadBgMutedActive	secondaryContainer	255	Selected active chat muted badge
+dialogsUnreadFgActive	onPrimary	255	Selected active chat unread text
+dialogsOnlineBadgeFgActive	onSecondaryContainer	255	User online status dot in active chat
+dialogsScamFgActive	error	255	Scam warning text in active chat
+dialogsRippleBg	onSurface	30	Chat row click ripple
+dialogsRippleBgActive	onSecondaryContainer	30	Active chat row click ripple
+searchedBarBg	surfaceContainerHigh	255	Search in chat top bar background
+searchedBarFg	onSurfaceVariant	255	Search in chat text counter
+searchedTextMatchBg	tertiaryContainer	255	In-message search match highlight
+searchedTextMatchFg	onTertiaryContainer	255	In-message search match text
+searchedTextCurrentMatchBg	primary	255	Current active search match highlight
+searchedTextCurrentMatchFg	onPrimary	255	Current active search match text
+topBarBg	surfaceContainer	255	Chat top bar navigation background
+emojiPanBg	surfaceContainer	255	Emoji & sticker panel background
+emojiPanCategories	surfaceContainer	255	Emoji categories tabs bar background
+emojiPanHeaderFg	onSurfaceVariant	255	Emoji set header title text
+emojiPanHeaderBg	surfaceContainer	242	Emoji set header sticky background
+emojiIconFg	onSurfaceVariant	255	Emoji category icon
+emojiSubIconFgActive	primary	255	Active sticker pack sub-tab icon
+stickerPanDeleteBg	error	255	Delete custom sticker pack button background
+stickerPanDeleteFg	onError	255	Delete sticker pack button icon
+stickerPreviewBg	scrim	176	Sticker long-press preview backdrop
+stickerPanPremium1	primary	255	Premium sticker lock badge 1
+stickerPanPremium2	tertiary	255	Premium sticker lock badge 2
+historyTextInFg	onSurface	255	Incoming message body text
+historyTextInFgSelected	onSurface	255	Incoming message body text selected
+historyTextOutFg	onPrimaryContainer	255	Outgoing message body text
+historyTextOutFgSelected	onPrimaryContainer	255	Outgoing message body text selected
+historyLinkInFg	primary	255	Incoming message link
+historyLinkInFgSelected	primary	255	Incoming message link selected
+historyLinkOutFg	primary	255	Outgoing message link
+historyLinkOutFgSelected	primary	255	Outgoing message link selected
+historyFileNameInFg	onSurface	255	Incoming message attached file name
+historyFileNameInFgSelected	onSurface	255	Incoming message attached file name selected
+historyFileNameOutFg	onPrimaryContainer	255	Outgoing message attached file name
+historyFileNameOutFgSelected	onPrimaryContainer	255	Outgoing message attached file name selected
+historyOutIconFg	onPrimaryContainer	255	Outgoing message sent double check icon
+historyOutIconFgSelected	onPrimaryContainer	255	Outgoing message sent check icon selected
+historyIconFgInverted	onPrimary	255	Inverted status checkmark icon
+historySendingOutIconFg	onPrimaryContainer	255	Outgoing message sending clock icon
+historySendingInIconFg	onSurfaceVariant	255	Incoming message downloading clock icon
+historySendingInvertedIconFg	onPrimary	200	Inverted message sending icon
+historyCallArrowInFg	primary	255	Incoming call arrow icon
+historyCallArrowInFgSelected	primary	255	Incoming call arrow icon selected
+historyCallArrowMissedInFg	error	255	Missed call arrow icon
+historyCallArrowMissedInFgSelected	error	255	Missed call arrow icon selected
+historyCallArrowOutFg	onPrimaryContainer	255	Outgoing call arrow icon
+historyCallArrowOutFgSelected	onPrimaryContainer	255	Outgoing call arrow icon selected
+historyUnreadBarBg	surfaceContainerHighest	255	Unread messages separator banner background
+historyUnreadBarBorder	outlineVariant	24	Unread messages separator banner border
+historyUnreadBarFg	primary	255	Unread messages separator banner text
+historyForwardChooseBg	primary	76	Forward message select mode background
+historyForwardChooseFg	onPrimary	255	Forward message select mode text
+historyPeer1NameFg	primary	255	Group member name color 1 (Red)
+historyPeer1NameFgSelected	primary	255	Group member name color 1 selected
+historyPeer1UserpicBg	primary	255	Peer avatar background color 1
+historyPeer2NameFg	secondary	255	Group member name color 2 (Green)
+historyPeer2NameFgSelected	secondary	255	Group member name color 2 selected
+historyPeer2UserpicBg	secondary	255	Peer avatar background color 2
+historyPeer3NameFg	tertiary	255	Group member name color 3 (Yellow)
+historyPeer3NameFgSelected	tertiary	255	Group member name color 3 selected
+historyPeer3UserpicBg	tertiary	255	Peer avatar background color 3
+historyPeer4NameFg	primaryContainer	255	Group member name color 4 (Blue)
+historyPeer4NameFgSelected	primaryContainer	255	Group member name color 4 selected
+historyPeer4UserpicBg	primaryContainer	255	Peer avatar background color 4
+historyPeer5NameFg	secondaryContainer	255	Group member name color 5 (Purple)
+historyPeer5NameFgSelected	secondaryContainer	255	Group member name color 5 selected
+historyPeer5UserpicBg	secondaryContainer	255	Peer avatar background color 5
+historyPeer6NameFg	tertiaryContainer	255	Group member name color 6 (Pink)
+historyPeer6NameFgSelected	tertiaryContainer	255	Group member name color 6 selected
+historyPeer6UserpicBg	tertiaryContainer	255	Peer avatar background color 6
+historyPeer7NameFg	error	255	Group member name color 7 (Sea)
+historyPeer7NameFgSelected	error	255	Group member name color 7 selected
+historyPeer7UserpicBg	error	255	Peer avatar background color 7
+historyPeer8NameFg	outline	255	Group member name color 8 (Orange)
+historyPeer8NameFgSelected	outline	255	Group member name color 8 selected
+historyPeer8UserpicBg	outline	255	Peer avatar background color 8
+historyPeerUserpicFg	onPrimary	255	Peer avatar initial letter text
+historyPeerSavedMessagesBg	primary	255	Saved messages cloud avatar background 1
+historyPeerArchiveUserpicBg	secondaryContainer	255	Archive folder avatar background
+historyPeer1UserpicBg2	primary	255	Peer avatar gradient color 1 bottom
+historyPeer2UserpicBg2	secondary	255	Peer avatar gradient color 2 bottom
+historyPeer3UserpicBg2	tertiary	255	Peer avatar gradient color 3 bottom
+historyPeer4UserpicBg2	primaryContainer	255	Peer avatar gradient color 4 bottom
+historyPeer5UserpicBg2	secondaryContainer	255	Peer avatar gradient color 5 bottom
+historyPeer6UserpicBg2	tertiaryContainer	255	Peer avatar gradient color 6 bottom
+historyPeer7UserpicBg2	error	255	Peer avatar gradient color 7 bottom
+historyPeer8UserpicBg2	outline	255	Peer avatar gradient color 8 bottom
+historyPeerSavedMessagesBg2	primary	255	Saved messages cloud avatar gradient bottom
+settingsIconBg1	error	255	Settings red category circle background
+settingsIconBg2	secondary	255	Settings green category circle background
+settingsIconBg3	tertiary	255	Settings yellow category circle background
+settingsIconBg4	primary	255	Settings blue category circle background
+settingsIconBg5	primaryContainer	255	Settings purple category circle background
+settingsIconBg6	secondaryContainer	255	Settings pink category circle background
+settingsIconBg8	outline	255	Settings gray category circle background
+settingsIconBgArchive	secondaryContainer	255	Settings archive category circle background
+settingsIconFg	onPrimary	255	Settings category icon foreground
+historyScrollBarBg	onSurfaceVariant	122	Chat history scrollbar thumb
+historyScrollBarBgOver	onSurfaceVariant	188	Chat history scrollbar thumb hover
+historyScrollBg	outlineVariant	76	Chat history scrollbar track
+historyScrollBgOver	outlineVariant	107	Chat history scrollbar track hover
+msgInBg	surfaceContainerHigh	255	Incoming message bubble background
+msgInBgSelected	surfaceContainerHighest	255	Incoming message bubble selected
+msgOutBg	primaryContainer	255	Outgoing message bubble background
+msgOutBgSelected	primaryContainer	255	Outgoing message bubble selected
+msgSelectOverlay	primary	76	Selected message highlight overlay
+msgStickerOverlay	scrim	127	Sticker hover overlay
+msgInServiceFg	primary	255	Incoming message service link/author text
+msgInServiceFgSelected	primary	255	Incoming message service text selected
+msgOutServiceFg	primary	255	Outgoing message service link/author text
+msgOutServiceFgSelected	primary	255	Outgoing message service text selected
+msgInShadow	shadow	41	Incoming bubble shadow
+msgInShadowSelected	shadow	41	Incoming bubble shadow selected
+msgOutShadow	shadow	29	Outgoing bubble shadow
+msgOutShadowSelected	shadow	34	Outgoing bubble shadow selected
+msgInDateFg	onSurfaceVariant	255	Incoming message timestamp
+msgInDateFgSelected	onSurfaceVariant	255	Incoming message timestamp selected
+msgOutDateFg	onPrimaryContainer	255	Outgoing message timestamp
+msgOutDateFgSelected	onPrimaryContainer	255	Outgoing message timestamp selected
+msgServiceFg	onSurface	255	Service message text (e.g. date header)
+msgServiceBg	surfaceContainer	127	Service message background pill
+msgServiceBgSelected	surfaceContainerHigh	162	Service message background pill selected
+msgInReplyBarColor	primary	255	Incoming reply vertical quote bar
+msgInReplyBarSelColor	primary	255	Incoming reply quote bar selected
+msgOutReplyBarColor	onPrimaryContainer	255	Outgoing reply vertical quote bar
+msgOutReplyBarSelColor	onPrimaryContainer	255	Outgoing reply quote bar selected
+msgImgReplyBarColor	inverseOnSurface	255	Photo caption reply quote bar
+msgInMonoFg	onSurface	255	Incoming monospace code text
+msgOutMonoFg	onPrimaryContainer	255	Outgoing monospace code text
+msgInMonoFgSelected	onSurface	255	Incoming monospace code text selected
+msgOutMonoFgSelected	onPrimaryContainer	255	Outgoing monospace code text selected
+msgDateImgFg	fixedWhite	255	Media overlaid date timestamp text
+msgDateImgBg	scrim	84	Media overlaid date timestamp background
+msgDateImgBgOver	scrim	116	Media overlaid date timestamp hover background
+msgDateImgBgSelected	scrim	135	Media overlaid date timestamp selected background
+msgFileThumbLinkInFg	primary	255	Incoming file thumbnail link
+msgFileThumbLinkInFgSelected	primary	255	Incoming file thumbnail link selected
+msgFileThumbLinkOutFg	onPrimaryContainer	255	Outgoing file thumbnail link
+msgFileThumbLinkOutFgSelected	onPrimaryContainer	255	Outgoing file thumbnail link selected
+msgFileInBg	surfaceContainerHighest	255	Incoming file circle background
+msgFileInBgOver	surfaceContainerHighest	255	Incoming file circle hover
+msgFileInBgSelected	surfaceContainerHighest	255	Incoming file circle selected
+msgFileOutBg	primary	255	Outgoing file circle background
+msgFileOutBgSelected	primary	255	Outgoing file circle selected
+msgFile1Bg	primary	255	File type 1 color (blue/doc)
+msgFile1BgDark	primary	255	File type 1 dark color
+msgFile1BgOver	primary	255	File type 1 hover
+msgFile1BgSelected	primary	255	File type 1 selected
+msgFile2Bg	secondary	255	File type 2 color (green/xls)
+msgFile2BgDark	secondary	255	File type 2 dark color
+msgFile2BgOver	secondary	255	File type 2 hover
+msgFile2BgSelected	secondary	255	File type 2 selected
+msgFile3Bg	tertiary	255	File type 3 color (red/pdf)
+msgFile3BgDark	tertiary	255	File type 3 dark color
+msgFile3BgOver	tertiary	255	File type 3 hover
+msgFile3BgSelected	tertiary	255	File type 3 selected
+msgFile4Bg	error	255	File type 4 color (yellow/zip)
+msgFile4BgDark	error	255	File type 4 dark color
+msgFile4BgOver	error	255	File type 4 hover
+msgFile4BgSelected	error	255	File type 4 selected
+historyFileInIconFg	onSurface	255	Incoming file icon
+historyFileInIconFgSelected	onSurface	255	Incoming file icon selected
+historyFileInRadialFg	primary	255	Incoming file radial progress
+historyFileInRadialFgSelected	primary	255	Incoming file radial progress selected
+historyFileOutIconFg	onPrimaryContainer	255	Outgoing file icon
+historyFileOutIconFgSelected	onPrimaryContainer	255	Outgoing file icon selected
+historyFileOutRadialFg	onPrimaryContainer	255	Outgoing file radial progress
+historyFileOutRadialFgSelected	onPrimaryContainer	255	Outgoing file radial progress selected
+historyFileThumbIconFg	inverseOnSurface	255	File thumbnail play/document icon
+historyFileThumbIconFgSelected	inverseOnSurface	255	File thumbnail play/document icon selected
+historyFileThumbRadialFg	inverseOnSurface	255	File thumbnail radial progress
+historyFileThumbRadialFgSelected	inverseOnSurface	255	File thumbnail radial progress selected
+historyVideoMessageProgressFg	inverseOnSurface	255	Round video message progress ring
+msgWaveformInActive	primary	255	Incoming voice waveform played
+msgWaveformInActiveSelected	primary	255	Incoming voice waveform played selected
+msgWaveformInInactive	outlineVariant	255	Incoming voice waveform upcoming
+msgWaveformInInactiveSelected	outlineVariant	255	Incoming voice waveform upcoming selected
+msgWaveformOutActive	onPrimaryContainer	255	Outgoing voice waveform played
+msgWaveformOutActiveSelected	onPrimaryContainer	255	Outgoing voice waveform played selected
+msgWaveformOutInactive	outline	255	Outgoing voice waveform upcoming
+msgWaveformOutInactiveSelected	outline	255	Outgoing voice waveform upcoming selected
+msgBotKbOverBgAdd	onSurface	32	Message bot keyboard button hover add
+msgBotKbIconFg	onSurface	255	Message bot keyboard icon
+msgBotKbRippleBg	onSurface	32	Message bot keyboard button ripple
+mediaInFg	onSurface	255	Incoming media player title
+mediaInFgSelected	onSurface	255	Incoming media player title selected
+mediaOutFg	onPrimaryContainer	255	Outgoing media player title
+mediaOutFgSelected	onPrimaryContainer	255	Outgoing media player title selected
+youtubePlayIconBg	scrim	200	YouTube video embed play button background
+youtubePlayIconFg	fixedWhite	255	YouTube video embed play button icon
+videoPlayIconBg	scrim	127	Inline video player play button background
+videoPlayIconFg	fixedWhite	255	Inline video player play button icon
+toastBg	inverseSurface	229	Toast message pill background
+toastFg	inverseOnSurface	255	Toast message pill text
+historyToDownBg	surfaceContainerHigh	255	Scroll to bottom floating button background
+historyToDownBgOver	surfaceContainerHighest	255	Scroll to bottom button hover
+historyToDownBgRipple	onSurface	30	Scroll to bottom button ripple
+historyToDownFg	onSurfaceVariant	255	Scroll to bottom button arrow icon
+historyToDownFgOver	onSurface	255	Scroll to bottom button arrow icon hover
+historyToDownShadow	shadow	64	Scroll to bottom button drop shadow
+historyComposeAreaBg	surfaceContainerHigh	255	Message compose text input field background
+historyComposeAreaFg	onSurface	255	Message compose text input field text
+historyComposeAreaFgService	outline	255	Message compose text input field placeholder
+historyComposeIconFg	onSurfaceVariant	255	Message compose bar action icons (attach, emoji)
+historyComposeIconFgOver	onSurface	255	Message compose bar action icons hover
+historySendIconFg	primary	255	Send message button icon
+historySendIconFgOver	primary	255	Send message button icon hover
+historyPinnedBg	surfaceContainer	255	Pinned message header background banner
+historyReplyBg	surfaceContainer	255	Reply/edit header background banner
+historyReplyIconFg	primary	255	Reply header icon
+historyReplyCancelFg	onSurfaceVariant	255	Cancel reply/edit cross icon
+historyReplyCancelFgOver	onSurface	255	Cancel reply/edit cross icon hover
+historyComposeButtonBg	primary	255	Compose area floating button background
+historyComposeButtonBgOver	primary	255	Compose area floating button hover
+historyComposeButtonBgRipple	onPrimary	40	Compose area floating button ripple
+mapPointDrop	error	255	Location map pin outer pin
+mapPointDot	onError	255	Location map pin center dot
+overviewCheckBg	scrim	64	Media overview select circle background
+overviewCheckBgActive	primary	255	Media overview selected check circle
+overviewCheckBorder	surface	255	Media overview select circle border
+overviewCheckFgActive	onPrimary	255	Media overview select checkmark
+overviewPhotoSelectOverlay	primary	51	Media overview photo selected tint
+profileStatusFgOver	primary	255	User profile status text hover
+profileVerifiedCheckBg	primary	255	Profile verified badge background
+profileVerifiedCheckFg	onPrimary	255	Profile verified checkmark
+profileAdminStartFg	primary	255	Channel admin star icon
+notificationsBoxMonitorFg	onSurface	255	Desktop notification preview window text
+notificationsBoxScreenBg	secondaryContainer	255	Desktop notification preview screen
+notificationSampleUserpicFg	primary	255	Notification sample avatar
+notificationSampleCloseFg	onSurfaceVariant	255	Notification sample close button
+notificationSampleTextFg	onSurface	255	Notification sample message text
+notificationSampleNameFg	onSurface	255	Notification sample sender name
+mainMenuBg	surfaceContainer	255	Drawer main menu background
+mainMenuCoverBg	secondaryContainer	255	Drawer main menu header cover
+mainMenuCloudFg	onSecondaryContainer	255	Saved messages cloud icon in drawer
+mainMenuCloudBg	secondaryContainer	255	Saved messages cloud background in drawer
+mediaPlayerBg	surfaceContainer	255	Audio player top bar background
+mediaPlayerActiveFg	primary	255	Audio player playback control icon
+mediaPlayerInactiveFg	outlineVariant	255	Audio player upcoming progress bar
+mediaPlayerDisabledFg	outline	255	Audio player disabled control icon
+mediaviewFileBg	surfaceContainer	255	Media viewer file rectangle background
+mediaviewFileNameFg	onSurface	255	Media viewer file name text
+mediaviewFileSizeFg	onSurfaceVariant	255	Media viewer file size text
+mediaviewFileRedCornerFg	error	255	Media viewer file placeholder red corner
+mediaviewFileYellowCornerFg	tertiary	255	Media viewer file placeholder yellow corner
+mediaviewFileGreenCornerFg	primary	255	Media viewer file placeholder green corner
+mediaviewFileBlueCornerFg	secondary	255	Media viewer file placeholder blue corner
+mediaviewFileExtFg	onPrimary	255	Media viewer file extension text
+mediaviewMenuBg	surfaceContainer	255	Media viewer context menu background
+mediaviewMenuBgOver	surfaceContainerHigh	255	Media viewer context menu hover
+mediaviewMenuBgRipple	onSurface	30	Media viewer context menu ripple
+mediaviewMenuFg	onSurface	255	Media viewer context menu text
+mediaviewBg	scrim	235	Media viewer backdrop scrim
+mediaviewVideoBg	fixedBlack	255	Media viewer video fullscreen background
+mediaviewControlBg	scrim	60	Media viewer control button background
+mediaviewControlFg	fixedWhite	255	Media viewer control button icon
+mediaviewCaptionBg	scrim	128	Media viewer caption background
+mediaviewCaptionFg	fixedWhite	255	Media viewer caption text
+mediaviewTextLinkFg	primary	255	Media viewer caption link text
+mediaviewSaveMsgBg	inverseSurface	229	Media viewer toast notification background
+mediaviewSaveMsgFg	inverseOnSurface	255	Media viewer toast notification text
+mediaviewPlaybackActive	primary	255	Media viewer video played bar
+mediaviewPlaybackInactive	surfaceContainerHighest	255	Media viewer video remaining bar
+mediaviewPlaybackActiveOver	primary	255	Media viewer video played bar hover
+mediaviewPlaybackInactiveOver	surfaceContainerHigh	255	Media viewer video remaining bar hover
+mediaviewPlaybackProgressFg	inverseOnSurface	199	Media viewer playback progress text
+mediaviewPlaybackIconFg	inverseOnSurface	255	Media viewer playback icon
+mediaviewPlaybackIconFgOver	primary	255	Media viewer playback icon hover
+mediaviewPlaybackIconRipple	inverseOnSurface	20	Media viewer playback icon ripple
+mediaviewPipControlsFg	inverseOnSurface	217	PIP controls icon
+mediaviewPipControlsFgOver	primary	255	PIP controls icon hover
+mediaviewPipPlaybackActive	primary	218	PIP playback active bar
+mediaviewPipPlaybackInactive	inverseOnSurface	38	PIP playback inactive bar
+mediaviewTransparentBg	surfaceContainer	255	Media viewer transparency checkerboard light
+mediaviewTransparentFg	surfaceContainerHigh	255	Media viewer transparency checkerboard dark
+notificationBg	surfaceContainerHigh	255	In-app toast notification card background
+callBg	surfaceContainerLowest	242	Active call screen background
+callBgOpaque	surfaceContainerLowest	255	Active call screen background opaque
+callBgButton	surfaceContainerHigh	127	Call control button background
+callNameFg	onSurface	255	Call participant name
+callStatusFg	onSurfaceVariant	255	Call status text
+callIconBg	surfaceContainerHigh	31	Call icon circle background
+callIconFg	onSurface	255	Call icon
+callIconBgActive	primary	229	Active call icon background
+callIconFgActive	onPrimary	255	Active call icon
+callIconActiveRipple	onPrimary	40	Active call icon ripple
+callAnswerBg	primary	255	Answer call button background
+callAnswerRipple	onPrimary	40	Answer call button ripple
+callAnswerBgOuter	primary	38	Answer call pulsing ring
+callHangupBg	error	255	Decline call button background
+callHangupRipple	onError	40	Decline call button ripple
+callMuteRipple	onSurface	18	Mute button ripple
+groupCallBg	surfaceContainerLowest	255	Group call screen background
+groupCallActiveFg	primary	255	Group call speaking member indicator
+groupCallMembersBg	surfaceContainerLow	255	Group call members panel background
+groupCallMembersBgOver	surfaceContainer	255	Group call member item hover
+groupCallMembersBgRipple	onSurface	30	Group call member ripple
+groupCallMembersFg	onSurface	255	Group call member name text
+groupCallMemberActiveIcon	primary	255	Group call active speaker icon
+groupCallMemberActiveStatus	primary	255	Group call active speaker status text
+groupCallMemberInactiveIcon	onSurfaceVariant	255	Group call inactive speaker icon
+groupCallMemberInactiveStatus	onSurfaceVariant	255	Group call inactive speaker status text
+groupCallMemberMutedIcon	error	255	Group call muted icon
+groupCallMemberNotJoinedStatus	outline	255	Group call not joined status
+groupCallIconFg	onSurface	255	Group call controls icon
+groupCallLive1	primary	255	Group call live badge gradient 1
+groupCallLive2	secondary	255	Group call live badge gradient 2
+groupCallMuted1	outline	255	Group call muted badge gradient 1
+groupCallMuted2	outlineVariant	255	Group call muted badge gradient 2
+groupCallForceMutedBar1	error	255	Force muted bar 1
+groupCallForceMutedBar2	errorContainer	255	Force muted bar 2
+groupCallForceMutedBar3	outline	255	Force muted bar 3
+groupCallForceMuted1	error	255	Force muted indicator 1
+groupCallForceMuted2	errorContainer	255	Force muted indicator 2
+groupCallForceMuted3	outline	255	Force muted indicator 3
+groupCallMenuBg	surfaceContainer	255	Group call menu background
+groupCallMenuBgOver	surfaceContainerHigh	255	Group call menu item hover
+groupCallMenuBgRipple	onSurface	30	Group call menu ripple
+groupCallLeaveBg	error	127	Leave group call button background
+groupCallLeaveBgRipple	error	158	Leave group call button ripple
+groupCallVideoTextFg	inverseOnSurface	224	Group call video overlay text
+groupCallVideoSubTextFg	inverseOnSurface	192	Group call video overlay subtext
+callBarBg	primaryContainer	255	Ongoing call top bar background
+callBarMuteRipple	onPrimaryContainer	30	Call bar mute ripple
+callBarBgMuted	surfaceContainerHighest	255	Call bar muted state background
+callBarFg	onPrimaryContainer	255	Ongoing call top bar text
+importantTooltipBg	inverseSurface	229	Important tooltip background
+importantTooltipFg	inverseOnSurface	255	Important tooltip text
+importantTooltipFgLink	inversePrimary	255	Important tooltip link text
+outdatedFg	onErrorContainer	255	Client obsolete warning bar text
+outdateSoonBg	tertiaryContainer	255	Client update available reminder background
+outdatedBg	errorContainer	255	Client obsolete warning bar background
+spellUnderline	error	136	Spell checker wavy red line
+walletTitleBg	surfaceContainer	255	Wallet title background
+walletTitleBgActive	surfaceContainer	255	Wallet title background active
+walletTitleButtonBg	surfaceContainer	255	Wallet title button background
+walletTitleButtonFg	onSurfaceVariant	255	Wallet title button icon
+walletTitleButtonBgOver	surfaceContainerHigh	255	Wallet title button hover
+walletTitleButtonFgOver	onSurface	255	Wallet title button icon hover
+walletTitleButtonBgActive	surfaceContainer	255	Wallet title button active
+walletTitleButtonFgActive	onSurfaceVariant	255	Wallet title button active icon
+walletTitleButtonBgActiveOver	surfaceContainerHigh	255	Wallet title button active hover
+walletTitleButtonFgActiveOver	onSurface	255	Wallet title button active icon hover
+walletTitleButtonCloseBg	surfaceContainer	255	Wallet close button background
+walletTitleButtonCloseFg	onSurfaceVariant	255	Wallet close button icon
+walletTitleButtonCloseBgOver	error	255	Wallet close button hover
+walletTitleButtonCloseFgOver	onError	255	Wallet close button icon hover
+walletTitleButtonCloseBgActive	surfaceContainer	255	Wallet close button active
+walletTitleButtonCloseFgActive	onSurfaceVariant	255	Wallet close button active icon
+walletTitleButtonCloseBgActiveOver	error	255	Wallet close button active hover
+walletTitleButtonCloseFgActiveOver	onError	255	Wallet close button active icon hover
+walletTopBg	surfaceContainer	255	Wallet top header area background
+walletBalanceFg	onSurface	255	Wallet balance amount text
+walletSubBalanceFg	onSurfaceVariant	255	Wallet balance currency label
+walletTopLabelFg	onSurfaceVariant	255	Wallet header label text
+walletTopIconFg	primary	255	Wallet header action icon
+walletTopIconRipple	onSurface	18	Wallet header action ripple
+sideBarBg	surface	255	Folders sidebar background
+sideBarBgActive	secondaryContainer	255	Folders sidebar active folder pill
+sideBarBgRipple	onSurface	30	Folders sidebar click ripple
+sideBarTextFg	onSurfaceVariant	255	Folders sidebar label text
+sideBarTextFgActive	onSecondaryContainer	255	Folders sidebar active label text
+sideBarIconFg	onSurfaceVariant	255	Folders sidebar icon
+sideBarIconFgActive	onSecondaryContainer	255	Folders sidebar active icon
+sideBarBadgeBg	primary	255	Folders sidebar unread counter badge
+sideBarBadgeBgActive	primary	255	Folders sidebar active unread badge
+sideBarBadgeBgMuted	secondaryContainer	255	Folders sidebar muted unread badge
+sideBarBadgeBgMutedActive	secondaryContainer	255	Folders sidebar active muted unread badge
+sideBarBadgeFg	onPrimary	255	Folders sidebar unread counter text
+songCoverOverlayFg	scrim	102	Music player album artwork dark overlay
+photoEditorItemBaseHandleFg	primary	255	Photo editor adjustment slider handle
+premiumButtonBg1	tertiary	255	Premium purchase button gradient 1
+premiumButtonBg2	primary	255	Premium purchase button gradient 2
+premiumButtonBg3	secondary	255	Premium purchase button gradient 3
+premiumButtonFg	onPrimary	255	Premium purchase button text
+premiumIconBg1	tertiary	255	Premium star icon gradient 1
+premiumIconBg2	primary	255	Premium star icon gradient 2
+premiumIconBg3	secondary	255	Premium star icon gradient 3
+statisticsChartInactive	onSurfaceVariant	153	Statistics chart inactive series
+statisticsChartActive	onSurface	216	Statistics chart active series
+statisticsChartLineBlue	primary	255	Statistics chart blue line
+statisticsChartLineGreen	secondary	255	Statistics chart green line
+statisticsChartLineRed	error	255	Statistics chart red line
+statisticsChartLineGolden	tertiary	255	Statistics chart gold line
+statisticsChartLineLightblue	primaryContainer	255	Statistics chart light blue line
+statisticsChartLineLightgreen	secondaryContainer	255	Statistics chart light green line
+statisticsChartLineOrange	tertiaryContainer	255	Statistics chart orange line
+statisticsChartLineIndigo	outline	255	Statistics chart indigo line
+statisticsChartLinePurple	inversePrimary	255	Statistics chart purple line
+statisticsChartLineCyan	outlineVariant	255	Statistics chart cyan line
+creditsBg1	tertiary	255	Telegram Stars balance gradient 1
+creditsBg2	primary	255	Telegram Stars balance gradient 2
+creditsBg3	secondary	255	Telegram Stars balance gradient 3
+creditsFg	onPrimary	255	Telegram Stars text
+creditsStroke	tertiaryContainer	255	Telegram Stars stroke outline
+currencyFg	tertiary	255	Monetary currency symbol color
+rankAdminFg	secondary	255	Group admin badge text
+rankOwnerFg	primary	255	Group owner badge text
+rankUserFg	onSurfaceVariant	255	Group member rank text
+dialogsMentionIconFg	primary	255	Unread mention @ icon in chat list
+dialogsReactionIconFg	primary	255	Unread reaction heart icon in chat list
+dialogsPollIconFg	primary	255	Unread poll vote icon in chat list

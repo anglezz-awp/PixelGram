@@ -796,7 +796,7 @@ void Generator::paintRow(const Row &row) {
 
 		auto textTop = (unreadRectHeight - st::dialogsUnreadFont->height) / 2;
 		_p->setFont(st::dialogsUnreadFont);
-		_p->setPen(row.active ? st::dialogsUnreadFgActive[_palette] : (row.selected ? st::dialogsUnreadFgOver[_palette] : st::dialogsUnreadFg[_palette]));
+		_p->setPen(row.muted ? st::dialogsArchiveFg[_palette] : row.active ? st::dialogsUnreadFgActive[_palette] : (row.selected ? st::dialogsUnreadFgOver[_palette] : st::dialogsUnreadFg[_palette]));
 		_p->drawText(unreadRectLeft + (unreadRectWidth - unreadWidth) / 2, unreadRectTop + textTop + st::dialogsUnreadFont->ascent, counter);
 	} else if (row.pinned) {
 		const auto icon = Dialogs::ThreeStateIcon(
