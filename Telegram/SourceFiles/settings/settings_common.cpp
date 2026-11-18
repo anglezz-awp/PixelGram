@@ -423,6 +423,93 @@ QSize Icon::size() const {
 	return _icon->size();
 }
 
+struct SemanticIconStyle {
+	QColor container;
+	QColor onContainer;
+};
+
+SemanticIconStyle GetSemanticIconStyle(const style::icon *icon) {
+	const auto &roles = PixelGram::CurrentM3Roles();
+	if (!roles.primary.isValid()) {
+		return { QColor(0x3c, 0x3c, 0x3c), QColor(0xff, 0xff, 0xff) };
+	}
+
+	// 1. Group 1: Notifications & Sounds (errorContainer / onErrorContainer)
+	if (icon == &st::menuIconNotifications
+		|| icon == &st::menuIconMute
+		|| icon == &st::menuIconUnmute
+		|| icon == &st::menuIconMuteFor
+		|| icon == &st::menuIconSilent
+		|| icon == &st::menuIconSoundOn
+		|| icon == &st::menuIconSoundOff
+		|| icon == &st::menuIconSoundSelect
+		|| icon == &st::menuIconSoundAdd
+		|| icon == &st::menuIconPhone
+		|| icon == &st::menuIconCallsReceive
+		|| icon == &st::menuIconVideoChat
+		|| icon == &st::menuIconStartStream
+		|| icon == &st::menuIconStartStreamWith
+		|| icon == &st::menuIconDockBounce) {
+		return { roles.errorContainer, roles.onErrorContainer };
+	}
+
+	// 2. Group 2: Account, Privacy & Security (primaryContainer / onPrimaryContainer)
+	if (icon == &st::menuIconProfile
+		|| icon == &st::menuIconUserShow
+		|| icon == &st::menuIconUserHide
+		|| icon == &st::menuIconUsername
+		|| icon == &st::menuIconLock
+		|| icon == &st::menuIcon2SV
+		|| icon == &st::menuIconPermissions
+		|| icon == &st::menuIconSystemPwd
+		|| icon == &st::menuIconTouchID
+		|| icon == &st::menuIconWinHello
+		|| icon == &st::menuIconAddAccount
+		|| icon == &st::menuIconDevices
+		|| icon == &st::menuIconRecoveryEmail) {
+		return { roles.primaryContainer, roles.onPrimaryContainer };
+	}
+
+	// 3. Group 3: Appearance, Chat Settings, Folders (secondaryContainer / onSecondaryContainer)
+	if (icon == &st::menuIconChatBubble
+		|| icon == &st::menuIconChats
+		|| icon == &st::menuIconShowInFolder
+		|| icon == &st::menuIconAddToFolder
+		|| icon == &st::menuIconArchive
+		|| icon == &st::menuIconArchiveOpen
+		|| icon == &st::menuIconUnarchive
+		|| icon == &st::menuIconPalette
+		|| icon == &st::menuIconNightMode
+		|| icon == &st::menuIconChangeColors
+		|| icon == &st::menuIconStickers
+		|| icon == &st::menuIconEmoji
+		|| icon == &st::menuIconStickerAdd
+		|| icon == &st::menuIconStickerCreate
+		|| icon == &st::menuIconSavedMessages
+		|| icon == &st::menuIconGroups
+		|| icon == &st::menuIconChannel
+		|| icon == &st::menuIconStoriesSavedSection
+		|| icon == &st::menuIconStoriesArchiveSection) {
+		return { roles.secondaryContainer, roles.onSecondaryContainer };
+	}
+
+	// 4. Group 4: Premium, Stars, Commerce, Gifts (tertiaryContainer / onTertiaryContainer)
+	if (icon == &st::menuIconPremium
+		|| icon == &st::menuIconStar
+		|| icon == &st::menuIconGiftPremium
+		|| icon == &st::menuIconShop
+		|| icon == &st::menuIconTon
+		|| icon == &st::menuIconBoosts
+		|| icon == &st::menuIconEarn
+		|| icon == &st::menuIconPayment
+		|| icon == &st::menuIconRatingGifts) {
+		return { roles.tertiaryContainer, roles.onTertiaryContainer };
+	}
+
+	// 5. Group 5: Advanced, System, Battery, Language, Help (surfaceContainerHighest / onSurfaceVariant)
+	return { roles.surfaceContainerHighest, roles.onSurfaceVariant };
+}
+
 void AddButtonIcon(
 		not_null<Ui::AbstractButton*> button,
 		const style::SettingsButton &st,
@@ -432,9 +519,11 @@ void AddButtonIcon(
 	struct IconWidget {
 		IconWidget(QWidget *parent, IconDescriptor &&descriptor)
 		: widget(parent)
+		, rawIcon(descriptor.icon)
 		, icon(std::move(descriptor)) {
 		}
 		Ui::RpWidget widget;
+		const style::icon *rawIcon = nullptr;
 		Icon icon;
 	};
 	const auto icon = button->lifetime().make_state<IconWidget>(
@@ -450,27 +539,18 @@ void AddButtonIcon(
 			(size.height() - 40) / 2,
 			size.width());
 	}, icon->widget.lifetime());
-	static int iconColorIndex = 0;
-	const QColor bgs[] = {
-		QColor("#004f46"), // Emerald
-		QColor("#2b3e55"), // Blue
-		QColor("#5c2a38"), // Rose
-		QColor("#4e2c4d"), // Magenta
-		QColor("#533722"), // Amber
-		QColor("#3c3c5a"), // Indigo
-		QColor("#29434e"), // Cyan
-		QColor("#573327"), // Coral
-	};
-	const auto bg = bgs[(iconColorIndex++) % 8];
+
 	icon->widget.paintRequest(
 	) | rpl::on_next([=] {
+		const auto semantic = GetSemanticIconStyle(icon->rawIcon);
 		auto p = QPainter(&icon->widget);
 		p.setRenderHint(QPainter::Antialiasing, true);
 		p.setPen(Qt::NoPen);
-		p.setBrush(bg);
+		p.setBrush(semantic.container);
 		p.drawEllipse(0, 0, 40, 40);
-		const auto isize = icon->icon.size();
-		icon->icon.paint(p, (40 - isize.width()) / 2, (40 - isize.height()) / 2);
+		if (icon->rawIcon) {
+			icon->rawIcon->paintInCenter(p, QRect(0, 0, 40, 40), semantic.onContainer);
+		}
 	}, icon->widget.lifetime());
 }
 
