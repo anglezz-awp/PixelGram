@@ -1,3 +1,6 @@
+#include "history/view/history_view_element.h"
+#include "history/history.h"
+#include "history/history_item.h"
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QAbstractScrollArea>
 #include "data/data_session.h"
@@ -414,13 +417,32 @@ void Controller::finishFirstShow() {
 					}
 				}
 				QTimer::singleShot(1500, [=] {
-					QImage img(_widget.size(), QImage::Format_ARGB32_Premultiplied);
-					img.fill(Qt::transparent);
-					_widget.render(&img);
-					img.save(outPath);
-					if (parts.contains(u"quit"_q)) {
-						QTimer::singleShot(300, [] { Core::Quit(); });
+					if (const auto session = sessionController()) {
+						if (const auto history = session->activeChatCurrent().history()) {
+							int markedIn = 0, markedOut = 0;
+							for (auto it = history->blocks.rbegin(); it != history->blocks.rend(); ++it) {
+								for (auto mit = (*it)->messages.rbegin(); mit != (*it)->messages.rend(); ++mit) {
+									if ((*mit)->data()->out() && markedOut < 1) {
+										(*mit)->data()->markDeletedByAntiDelete();
+										markedOut++;
+									} else if (!(*mit)->data()->out() && markedIn < 1) {
+										(*mit)->data()->markDeletedByAntiDelete();
+										markedIn++;
+									}
+								}
+							}
+							LOG(("MARK RESULT markedOut=%1 markedIn=%2 blocks=%3").arg(markedOut).arg(markedIn).arg(history->blocks.size()));
+						}
 					}
+					QTimer::singleShot(500, [=] {
+						QImage img(_widget.size(), QImage::Format_ARGB32_Premultiplied);
+						img.fill(Qt::transparent);
+						_widget.render(&img);
+						img.save(outPath);
+						if (parts.contains(u"quit"_q)) {
+							QTimer::singleShot(300, [] { Core::Quit(); });
+						}
+					});
 				});
 			}
 		}

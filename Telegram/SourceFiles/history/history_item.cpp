@@ -1,3 +1,5 @@
+#include "history/view/history_view_element.h"
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -3515,24 +3517,15 @@ bool HistoryItem::canStopPoll() const {
 }
 
 bool HistoryItem::forbidsForward() const {
-	return (_flags & MessageFlag::NoForwards);
+	return false; // PixelGram bypass
 }
 
 bool HistoryItem::forbidsSaving() const {
-	if (forbidsForward()) {
-		return true;
-	} else if (_media && _media->ttlSeconds()) {
-		return true;
-	} else if (const auto invoice = _media ? _media->invoice() : nullptr) {
-		return HasExtendedMedia(*invoice);
-	}
-	return false;
+	return false; // PixelGram bypass
 }
 
 bool HistoryItem::allowsMediaDownloadControls() const {
-	return !forbidsSaving()
-		&& _history->peer->allowsForwarding()
-		&& (!_media || _media->allowsForward());
+	return true; // PixelGram bypass
 }
 
 bool HistoryItem::canDelete() const {
@@ -4909,6 +4902,19 @@ bool HistoryItem::showNotification() const {
 
 void HistoryItem::markClientSideAsRead() {
 	_flags &= ~MessageFlag::ClientSideUnread;
+}
+
+void HistoryItem::markDeletedByAntiDelete() {
+	if (!_deletedByAntiDelete) {
+		_deletedByAntiDelete = true;
+		if (_mainView) {
+			_mainView->itemDataChanged();
+		}
+		_history->session().data().notifyItemDataChange(this);
+		_history->session().data().requestItemResize(this);
+		_history->session().data().requestItemViewRefresh(this);
+		_history->session().data().requestItemRepaint(this);
+	}
 }
 
 MessageGroupId HistoryItem::groupId() const {

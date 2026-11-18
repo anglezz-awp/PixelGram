@@ -1,3 +1,6 @@
+#include "lang/lang_instance.h"
+#include "ui/pixelgram_m3_scheme.h"
+#include "lang/lang_keys.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -37,6 +40,18 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_credits.h"
 
 namespace HistoryView {
+namespace {
+
+QString AntiDeleteTag() {
+	const auto id = Lang::GetInstance().id();
+	if (id.startsWith(u"ru"_q) || id.startsWith(u"be"_q) || id.startsWith(u"uk"_q)) {
+		return QString::fromUtf8("\xD0\xA3\xD0\xB4\xD0\xB0\xD0\xBB\xD0\xB5\xD0\xBD\xD0\xBE");
+	}
+	return tr::lng_antidelete_deleted(tr::now);
+}
+
+} // namespace
+
 namespace {
 
 [[nodiscard]] QString SchedulePeriodText(TimeId period) {
@@ -306,6 +321,36 @@ void BottomInfo::paint(
 		position.y(),
 		authorEditedWidth,
 		outerWidth);
+
+	if (_data.flags & Data::Flag::Deleted) {
+		const auto &roles = PixelGram::CurrentM3Roles();
+		const auto deletedColor = inverted ? roles.onErrorContainer : roles.error;
+		const auto text = AntiDeleteTag();
+		const auto textWidth = st::msgDateFont->width(text);
+		const auto totalDeletedWidth = 10 + 3 + textWidth + 4;
+		right -= totalDeletedWidth;
+
+		const auto iconX = right;
+		const auto iconY = position.y() + (st::msgDateFont->height - 11) / 2;
+
+		PainterHighQualityEnabler hq(p);
+		p.setPen(QPen(deletedColor, 1.2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+		p.setBrush(Qt::NoBrush);
+		p.drawLine(iconX + 3, iconY + 1, iconX + 7, iconY + 1);
+		p.drawLine(iconX + 1, iconY + 3, iconX + 9, iconY + 3);
+		QPainterPath body;
+		body.moveTo(iconX + 2, iconY + 4);
+		body.lineTo(iconX + 2.5, iconY + 10.5);
+		body.lineTo(iconX + 7.5, iconY + 10.5);
+		body.lineTo(iconX + 8, iconY + 4);
+		p.drawPath(body);
+		p.drawLine(iconX + 4, iconY + 5.5, iconX + 4, iconY + 9);
+		p.drawLine(iconX + 6, iconY + 5.5, iconX + 6, iconY + 9);
+
+		p.setFont(st::msgDateFont);
+		p.setPen(deletedColor);
+		p.drawText(iconX + 13, position.y() + st::msgDateFont->ascent, text);
+	}
 
 	if (_data.flags & Data::Flag::Silent) {
 		const auto &icon = inverted
@@ -599,6 +644,11 @@ QSize BottomInfo::countOptimalSize() {
 		width += st::historySendStateSpace;
 	}
 	width += _authorEditedDate.maxWidth();
+	if (_data.flags & Data::Flag::Deleted) {
+		const auto text = AntiDeleteTag();
+		const auto textWidth = st::msgDateFont->width(text);
+		width += 10 + 3 + textWidth + 4;
+	}
 	if (!_views.isEmpty()) {
 		width += st::historyViewsSpace
 			+ _views.maxWidth()
@@ -675,6 +725,9 @@ BottomInfo::Data BottomInfoDataFromMessage(not_null<Message*> message) {
 	}
 	if (message->context() == Context::Replies) {
 		result.flags |= Flag::RepliesContext;
+	}
+	if (item->isDeletedByAntiDelete()) {
+		result.flags |= Flag::Deleted;
 	}
 	if (item->isSponsored()) {
 		result.flags |= Flag::Sponsored;

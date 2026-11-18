@@ -1,3 +1,4 @@
+#include "ui/pixelgram_m3_scheme.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -1768,9 +1769,9 @@ int Message::marginTop() const {
 	auto result = 0;
 	if (!isHidden()) {
 		if (isAttachedToPrevious()) {
-			result += st::msgMarginTopAttached;
+			result += 2;
 		} else {
-			result += st::msgMargin.top();
+			result += 10;
 		}
 	}
 	result += displayedDateHeight();
@@ -1795,7 +1796,7 @@ int Message::marginBottom() const {
 	if (isHidden()) {
 		return 0;
 	}
-	auto result = st::msgMargin.bottom();
+	auto result = 0;
 	if (const auto service = Get<ServicePreMessage>()) {
 		if (service->below) {
 			result += service->height;
@@ -2034,6 +2035,19 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 					.selection = mediaSelectionIntervals,
 				});
 		}
+		if (data()->isDeletedByAntiDelete()) {
+			const auto &roles = PixelGram::CurrentM3Roles();
+			PainterHighQualityEnabler hq(p);
+			const auto barWidth = 3.5;
+			const auto barMargin = 4.0;
+			const auto barTop = g.top() + 6.0;
+			const auto barHeight = std::max(6.0, g.height() - 12.0);
+			const auto barRect = QRectF(g.left() + barMargin, barTop, barWidth, barHeight);
+			p.setPen(Qt::NoPen);
+			p.setBrush(roles.error);
+			p.drawRoundedRect(barRect, 1.75, 1.75);
+		}
+
 
 		auto inner = g;
 		paintCommentsButton(p, inner, context);
@@ -2296,6 +2310,18 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 		}
 		p.translate(-g.topLeft());
 	}
+		if (data()->isDeletedByAntiDelete()) {
+			const auto &roles = PixelGram::CurrentM3Roles();
+			PainterHighQualityEnabler hq(p);
+			const auto barWidth = 3.5;
+			const auto barTop = g.top() + 4.0;
+			const auto barHeight = std::max(6.0, g.height() - 8.0);
+			const auto barRect = QRectF(g.left() - 6.0, barTop, barWidth, barHeight);
+			p.setPen(Qt::NoPen);
+			p.setBrush(roles.error);
+			p.drawRoundedRect(barRect, 1.75, 1.75);
+		}
+
 
 	p.restoreTextPalette();
 
@@ -3917,61 +3943,18 @@ bool Message::hasFromPhoto() const {
 	if (isHidden()) {
 		return false;
 	}
-	switch (context()) {
-	case Context::AdminLog:
-		return true;
-	case Context::WelcomeMessages:
-		if (const auto channel = data()->history()->peer->asBroadcast()) {
-			return channel->signatureProfiles();
-		}
-		return true;
-	case Context::Monoforum:
-		return (delegate()->elementChatMode() == ElementChatMode::Wide);
-	case Context::History:
-	case Context::ChatPreview:
-	case Context::TTLViewer:
-	case Context::MediaEditor:
-	case Context::Pinned:
-	case Context::Replies:
-	case Context::SavedSublist:
-	case Context::ScheduledTopic: {
-		const auto item = data();
-		if (item->isSponsored()) {
-			return false;
-		} else if (item->isPost()) {
-			return (context() == Context::MediaEditor)
-				|| !item->isPostHidingAuthor();
-		} else if (item->isEmpty()
-			|| item->isFakeAboutView()
-			|| isCommentsRootView()) {
-			return false;
-		}
-		if (item->isEphemeral()) {
-			if (const auto channel = item->history()->peer->asBroadcast()) {
-				return channel->signatureProfiles();
-			}
-		}
-		const auto mode = delegate()->elementChatMode();
-		if (mode != ElementChatMode::Default) {
-			return (mode == ElementChatMode::Wide);
-		} else if (item->history()->peer->isVerifyCodes()) {
-			return !hasOutLayout();
-		} else if (item->Has<HistoryMessageForwarded>()) {
-			const auto peer = item->history()->peer;
-			if (peer->isSelf() || peer->isRepliesChat()) {
-				return !hasOutLayout();
-			}
-		}
-		if (item->isGuestChatBotMessage()) {
-			return true;
-		}
-		return !item->out() && !item->history()->peer->isUser();
-	} break;
-	case Context::ContactPreview:
-	case Context::ShortcutMessages:
+	const auto item = data();
+	const auto peer = item->history()->peer;
+	if (peer->isUser()) {
 		return false;
 	}
-	Unexpected("Context in Message::hasFromPhoto.");
+	if (hasOutLayout() || item->out()) {
+		return false;
+	}
+	if (const auto channel = peer->asBroadcast()) {
+		return channel->signatureProfiles();
+	}
+	return true;
 }
 
 TextState Message::textState(
@@ -6575,24 +6558,18 @@ QRect Message::countGeometry() const {
 	const auto mediaDisplayed = media && media->isDisplayed();
 	const auto mediaWidth = mediaDisplayed ? media->width() : width();
 	const auto outbg = hasOutLayout();
-	const auto useMoreSpace = (delegate()->elementChatMode()
-		== ElementChatMode::Narrow);
-	const auto wideSkip = useMoreSpace
-		? st::msgMargin.left()
-		: st::msgMargin.right();
-	const auto availableWidth = width()
-		- st::msgMargin.left()
-		- (centeredView ? st::msgMargin.left() : wideSkip);
-	auto contentLeft = hasRightLayout() ? wideSkip : st::msgMargin.left();
-	auto contentWidth = availableWidth;
+
+	const auto totalWidth = width();
+	const auto maxBubbleWidth = std::clamp(int(totalWidth * 0.72), 480, 800);
+
+	auto availableWidth = maxBubbleWidth;
 	if (hasFromPhoto()) {
-		contentLeft += st::msgPhotoSkip;
+		availableWidth -= st::msgPhotoSkip;
 		if (const auto size = rightActionSize()) {
-			contentWidth -= size->width() + (st::msgPhotoSkip - st::historyFastShareSize);
+			availableWidth -= size->width() + (st::msgPhotoSkip - st::historyFastShareSize);
 		}
-	//} else if (!Adaptive::Wide() && !out() && !fromChannel() && st::msgPhotoSkip - (hmaxwidth - hwidth) > 0) {
-	//	contentLeft += st::msgPhotoSkip - (hmaxwidth - hwidth);
 	}
+	auto contentWidth = availableWidth;
 	accumulate_min(contentWidth, maxWidth());
 	accumulate_min(contentWidth, int(_bubbleWidthLimit));
 	if (mediaWidth < contentWidth) {
@@ -6615,17 +6592,17 @@ QRect Message::countGeometry() const {
 			accumulate_min(contentWidth, shrunk);
 		}
 	}
-	if (contentWidth < availableWidth
-		&& delegate()->elementChatMode() != ElementChatMode::Wide) {
-		if (outbg) {
-			contentLeft += availableWidth - contentWidth;
-		} else if (centeredView) {
-			contentLeft += (availableWidth - contentWidth) / 2;
+
+	int contentLeft = 0;
+	if (outbg) {
+		contentLeft = totalWidth - st::msgMargin.right() - contentWidth;
+	} else if (centeredView) {
+		contentLeft = (totalWidth - contentWidth) / 2;
+	} else {
+		contentLeft = st::msgMargin.left();
+		if (hasFromPhoto()) {
+			contentLeft += st::msgPhotoSkip;
 		}
-	} else if (contentWidth < availableWidth && centeredView) {
-		contentLeft += std::max(
-			((st::msgMaxWidth + 2 * st::msgPhotoSkip) - contentWidth) / 2,
-			0);
 	}
 
 	const auto contentTop = marginTop();
@@ -6639,38 +6616,13 @@ QRect Message::countGeometry() const {
 Ui::BubbleRounding Message::countMessageRounding() const {
 	const auto smallTop = isBubbleAttachedToPrevious();
 	const auto smallBottom = isBubbleAttachedToNext();
-	const auto media = smallBottom ? nullptr : this->media();
-	const auto rich = smallBottom ? nullptr : richpage();
-	const auto item = data();
-	const auto keyboard = item->inlineReplyKeyboard();
-	const auto richMediaAtBottom = [&] {
-		using Block = Iv::Markdown::MarkdownArticleEdgeBlock;
-		const auto edges = countRichPageBubbleEdges();
-		return edges.bottom
-			&& !edges.infoBelow
-			&& (rich->article.edgeBlocks().bottom == Block::VisualMedia);
-	};
-	const auto skipTail = smallBottom
-		|| (media && media->skipBubbleTail())
-		|| (rich && richMediaAtBottom())
-		|| (keyboard != nullptr)
-		|| item->isFakeAboutView()
-		|| isCommentsRootView();
 	const auto right = hasRightLayout();
 	using Corner = Ui::BubbleCornerRounding;
 	return Ui::BubbleRounding{
 		.topLeft = (smallTop && !right) ? Corner::Small : Corner::Large,
 		.topRight = (smallTop && right) ? Corner::Small : Corner::Large,
-		.bottomLeft = ((smallBottom && !right)
-			? Corner::Small
-			: (!skipTail && !right)
-			? Corner::Tail
-			: Corner::Large),
-		.bottomRight = ((smallBottom && right)
-			? Corner::Small
-			: (!skipTail && right)
-			? Corner::Tail
-			: Corner::Large),
+		.bottomLeft = (smallBottom && !right) ? Corner::Small : Corner::Large,
+		.bottomRight = (smallBottom && right) ? Corner::Small : Corner::Large,
 	};
 }
 
@@ -6718,17 +6670,11 @@ int Message::resizeContentGetHeight(int newWidth) {
 	item->resolveDependent();
 
 	// This code duplicates countGeometry() but also resizes media.
-	const auto centeredView = item->isFakeAboutView()
-		|| isCommentsRootView();
-	const auto useMoreSpace = (delegate()->elementChatMode()
-		== ElementChatMode::Narrow);
-	const auto wideSkip = useMoreSpace
-		? st::msgMargin.left()
-		: st::msgMargin.right();
-	auto contentWidth = newWidth
-		- st::msgMargin.left()
-		- (centeredView ? st::msgMargin.left() : wideSkip);
+	const auto maxBubbleWidth = std::clamp(int(newWidth * 0.72), 480, 800);
+
+	auto contentWidth = maxBubbleWidth;
 	if (hasFromPhoto()) {
+		contentWidth -= st::msgPhotoSkip;
 		if (const auto size = rightActionSize()) {
 			contentWidth -= size->width() + (st::msgPhotoSkip - st::historyFastShareSize);
 		}
@@ -6737,7 +6683,7 @@ int Message::resizeContentGetHeight(int newWidth) {
 	_bubbleWidthLimit = (UnlimitedMessageWidth.value() && !mediaDisplayed)
 		? 0x3FFFFFF
 		: std::max({
-			st::msgMaxWidth,
+			maxBubbleWidth,
 			monospaceMaxWidth(),
 			mediaDisplayed ? media->bubbleWidthLimit() : 0,
 		});

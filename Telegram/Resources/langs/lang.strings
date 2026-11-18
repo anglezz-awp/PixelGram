@@ -371,6 +371,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_deleted" = "Deleted Account";
 "lng_deleted_message" = "Deleted message";
 "lng_deleted_story" = "Deleted story";
+"lng_antidelete_deleted" = "Deleted";
 "lng_pinned_message" = "Pinned message";
 "lng_pinned_previous" = "Previous message";
 "lng_pinned_unpin_sure" = "Would you like to unpin this message?";

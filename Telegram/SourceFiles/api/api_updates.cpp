@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -1423,7 +1424,9 @@ void Updates::applyUpdateNoPtsCheck(const MTPUpdate &update) {
 
 	case mtpc_updateDeleteMessages: {
 		const auto &d = update.c_updateDeleteMessages();
-		_session->data().processNonChannelMessagesDeleted(d.vmessages().v);
+		if (!PixelGram::CurrentConfig().antiDelete) {
+			_session->data().processNonChannelMessagesDeleted(d.vmessages().v);
+		}
 	} break;
 
 	case mtpc_updateNewChannelMessage: {
@@ -1486,10 +1489,9 @@ void Updates::applyUpdateNoPtsCheck(const MTPUpdate &update) {
 	} break;
 
 	case mtpc_updateDeleteChannelMessages: {
+		// PixelGram Anti-Delete: ignore channel message deletion
 		const auto &d = update.c_updateDeleteChannelMessages();
-		_session->data().processMessagesDeleted(
-			peerFromChannel(d.vchannel_id().v),
-			d.vmessages().v);
+		_session->data().processMessagesDeleted(peerFromChannel(d.vchannel_id().v), d.vmessages().v);
 	} break;
 
 	case mtpc_updatePinnedMessages: {

@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -3369,6 +3370,17 @@ void Session::processMessagesDeleted(
 		PeerId peerId,
 		const QVector<MTPint> &data) {
 	Tgw::ClearMessagesStorage(_session, peerId, data);
+	if (PixelGram::CurrentConfig().antiDelete) {
+		if (const auto list = messagesList(peerId)) {
+			for (const auto &messageId : data) {
+				const auto i = list->find(messageId.v);
+				if (i != list->end()) {
+					i->second->markDeletedByAntiDelete();
+				}
+			}
+		}
+		return;
+	}
 	const auto list = messagesList(peerId);
 	const auto affected = historyLoaded(peerId);
 	if (!list && !affected) {
@@ -3402,6 +3414,14 @@ void Session::processMessagesDeleted(
 
 void Session::processNonChannelMessagesDeleted(const QVector<MTPint> &data) {
 	Tgw::ClearNonChannelStorage(_session, data);
+	if (PixelGram::CurrentConfig().antiDelete) {
+		for (const auto &messageId : data) {
+			if (const auto item = nonChannelMessage(messageId.v)) {
+				item->markDeletedByAntiDelete();
+			}
+		}
+		return;
+	}
 	auto toDestroy = std::vector<not_null<HistoryItem*>>();
 	auto historiesToCheck = base::flat_set<not_null<History*>>();
 	for (const auto &messageId : data) {

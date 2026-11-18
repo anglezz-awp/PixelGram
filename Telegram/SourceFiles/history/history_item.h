@@ -260,6 +260,11 @@ public:
 	[[nodiscard]] bool isPinned() const {
 		return _flags & MessageFlag::Pinned;
 	}
+	[[nodiscard]] bool isDeletedByAntiDelete() const {
+		return _deletedByAntiDelete;
+	}
+	void markDeletedByAntiDelete();
+
 	[[nodiscard]] bool invertMedia() const {
 		return _flags & MessageFlag::InvertMedia;
 	}
@@ -836,6 +841,7 @@ private:
 	BusinessShortcutId _shortcutId = 0;
 	// Service-styled regular messages still accept ordinary content updates.
 	bool _isServiceMessage = false;
+	bool _deletedByAntiDelete = false;
 
 	MessageGroupId _groupId = MessageGroupId();
 	EffectId _effectId = 0;
