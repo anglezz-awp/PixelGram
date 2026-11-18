@@ -1,3 +1,4 @@
+#include "ui/pixelgram_m3_scheme.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -440,19 +441,36 @@ void AddButtonIcon(
 		button,
 		std::move(descriptor));
 	icon->widget.setAttribute(Qt::WA_TransparentForMouseEvents);
-	icon->widget.resize(icon->icon.size());
+	icon->widget.resize(40, 40);
 	icon->widget.show();
 	button->sizeValue(
 	) | rpl::on_next([=, left = st.iconLeft](QSize size) {
 		icon->widget.moveToLeft(
 			left,
-			(size.height() - icon->widget.height()) / 2,
+			(size.height() - 40) / 2,
 			size.width());
 	}, icon->widget.lifetime());
+	static int iconColorIndex = 0;
+	const QColor bgs[] = {
+		QColor("#004f46"), // Emerald
+		QColor("#2b3e55"), // Blue
+		QColor("#5c2a38"), // Rose
+		QColor("#4e2c4d"), // Magenta
+		QColor("#533722"), // Amber
+		QColor("#3c3c5a"), // Indigo
+		QColor("#29434e"), // Cyan
+		QColor("#573327"), // Coral
+	};
+	const auto bg = bgs[(iconColorIndex++) % 8];
 	icon->widget.paintRequest(
 	) | rpl::on_next([=] {
 		auto p = QPainter(&icon->widget);
-		icon->icon.paint(p, 0, 0);
+		p.setRenderHint(QPainter::Antialiasing, true);
+		p.setPen(Qt::NoPen);
+		p.setBrush(bg);
+		p.drawEllipse(0, 0, 40, 40);
+		const auto isize = icon->icon.size();
+		icon->icon.paint(p, (40 - isize.width()) / 2, (40 - isize.height()) / 2);
 	}, icon->widget.lifetime());
 }
 
@@ -796,9 +814,13 @@ void AddPremiumStar(
 		not_null<Button*> button,
 		bool credits,
 		Fn<bool()> isPaused) {
+	const auto roles = PixelGram::CurrentM3Roles();
+	const auto starFg = roles.onTertiaryContainer.isValid()
+		? roles.onTertiaryContainer
+		: QColor(0xff, 0xff, 0xff);
 	const auto stops = credits
-		? Ui::Premium::CreditsIconGradientStops()
-		: Ui::Premium::ButtonGradientStops();
+		? QGradientStops{ { 0.0, starFg }, { 1.0, starFg.lighter(115) } }
+		: QGradientStops{ { 0.0, starFg }, { 1.0, starFg.lighter(115) } };
 
 	const auto ministarsContainer = Ui::CreateChild<Ui::RpWidget>(button);
 	const auto &buttonSt = button->st();
@@ -847,22 +869,31 @@ void AddPremiumStar(
 		}
 		return image;
 	}();
-	badge->resize(star.size() / style::DevicePixelRatio());
+	badge->resize(40, 40);
 	badge->paintRequest(
 	) | rpl::on_next([=] {
 		auto p = QPainter(badge);
-		p.drawImage(0, 0, star);
+		p.setRenderHint(QPainter::Antialiasing, true);
+		p.setPen(Qt::NoPen);
+		const auto currentRoles = PixelGram::CurrentM3Roles();
+		const auto circleBg = currentRoles.tertiaryContainer.isValid()
+			? currentRoles.tertiaryContainer
+			: st::settingsIconBg3->c;
+		p.setBrush(circleBg);
+		p.drawEllipse(0, 0, 40, 40);
+		const auto starW = star.width() / star.devicePixelRatio();
+		const auto starH = star.height() / star.devicePixelRatio();
+		p.drawImage((40 - starW) / 2, (40 - starH) / 2, star);
 	}, badge->lifetime());
 
 	button->sizeValue(
-	) | rpl::on_next([=](const QSize &s) {
+	) | rpl::on_next([=, left = button->st().iconLeft](const QSize &s) {
 		badge->moveToLeft(
-			button->st().iconLeft
-				+ (st::menuIconShop.width() - badge->width()) / 2,
-			(s.height() - badge->height()) / 2);
+			left,
+			(s.height() - 40) / 2);
 		ministarsContainer->moveToLeft(
-			badge->x() - (fullHeight - badge->height()) / 2,
-			0);
+			left + (40 - fullHeight) / 2,
+			(s.height() - fullHeight) / 2);
 	}, badge->lifetime());
 
 	ministarsContainer->resize(fullHeight, fullHeight);

@@ -273,7 +273,7 @@ historyPeer8UserpicBg2	outline	255	Peer avatar gradient color 8 bottom
 historyPeerSavedMessagesBg2	primary	255	Saved messages cloud avatar gradient bottom
 settingsIconBg1	error	255	Settings red category circle background
 settingsIconBg2	secondary	255	Settings green category circle background
-settingsIconBg3	tertiary	255	Settings yellow category circle background
+settingsIconBg3	tertiaryContainer	255	Settings yellow category circle background
 settingsIconBg4	primary	255	Settings blue category circle background
 settingsIconBg5	primaryContainer	255	Settings purple category circle background
 settingsIconBg6	secondaryContainer	255	Settings pink category circle background

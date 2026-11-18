@@ -579,7 +579,7 @@ add("introCoverPlaneTop", "onPrimary", "Paper airplane top ridge")
 # ==========================================
 add("settingsIconBg1", "error", "Settings red category circle background")
 add("settingsIconBg2", "secondary", "Settings green category circle background")
-add("settingsIconBg3", "tertiary", "Settings yellow category circle background")
+add("settingsIconBg3", "tertiaryContainer", "Settings yellow category circle background")
 add("settingsIconBg4", "primary", "Settings blue category circle background")
 add("settingsIconBg5", "primaryContainer", "Settings purple category circle background")
 add("settingsIconBg6", "secondaryContainer", "Settings pink category circle background")

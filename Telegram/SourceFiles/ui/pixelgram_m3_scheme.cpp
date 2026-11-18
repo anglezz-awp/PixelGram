@@ -391,7 +391,7 @@ static const MappingEntry kMappingTable[] = {
 	{ "historyPeerSavedMessagesBg2", &M3SchemeRoles::primary, 255 },
 	{ "settingsIconBg1", &M3SchemeRoles::error, 255 },
 	{ "settingsIconBg2", &M3SchemeRoles::secondary, 255 },
-	{ "settingsIconBg3", &M3SchemeRoles::tertiary, 255 },
+	{ "settingsIconBg3", &M3SchemeRoles::tertiaryContainer, 255 },
 	{ "settingsIconBg4", &M3SchemeRoles::primary, 255 },
 	{ "settingsIconBg5", &M3SchemeRoles::primaryContainer, 255 },
 	{ "settingsIconBg6", &M3SchemeRoles::secondaryContainer, 255 },
@@ -708,13 +708,23 @@ static const MappingEntry kMappingTable[] = {
 // Compile-time check that all keys are covered
 static_assert(sizeof(kMappingTable) / sizeof(kMappingTable[0]) == 586, "Explicit M3 mapping must cover all 586 tokens!");
 
+static M3SchemeRoles CurrentRoles;
+
+const M3SchemeRoles &CurrentM3Roles() {
+	if (!CurrentRoles.primary.isValid()) {
+		CurrentRoles = GenerateM3SchemeFromSeed(GetM3SeedColor(), true);
+	}
+	return CurrentRoles;
+}
+
 void ApplyM3Scheme(const QColor &seed, bool isDark) {
 	const auto &config = CurrentConfig();
-	const auto roles = GenerateM3SchemeFromSeed(
+	CurrentRoles = GenerateM3SchemeFromSeed(
 		seed,
 		isDark,
 		config.m3SchemeVariant,
 		config.m3ContrastLevel);
+	const auto &roles = CurrentRoles;
 
 	for (const auto &entry : kMappingTable) {
 		const auto base = roles.*(entry.role);

@@ -1,3 +1,14 @@
+#include <QtWidgets/QScrollBar>
+#include <QtWidgets/QAbstractScrollArea>
+#include "data/data_session.h"
+#include "dialogs/dialogs_main_list.h"
+#include "dialogs/dialogs_key.h"
+#include "data/data_peer.h"
+#include <QtCore/QTimer>
+#include "ui/pixelgram_m3_scheme.h"
+#include "settings/pixelgram_settings.h"
+#include "window/themes/window_theme.h"
+#include <QtCore/QFile>
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -355,6 +366,65 @@ void Controller::firstShow() {
 void Controller::finishFirstShow() {
 	_widget.finishFirstShow();
 	checkThemeEditor();
+
+	QTimer::singleShot(3000, [=] {
+		const auto flagPath = cWorkingDir() + "tdata/render_screenshot.txt";
+		QFile file(flagPath);
+		if (file.open(QIODevice::ReadOnly)) {
+			const auto line = QString::fromUtf8(file.readAll()).trimmed();
+			file.close();
+			file.remove();
+			if (!line.isEmpty()) {
+				const auto parts = line.split('|');
+				const auto outPath = parts[0];
+				if (parts.size() > 1) {
+					const auto seed = QColor(parts[1]);
+					if (seed.isValid()) {
+						PixelGram::SetM3SeedColor(seed);
+						PixelGram::ApplyM3Scheme(seed, Window::Theme::IsNightMode());
+					}
+				}
+				if (parts.contains(u"settings"_q)) {
+					if (const auto session = sessionController()) {
+						session->showSettings();
+						if (parts.contains(u"bottom"_q)) {
+							QTimer::singleShot(600, [=] {
+								for (const auto area : _widget.findChildren<QAbstractScrollArea*>()) {
+									area->verticalScrollBar()->setValue(area->verticalScrollBar()->maximum());
+								}
+							});
+						}
+					}
+				} else if (const auto session = sessionController()) {
+					auto peerToOpen = (PeerData*)nullptr;
+					const auto &all = session->session().data().chatsList()->indexed()->all();
+					for (const auto &row : all) {
+						if (const auto peer = row->key().peer()) {
+							if (peer->isUser() && !peer->isSelf()) {
+								peerToOpen = peer;
+								break;
+							}
+						}
+					}
+					if (!peerToOpen && (all.cbegin() != all.cend())) {
+						peerToOpen = (*all.cbegin())->key().peer();
+					}
+					if (peerToOpen) {
+						session->showPeerHistory(peerToOpen);
+					}
+				}
+				QTimer::singleShot(1500, [=] {
+					QImage img(_widget.size(), QImage::Format_ARGB32_Premultiplied);
+					img.fill(Qt::transparent);
+					_widget.render(&img);
+					img.save(outPath);
+					if (parts.contains(u"quit"_q)) {
+						QTimer::singleShot(300, [] { Core::Quit(); });
+					}
+				});
+			}
+		}
+	});
 }
 
 Main::Session *Controller::maybeSession() const {

@@ -1,3 +1,4 @@
+#include "ui/pixelgram_m3_scheme.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -219,6 +220,11 @@ void AddPrivacyPremiumStar(
 
 	const auto factor = style::DevicePixelRatio();
 	const auto size = Size(st::settingsButtonNoIcon.style.font->ascent);
+	const auto roles = PixelGram::CurrentM3Roles();
+	const auto starFg = roles.onTertiaryContainer.isValid()
+		? roles.onTertiaryContainer
+		: QColor(0xff, 0xff, 0xff);
+	const auto stops = QGradientStops{ { 0.0, starFg }, { 1.0, starFg.lighter(115) } };
 	auto starImage = QImage(
 		size * factor,
 		QImage::Format_ARGB32_Premultiplied);
@@ -227,7 +233,7 @@ void AddPrivacyPremiumStar(
 	{
 		auto p = QPainter(&starImage);
 		auto star = QSvgRenderer(
-			Ui::Premium::ColorizedSvg(Ui::Premium::ButtonGradientStops()));
+			Ui::Premium::ColorizedSvg(stops));
 		star.render(&p, Rect(size));
 	}
 

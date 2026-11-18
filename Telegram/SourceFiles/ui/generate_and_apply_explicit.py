@@ -179,13 +179,23 @@ static const MappingEntry kMappingTable[] = {{
 // Compile-time check that all keys are covered
 static_assert(sizeof(kMappingTable) / sizeof(kMappingTable[0]) == 586, "Explicit M3 mapping must cover all 586 tokens!");
 
+static M3SchemeRoles CurrentRoles;
+
+const M3SchemeRoles &CurrentM3Roles() {{
+	if (!CurrentRoles.primary.isValid()) {{
+		CurrentRoles = GenerateM3SchemeFromSeed(GetM3SeedColor(), true);
+	}}
+	return CurrentRoles;
+}}
+
 void ApplyM3Scheme(const QColor &seed, bool isDark) {{
 \tconst auto &config = CurrentConfig();
-\tconst auto roles = GenerateM3SchemeFromSeed(
+\tCurrentRoles = GenerateM3SchemeFromSeed(
 \t\tseed,
 \t\tisDark,
 \t\tconfig.m3SchemeVariant,
 \t\tconfig.m3ContrastLevel);
+\tconst auto &roles = CurrentRoles;
 
 \tfor (const auto &entry : kMappingTable) {{
 \t\tconst auto base = roles.*(entry.role);
