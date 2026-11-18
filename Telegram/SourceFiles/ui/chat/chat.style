@@ -12,17 +12,17 @@ using "ui/menu_icons.style";
 using "chat_helpers/chat_helpers.style"; // GroupCallUserpics
 
 msgMaxWidth: 430px;
-msgFont: font(fsize);
+msgFont: font(16px);
 msgNameFont: semiboldFont;
 msgNameStyle: semiboldTextStyle;
 msgServiceFont: semiboldFont;
 msgServiceNameFont: semiboldFont;
 msgServicePhotoWidth: 100px;
-msgDateFont: font(13px);
+msgDateFont: font(12px);
 msgMinWidth: 160px;
 msgPhotoSize: 33px;
 msgPhotoSkip: 40px;
-msgPadding: margins(11px, 8px, 11px, 8px);
+msgPadding: margins(16px, 9px, 16px, 9px);
 msgTagBadgePadding: margins(5px, -1px, 5px, 0px);
 msgTagBadgeBoostSkip: 2px;
 
@@ -49,7 +49,7 @@ tagInfoAdminsOnlyLabel: FlatLabel(defaultFlatLabel) {
 	}
 }
 
-msgMargin: margins(16px, 6px, 56px, 2px);
+msgMargin: margins(16px, 6px, 16px, 2px);
 msgMarginTopAttached: 0px;
 msgShadow: 2px;
 msgSelectionOffset: 30px;
@@ -96,8 +96,8 @@ msgServicePadding: margins(12px, 3px, 12px, 4px);
 msgServiceMargin: margins(10px, 10px, 10px, 2px);
 monoforumBarUserpicSkip: 2px;
 
-msgDateSpace: 12px;
-msgDateDelta: point(2px, 5px);
+msgDateSpace: 8px;
+msgDateDelta: point(0px, 0px);
 
 msgDateImgDelta: 4px;
 msgDateImgPadding: point(8px, 2px);
@@ -323,8 +323,8 @@ historyInfoToast: Toast(defaultToast) {
 }
 historyInfoToastIcon: icon {{ "toast/info", toastFg }};
 
-bubbleRadiusSmall: roundRadiusLarge;
-bubbleRadiusLarge: 16px;
+bubbleRadiusSmall: 4px;
+bubbleRadiusLarge: 20px;
 
 historyPhotoLeft: 14px;
 historyPhotoBubbleMinWidth: 200px;
