@@ -186,6 +186,7 @@ public:
 	void setEditingTheme(const Data::CloudTheme &editing);
 	void clearEditingTheme(ClearEditing clear = ClearEditing::Temporary);
 	void reset();
+	void notifyBackgroundChanged();
 
 	void setTestingTheme(Instance &&theme);
 	void saveAdjustableColors();

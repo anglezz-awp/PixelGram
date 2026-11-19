@@ -18,11 +18,11 @@ msgNameStyle: semiboldTextStyle;
 msgServiceFont: semiboldFont;
 msgServiceNameFont: semiboldFont;
 msgServicePhotoWidth: 100px;
-msgDateFont: font(12px);
+msgDateFont: font(10px);
 msgMinWidth: 160px;
 msgPhotoSize: 33px;
 msgPhotoSkip: 40px;
-msgPadding: margins(22px, 10px, 22px, 10px);
+msgPadding: margins(16px, 8px, 16px, 8px);
 msgTagBadgePadding: margins(5px, -1px, 5px, 0px);
 msgTagBadgeBoostSkip: 2px;
 
@@ -235,8 +235,8 @@ membersInnerDropdown: InnerDropdown(defaultInnerDropdown) {
 }
 
 
-historySendStateSpace: 19px;
-historySendStatePosition: point(-16px, -14px);
+historySendStateSpace: 16px;
+historySendStatePosition: point(-14px, -11px);
 historyShortcutStateSpace: 18px;
 
 historyViewsSpace: 8px;

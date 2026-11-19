@@ -124,7 +124,7 @@ void TopBarActionButton::paintEvent(QPaintEvent *e) {
 	p.setBrush(_bgColor);
 	{
 		auto hq = PainterHighQualityEnabler(p);
-		p.drawRoundedRect(rect(), st::boxRadius, st::boxRadius);
+		p.drawRoundedRect(rect(), 16.0, 16.0);
 
 		const auto hovered = _rippleColor
 			? _overAnimation.value(isOver() ? 1. : 0.)
@@ -132,7 +132,7 @@ void TopBarActionButton::paintEvent(QPaintEvent *e) {
 		if (hovered > 0.) {
 			p.setOpacity(progress * hovered);
 			p.setBrush(*_rippleColor);
-			p.drawRoundedRect(rect(), st::boxRadius, st::boxRadius);
+			p.drawRoundedRect(rect(), 16.0, 16.0);
 			p.setOpacity(progress);
 		}
 	}
@@ -211,7 +211,7 @@ void TopBarActionButton::onStateChanged(
 }
 
 QImage TopBarActionButton::prepareRippleMask() const {
-	return Ui::RippleAnimation::RoundRectMask(size(), st::boxRadius);
+	return Ui::RippleAnimation::RoundRectMask(size(), 16);
 }
 
 QPoint TopBarActionButton::prepareRippleStartPosition() const {

@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "info/profile/info_profile_top_bar.h"
+#include "ui/pixelgram_m3_scheme.h"
 
 #include "api/api_peer_colors.h"
 #include "api/api_peer_photo.h"
@@ -1913,7 +1914,7 @@ void TopBar::paintEdges(
 
 void TopBar::paintEdges(QPainter &p, const QRect &clip) const {
 	if (!_solidBg) {
-		paintEdges(p, clip, st::boxDividerBg);
+		paintEdges(p, clip, st::boxBg);
 	} else {
 		paintEdges(p, clip, *_solidBg);
 	}
@@ -3970,24 +3971,21 @@ rpl::producer<QString> TopBar::nameValue() const {
 
 TopBarActionButtonStyle TopBar::mapActionStyle(
 		std::optional<QColor> c) const {
+	const auto &roles = PixelGram::CurrentM3Roles();
 	if (c) {
 		return TopBarActionButtonStyle{
 			.bgColor = Ui::BlendColors(
 				*c,
-				Qt::black,
+				roles.secondaryContainer,
 				st::infoProfileTopBarActionButtonBgOpacity),
-			.fgColor = ContentColorOverBackground(*c),
+			.fgColor = roles.onSecondaryContainer,
 			.shadowColor = std::nullopt,
 		};
 	} else {
 		return TopBarActionButtonStyle{
-			.bgColor = anim::with_alpha(
-				st::boxBg->c,
-				1. - st::infoProfileTopBarActionButtonBgOpacity),
-			.fgColor = std::nullopt,
-			.shadowColor = Window::Theme::IsNightMode()
-				? std::nullopt
-				: std::make_optional(st::windowShadowFgFallback->c),
+			.bgColor = roles.secondaryContainer,
+			.fgColor = roles.onSecondaryContainer,
+			.shadowColor = std::nullopt,
 		};
 	}
 }

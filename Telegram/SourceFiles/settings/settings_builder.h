@@ -10,6 +10,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "api/api_user_privacy.h"
 #include "base/object_ptr.h"
 #include "settings/settings_common.h"
+#include "ui/widgets/buttons.h"
 #include "settings/settings_type.h"
 
 #include <variant>
@@ -186,6 +187,8 @@ public:
 	struct ButtonArgs {
 		QString id;
 		rpl::producer<QString> title;
+		QString description;
+		Ui::GroupPosition groupPosition = Ui::GroupPosition::Standalone;
 		const style::SettingsButton *st = nullptr;
 		IconDescriptor icon;
 		Ui::VerticalLayout *container = nullptr;
@@ -199,8 +202,9 @@ public:
 	Ui::SettingsButton *addButton(ButtonArgs &&args);
 
 	struct SectionArgs {
-		//QString id; // Sections should register themselves in search.
 		rpl::producer<QString> title;
+		QString description;
+		Ui::GroupPosition groupPosition = Ui::GroupPosition::Standalone;
 		Type targetSection;
 		IconDescriptor icon;
 		QStringList keywords;

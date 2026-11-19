@@ -104,7 +104,9 @@ void SectionWidget::showAnimatedHook(
 void SectionWidget::paintEvent(QPaintEvent *e) {
 	Window::SectionWidget::paintEvent(e);
 	if (!animatingShow()) {
-		QPainter(this).fillRect(e->rect(), st::windowBg);
+		auto p = QPainter(this);
+		p.fillRect(e->rect(), st::boxBg);
+		p.fillRect(0, 0, st::lineWidth, height(), st::windowShadowFgFallback);
 	}
 }
 

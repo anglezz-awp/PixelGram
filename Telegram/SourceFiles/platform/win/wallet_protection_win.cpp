@@ -204,17 +204,6 @@ void FocusUnownedPrompt(int attemptsLeft = kPromptFocusAttempts) {
 		const winrt::hstring &name,
 		const std::optional<WindowId> &owner) {
 	const auto option = KeyCredentialCreationOption::ReplaceExisting;
-	if (owner) {
-		auto owned = base::WinRT::Try([&] {
-			return KeyCredentialManager::RequestCreateForWindowAsync(
-				*owner,
-				name,
-				option);
-		});
-		if (owned) {
-			return std::move(*owned);
-		}
-	}
 	auto result = KeyCredentialManager::RequestCreateAsync(name, option);
 	FocusUnownedPrompt();
 	return result;
@@ -224,16 +213,6 @@ void FocusUnownedPrompt(int attemptsLeft = kPromptFocusAttempts) {
 		const KeyCredential &credential,
 		const IBuffer &data,
 		const std::optional<WindowId> &owner) {
-	if (owner) {
-		if (const auto owned = credential.try_as<IKeyCredentialWithWindow>()) {
-			auto request = base::WinRT::Try([&] {
-				return owned.RequestSignForWindowAsync(*owner, data);
-			});
-			if (request) {
-				return std::move(*request);
-			}
-		}
-	}
 	auto result = credential.RequestSignAsync(data);
 	FocusUnownedPrompt();
 	return result;

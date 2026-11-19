@@ -1077,16 +1077,16 @@ historyGiftToChannel: IconButton(defaultIconButton) {
 	width: 52px;
 	height: 52px;
 
-	icon: icon{{ "menu/gift_premium", activeButtonFg }};
-	iconOver: icon{{ "menu/gift_premium", activeButtonFg }};
+	icon: icon{{ "menu/gift_premium", lightButtonFg }};
+	iconOver: icon{{ "menu/gift_premium", lightButtonFgOver }};
 
 	rippleAreaPosition: point(6px, 6px);
 	rippleAreaSize: 40px;
 	ripple: universalRippleAnimation;
 }
 historyDirectMessage: IconButton(historyGiftToChannel) {
-	icon: icon{{ "menu/chat_discuss", activeButtonFg }};
-	iconOver: icon{{ "menu/chat_discuss", activeButtonFg }};
+	icon: icon{{ "menu/chat_discuss", lightButtonFg }};
+	iconOver: icon{{ "menu/chat_discuss", lightButtonFgOver }};
 }
 historyUnblock: FlatButton(historyComposeButton) {
 	color: attentionButtonFg;

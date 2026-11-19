@@ -25,15 +25,25 @@ FloatingIcon::FloatingIcon(
 : RpWidget(parent)
 , _icon(&icon)
 , _point(position) {
-	setGeometry(QRect(
-		QPoint(0, 0),
-		QSize(_point.x() + _icon->width(), _point.y() + _icon->height())));
 	setAttribute(Qt::WA_TransparentForMouseEvents);
+	if (parent) {
+		parent->sizeValue(
+		) | rpl::on_next([=](QSize s) {
+			setGeometry(0, 0, s.width(), s.height());
+		}, lifetime());
+	} else {
+		setGeometry(QRect(
+			QPoint(0, 0),
+			QSize(_point.x() + _icon->width(), _point.y() + _icon->height())));
+	}
 }
 
 void FloatingIcon::paintEvent(QPaintEvent *e) {
 	auto p = QPainter(this);
-	_icon->paint(p, _point, width());
+	const auto iconY = parentWidget()
+		? (parentWidget()->height() - _icon->height()) / 2
+		: _point.y();
+	_icon->paint(p, _point.x(), iconY, width());
 }
 
 } // namespace Profile

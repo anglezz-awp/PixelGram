@@ -7,6 +7,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "window/section_widget.h"
 
+#include "window/themes/window_theme.h"
+#include "data/data_wall_paper.h"
+#include "styles/style_window.h"
+
 #include "mainwidget.h"
 #include "mainwindow.h"
 #include "ui/ui_utility.h"
@@ -394,6 +398,14 @@ void SectionWidget::PaintBackground(
 		QSize fill,
 		QRect clip,
 		bool paused) {
+	const auto bgTheme = Window::Theme::Background();
+	const auto isUserChosenWallPaper = bgTheme
+		&& (Data::IsCustomWallPaper(bgTheme->paper())
+			|| (Data::IsCloudWallPaper(bgTheme->paper()) && !Data::IsDefaultWallPaper(bgTheme->paper())));
+	if (!isUserChosenWallPaper) {
+		p.fillRect(clip, st::windowBg->c);
+		return;
+	}
 	const auto &background = theme->background();
 	if (background.colorForFill) {
 		p.fillRect(clip, *background.colorForFill);

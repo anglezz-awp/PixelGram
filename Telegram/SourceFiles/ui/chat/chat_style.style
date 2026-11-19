@@ -85,8 +85,8 @@ historyFileThumbPauseSelected: icon {{ "history_file_pause", historyFileThumbIco
 historyFileThumbPlaySelected: icon {{ "history_file_play", historyFileThumbIconFgSelected }};
 historyFileThumbWaiting: icon {{ "mediaview/save_check", historyFileThumbIconFg }};
 historyFileThumbWaitingSelected: icon {{ "mediaview/save_check", historyFileThumbIconFgSelected }};
-historySentSelectedIcon: icon {{ "history_sent", historyOutIconFgSelected, point(1px, 0px) }};
-historySentInvertedIcon: icon {{ "history_sent", historyIconFgInverted, point(1px, 0px) }};
+historySentSelectedIcon: icon {{ "history_sent", historyOutIconFgSelected }};
+historySentInvertedIcon: icon {{ "history_sent", historyIconFgInverted }};
 historyReceivedSelectedIcon: icon {{ "history_received", historyOutIconFgSelected, point(0px, 0px) }};
 historyReceivedInvertedIcon: icon {{ "history_received", historyIconFgInverted, point(0px, 0px) }};
 historyViewsInIcon: icon {{ "history_views", msgInDateFg }};
@@ -211,7 +211,7 @@ historyFileThumbDownloadSelected: icon {{ "history_file_download", historyFileTh
 historyFileThumbCancel: icon {{ "history_file_cancel", historyFileThumbIconFg }};
 historyFileThumbCancelSelected: icon {{ "history_file_cancel", historyFileThumbIconFgSelected }};
 historyFileThumbPlay: icon {{ "history_file_play", historyFileThumbIconFg }};
-historySentIcon: icon {{ "history_sent", historyOutIconFg, point(1px, 0px) }};
+historySentIcon: icon {{ "history_sent", historyOutIconFg }};
 historyReceivedIcon: icon {{ "history_received", historyOutIconFg, point(0px, 0px) }};
 historyBubbleTailInLeft: icon {{ "bubble_tail", msgInBg }};
 historyBubbleTailOutLeft: icon {{ "bubble_tail", msgOutBg }};

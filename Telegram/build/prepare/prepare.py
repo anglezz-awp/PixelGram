@@ -1041,6 +1041,8 @@ stage('libjxl', """
     git checkout v1.2.1
     cd ..
     cd ..
+win:
+    powershell -Command "(Get-Content lib/jxl/base/common.h) -replace '#if JXL_COMPILER_MSVC', '#if defined(_MSC_VER)' | Set-Content lib/jxl/base/common.h"
 """ + setVar("cmake_defines", """
     -DBUILD_SHARED_LIBS=OFF
     -DBUILD_TESTING=OFF
@@ -1533,9 +1535,7 @@ depends:python/Scripts/activate.bat
     ninja -C out/Debug%FolderPostfix% common crash_generation_client exception_handler
 release:
     ninja -C out/Release%FolderPostfix% common crash_generation_client exception_handler
-    cd tools\\windows\\dump_syms
-    gyp dump_syms.gyp --format=msvs
-    msbuild -m dump_syms.vcxproj /property:Configuration=Release /property:Platform="x64" %ToolsetProp%
+    rem skipped dump_syms
 win:
     deactivate
 mac:

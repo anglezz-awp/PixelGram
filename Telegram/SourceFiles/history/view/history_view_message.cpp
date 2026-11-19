@@ -2035,18 +2035,7 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 					.selection = mediaSelectionIntervals,
 				});
 		}
-		if (data()->isDeletedByAntiDelete()) {
-			const auto &roles = PixelGram::CurrentM3Roles();
-			PainterHighQualityEnabler hq(p);
-			const auto barWidth = 3.5;
-			const auto barMargin = 4.0;
-			const auto barTop = g.top() + 6.0;
-			const auto barHeight = std::max(6.0, g.height() - 12.0);
-			const auto barRect = QRectF(g.left() + barMargin, barTop, barWidth, barHeight);
-			p.setPen(Qt::NoPen);
-			p.setBrush(roles.error);
-			p.drawRoundedRect(barRect, 1.75, 1.75);
-		}
+
 
 
 		auto inner = g;
@@ -2310,17 +2299,7 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 		}
 		p.translate(-g.topLeft());
 	}
-		if (data()->isDeletedByAntiDelete()) {
-			const auto &roles = PixelGram::CurrentM3Roles();
-			PainterHighQualityEnabler hq(p);
-			const auto barWidth = 3.5;
-			const auto barTop = g.top() + 4.0;
-			const auto barHeight = std::max(6.0, g.height() - 8.0);
-			const auto barRect = QRectF(g.left() - 6.0, barTop, barWidth, barHeight);
-			p.setPen(Qt::NoPen);
-			p.setBrush(roles.error);
-			p.drawRoundedRect(barRect, 1.75, 1.75);
-		}
+
 
 
 	p.restoreTextPalette();

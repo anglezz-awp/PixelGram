@@ -1990,6 +1990,10 @@ PRIVATE
     settings/sections/settings_local_passcode.h
     settings/sections/settings_local_storage.cpp
     settings/sections/settings_local_storage.h
+    settings/pixelgram_settings.cpp
+    settings/pixelgram_settings.h
+    ui/pixelgram_m3_scheme.cpp
+    ui/pixelgram_m3_scheme.h
     settings/sections/settings_main.cpp
     settings/sections/settings_main.h
     settings/settings_recent_searches.cpp
@@ -2799,6 +2803,7 @@ elseif (APPLE)
             Resources/${lang}.lproj
         )
         target_sources(Telegram PRIVATE ${strings_path})
+
         source_group(TREE ${res_loc} PREFIX Resources FILES ${strings_path})
     endforeach()
 
@@ -2893,7 +2898,58 @@ set(entitlement_sources
 target_sources(Telegram PRIVATE ${entitlement_sources})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/Telegram PREFIX Resources FILES ${entitlement_sources})
 
-target_include_directories(Telegram PRIVATE ${src_loc})
+target_include_directories(Telegram PRIVATE
+    ${src_loc}
+    ${src_loc}/../ThirdParty/material-color-utilities
+)
+
+# Fail build if m3_unmapped.txt is not empty
+if (EXISTS "${src_loc}/ui/m3_unmapped.txt")
+    file(READ "${src_loc}/ui/m3_unmapped.txt" m3_unmapped_data)
+    string(STRIP "${m3_unmapped_data}" m3_unmapped_stripped)
+    if (NOT m3_unmapped_stripped STREQUAL "")
+        message(FATAL_ERROR "FATAL: m3_unmapped.txt is NOT empty! All tokens must be explicitly mapped: ${m3_unmapped_stripped}")
+    endif()
+endif()
+
+# Google Material Color Utilities (MCU)
+set(mcu_loc ${src_loc}/../ThirdParty/material-color-utilities/cpp)
+target_sources(Telegram PRIVATE
+    ${mcu_loc}/cam/cam.cc
+    ${mcu_loc}/cam/cam.h
+    ${mcu_loc}/cam/hct.cc
+    ${mcu_loc}/cam/hct.h
+    ${mcu_loc}/cam/hct_solver.cc
+    ${mcu_loc}/cam/hct_solver.h
+    ${mcu_loc}/cam/viewing_conditions.cc
+    ${mcu_loc}/cam/viewing_conditions.h
+    ${mcu_loc}/dynamiccolor/dynamic_color.cc
+    ${mcu_loc}/dynamiccolor/dynamic_color.h
+    ${mcu_loc}/dynamiccolor/dynamic_scheme.cc
+    ${mcu_loc}/dynamiccolor/dynamic_scheme.h
+    ${mcu_loc}/dynamiccolor/material_dynamic_colors.cc
+    ${mcu_loc}/dynamiccolor/material_dynamic_colors.h
+    ${mcu_loc}/palettes/tones.cc
+    ${mcu_loc}/palettes/tones.h
+    ${mcu_loc}/scheme/scheme_tonal_spot.cc
+    ${mcu_loc}/scheme/scheme_tonal_spot.h
+    ${mcu_loc}/scheme/scheme_vibrant.cc
+    ${mcu_loc}/scheme/scheme_vibrant.h
+    ${mcu_loc}/scheme/scheme_expressive.cc
+    ${mcu_loc}/scheme/scheme_expressive.h
+    ${mcu_loc}/scheme/scheme_neutral.cc
+    ${mcu_loc}/scheme/scheme_neutral.h
+    ${mcu_loc}/scheme/scheme_monochrome.cc
+    ${mcu_loc}/scheme/scheme_monochrome.h
+    ${mcu_loc}/utils/utils.cc
+    ${mcu_loc}/utils/utils.h
+    ${mcu_loc}/contrast/contrast.cc
+    ${mcu_loc}/contrast/contrast.h
+    ${mcu_loc}/dislike/dislike.cc
+    ${mcu_loc}/dislike/dislike.h
+    ${src_loc}/ui/pixelgram_m3_scheme.cpp
+    ${src_loc}/ui/pixelgram_m3_scheme.h
+)
 
 target_compile_definitions(Telegram
 PRIVATE

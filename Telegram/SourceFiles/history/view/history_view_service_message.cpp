@@ -157,9 +157,7 @@ void PaintPreparedDate(
 		int w,
 		bool chatWide) {
 	int left = st::msgServiceMargin.left();
-	const auto maxwidth = chatWide
-		? std::min(w, WideChatWidth())
-		: w;
+	const auto maxwidth = w;
 	w = maxwidth - st::msgServiceMargin.left() - st::msgServiceMargin.left();
 
 	left += (w - dateTextWidth - st::msgServicePadding.left() - st::msgServicePadding.right()) / 2;
@@ -469,13 +467,8 @@ bool Service::consumeHorizontalScroll(
 
 QRect Service::countGeometry() const {
 	auto result = QRect(0, 0, width(), height());
-	if (delegate()->elementChatMode() == ElementChatMode::Wide) {
-		result.setWidth(std::min(
-			result.width(),
-			st::msgMaxWidth
-				+ 2 * st::msgPhotoSkip
-				+ 2 * st::msgMargin.left()));
-	}
+	// Full width for service messages
+	// (do not restrict to narrow column in wide mode)
 	auto margins = st::msgServiceMargin;
 	margins.setTop(marginTop());
 	return result.marginsRemoved(margins);
@@ -512,9 +505,7 @@ QSize Service::performCountCurrentSize(int newWidth) {
 	const auto media = this->media();
 	const auto mediaDisplayed = media && media->isDisplayed();
 	auto contentWidth = newWidth;
-	if (delegate()->elementChatMode() == ElementChatMode::Wide) {
-		accumulate_min(contentWidth, st::msgMaxWidth + 2 * st::msgPhotoSkip + 2 * st::msgMargin.left());
-	}
+	// No accumulate_min to narrow column
 	contentWidth -= st::msgServiceMargin.left() + st::msgServiceMargin.left(); // two small margins
 	if (contentWidth < st::msgServicePadding.left() + st::msgServicePadding.right() + 1) {
 		contentWidth = st::msgServicePadding.left() + st::msgServicePadding.right() + 1;

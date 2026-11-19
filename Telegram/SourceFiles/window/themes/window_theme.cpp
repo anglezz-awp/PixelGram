@@ -1,3 +1,4 @@
+#include "ui/pixelgram_m3_scheme.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -544,10 +545,12 @@ ChatBackground::ChatBackground() : _adjustableColors({
 ChatBackground::~ChatBackground() = default;
 
 void ChatBackground::setThemeData(QImage &&themeImage, bool themeTile) {
-	_themeImage = PostprocessBackgroundImage(
-		std::move(themeImage),
-		Data::ThemeWallPaper());
-	_themeTile = themeTile;
+	_themeImage = QImage();
+	_themeTile = false;
+}
+
+void ChatBackground::notifyBackgroundChanged() {
+	_updates.fire({ BackgroundUpdate::Type::New, tile() });
 }
 
 void ChatBackground::initialRead() {
@@ -580,6 +583,7 @@ void ChatBackground::start() {
 	}, _lifetime);
 
 	initialRead();
+	PixelGram::ApplyM3Scheme(PixelGram::GetM3SeedColor(), nightMode());
 
 	Core::App().domain().activeSessionValue(
 	) | rpl::filter([=](Main::Session *session) {
@@ -798,6 +802,12 @@ void ChatBackground::set(const Data::WallPaper &paper, QImage image) {
 }
 
 void ChatBackground::setPreparedAfterPaper(QImage image) {
+	const auto isUserChosenWallPaper = Data::IsCustomWallPaper(_paper)
+		|| (Data::IsCloudWallPaper(_paper) && !Data::IsDefaultWallPaper(_paper));
+	if (!isUserChosenWallPaper) {
+		setPrepared(QImage(), QImage(), QImage());
+		return;
+	}
 	const auto &bgColors = _paper.backgroundColors();
 	if (_paper.isPattern() && !image.isNull()) {
 		if (bgColors.size() < 2) {
@@ -932,6 +942,11 @@ void ChatBackground::adjustPaletteUsingColor(QColor color) {
 }
 
 std::optional<QColor> ChatBackground::colorForFill() const {
+	const auto isUserChosenWallPaper = Data::IsCustomWallPaper(_paper)
+		|| (Data::IsCloudWallPaper(_paper) && !Data::IsDefaultWallPaper(_paper));
+	if (!isUserChosenWallPaper) {
+		return st::windowBg->c;
+	}
 	return !_prepared.isNull()
 		? imageMonoColor()
 		: (!_gradient.isNull() || _paper.backgroundColors().empty())
@@ -1112,6 +1127,7 @@ void ChatBackground::restoreAdjustableColors() {
 void ChatBackground::setTestingTheme(Instance &&theme) {
 	style::main_palette::apply(theme.palette);
 	saveAdjustableColors();
+	PixelGram::ApplyM3Scheme(PixelGram::GetM3SeedColor(), nightMode());
 
 	auto switchToThemeBackground = !theme.background.isNull()
 		|| Data::IsThemeWallPaper(_paper)
@@ -1151,17 +1167,9 @@ void ChatBackground::setTestingDefaultTheme() {
 }
 
 void ChatBackground::applyDefaultThemeAccentColorizer() {
-	const auto colorizer = ColorizerForTheme(QString());
-	style::main_palette::reset(colorizer);
-	if (colorizer) {
-		auto reference = style::palette();
-		reference.finalize();
-		Ui::EnsureBubblesReadable(*style::main_palette::get(), {
-			.dark = Ui::IsDarkPalette(reference),
-			.reference = &reference,
-		});
-	}
+	style::main_palette::reset();
 	saveAdjustableColors();
+	PixelGram::ApplyM3Scheme(PixelGram::GetM3SeedColor(), nightMode());
 }
 
 void ChatBackground::keepApplied(const Object &object, bool write) {

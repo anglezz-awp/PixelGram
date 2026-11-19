@@ -574,7 +574,7 @@ infoIconDeleteRed: icon {{ "info/info_delete", attentionButtonFg }};
 infoIconReport: icon {{ "info/info_report", attentionButtonFg }};
 infoIconBlock: icon {{ "info/info_block", attentionButtonFg }};
 infoIconMembers: icon {{ "info/info_members", infoIconFg }};
-infoSharedMediaButtonIconPosition: point(20px, 3px);
+infoSharedMediaButtonIconPosition: point(32px, 0px);
 infoGroupMembersIconPosition: point(20px, 10px);
 
 infoOpenApp: RoundButton(defaultActiveButton) {
@@ -624,7 +624,10 @@ infoMainButton: SettingsButton(infoProfileButton) {
 	style: semiboldTextStyle;
 	padding: margins(23px, 10px, 8px, 8px);
 }
-infoSharedMediaButton: infoProfileButton;
+infoSharedMediaButton: SettingsButton(infoProfileButton) {
+	textBg: windowBgOver;
+	textBgOver: windowBgRipple;
+}
 
 infoBlockButton: SettingsButton(infoProfileButton) {
 	textFg: attentionButtonFg;

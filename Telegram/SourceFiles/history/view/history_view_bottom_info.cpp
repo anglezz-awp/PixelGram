@@ -318,11 +318,13 @@ void BottomInfo::paint(
 			: (inverted
 				? st->historyReceivedInvertedIcon()
 				: stm->historyReceivedIcon);
+		const auto iconX = right - icon.width();
+		const auto iconY = position.y() + std::max(0, (st::msgDateFont->height - icon.height()) / 2);
 		icon.paint(
 			p,
-			QPoint(right, firstLineBottom) + st::historySendStatePosition,
-			outer(right + st::historySendStatePosition.x(), icon));
-		right -= st::historySendStateSpace;
+			QPoint(iconX, iconY),
+			outer(iconX, icon));
+		right -= (icon.width() + 2);
 	}
 
 	const auto authorEditedWidth = _authorEditedDate.maxWidth();

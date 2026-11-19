@@ -2726,7 +2726,10 @@ OverlayWidget::ContentGeometry OverlayWidget::contentGeometry() const {
 			fromRect.width() + (toRectFinal.width() - fromRect.width()) * progress,
 			fromRect.height() + (toRectFinal.height() - fromRect.height()) * progress
 		);
-		const auto opacity = std::clamp(1. - progress, 0., 1.);
+		const auto t = std::clamp(progress, 0., 1.);
+		const auto opacity = (t < 0.4)
+			? 1.0
+			: std::clamp((1.0 - t) / 0.6, 0.0, 1.0);
 		return { useRect, toRotation, opacity };
 	}
 	if (!_geometryAnimation.animating()) {
@@ -3225,44 +3228,55 @@ void OverlayWidget::close() {
 		_closeToRect = QRectF(_fromChatRect);
 	} else {
 		const auto current = _closeFromRect;
-		const auto targetW = current.width() * 0.88;
-		const auto targetH = current.height() * 0.88;
+		const auto targetW = current.width() * 0.35;
+		const auto targetH = current.height() * 0.35;
 		_closeToRect = QRectF(
 			current.center().x() - targetW / 2.0,
 			current.center().y() - targetH / 2.0,
 			targetW,
 			targetH);
 	}
-	constexpr auto kCloseDuration = crl::time(220);
+	constexpr auto kCloseDuration = crl::time(280);
+
+	const auto easeInBack = [](float64 delta, float64 dt) {
+		constexpr auto s = 1.35;
+		return delta * (dt * dt * ((s + 1.0) * dt - s));
+	};
+
+	const auto checkFinished = [=] {
+		_helper->setControlsOpacity(
+			_controlsOpacity.current() * backgroundOpacity());
+		_widget->update();
+		if (!_geometryAnimation.animating()
+			&& !_backgroundOpacityAnimation.animating()
+			&& _isClosingAnimation) {
+			InvokeQueued(_widget, [=] {
+				if (_isClosingAnimation
+					&& !_geometryAnimation.animating()
+					&& !_backgroundOpacityAnimation.animating()) {
+					_isClosingAnimation = false;
+					hide();
+					_helper->clearState();
+				}
+			});
+		}
+	};
+
 	_backgroundOpacityAnimation.stop();
 	_backgroundOpacityAnimation.start(
-		[=] { _widget->update(); },
+		checkFinished,
 		startBgOpacity,
 		0.,
 		kCloseDuration,
 		anim::sineInOut);
+
 	_geometryAnimation.stop();
 	_geometryAnimation.start(
-		[=] {
-			_helper->setControlsOpacity(
-				_controlsOpacity.current() * backgroundOpacity());
-			_widget->update();
-			if (!_geometryAnimation.animating() && _isClosingAnimation) {
-				InvokeQueued(_widget, [=] {
-					if (_isClosingAnimation
-						&& !_geometryAnimation.animating()) {
-						_isClosingAnimation = false;
-						_backgroundOpacityAnimation.stop();
-						hide();
-						_helper->clearState();
-					}
-				});
-			}
-		},
+		checkFinished,
 		0.,
 		1.,
 		kCloseDuration,
-		anim::sineInOut);
+		easeInBack);
 }
 
 void OverlayWidget::minimize() {

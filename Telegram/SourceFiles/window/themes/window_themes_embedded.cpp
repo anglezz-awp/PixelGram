@@ -303,27 +303,7 @@ std::optional<QColor> SystemAccentColor() {
 }
 
 style::colorizer ColorizerForTheme(const QString &absolutePath) {
-	if (!IsEmbeddedTheme(absolutePath)) {
-		return {};
-	}
-	const auto schemes = EmbeddedThemes();
-	const auto i = ranges::find(
-		schemes,
-		absolutePath,
-		&EmbeddedScheme::path);
-	if (i == end(schemes)) {
-		return {};
-	}
-	const auto &settings = Core::App().settings();
-	if (settings.systemAccentColorEnabled()) {
-		if (const auto accent = SystemAccentColor()) {
-			return ColorizerFrom(*i, *accent);
-		}
-	}
-	const auto &colors = settings.themesAccentColors();
-	if (const auto accent = colors.get(i->type)) {
-		return ColorizerFrom(*i, *accent);
-	}
+	// Completely disable old 15-degree colorizer for embedded M3 themes
 	return {};
 }
 

@@ -971,9 +971,7 @@ void ForumThreadBar::Paint(
 		bool chatWide,
 		bool skipPatternLine) {
 	int left = st::msgServiceMargin.left();
-	const auto maxwidth = chatWide
-		? std::min(w, WideChatWidth())
-		: w;
+	const auto maxwidth = w;
 	w = maxwidth - st::msgServiceMargin.left() - st::msgServiceMargin.left();
 
 	const auto use = std::min(w, width);
@@ -1067,11 +1065,7 @@ void ServicePreMessage::init(
 
 int ServicePreMessage::resizeToWidth(int newWidth, ElementChatMode mode) {
 	width = newWidth;
-	if (mode == ElementChatMode::Wide) {
-		accumulate_min(
-			width,
-			st::msgMaxWidth + 2 * st::msgPhotoSkip + 2 * st::msgMargin.left());
-	}
+	// No accumulate_min to narrow column
 
 	if (media) {
 		media->initDimensions();
@@ -2872,8 +2866,7 @@ bool Element::hasOutLayout() const {
 }
 
 bool Element::hasRightLayout() const {
-	return hasOutLayout()
-		&& (_delegate->elementChatMode() != ElementChatMode::Wide);
+	return hasOutLayout();
 }
 
 bool Element::drawBubble() const {

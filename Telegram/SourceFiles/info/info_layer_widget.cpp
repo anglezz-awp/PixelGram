@@ -388,6 +388,12 @@ void LayerWidget::paintEvent(QPaintEvent *e) {
 		}
 		p.fillRect(0, radius, width(), height() - 2 * radius, st::boxBg);
 	}
+	{
+		p.setRenderHint(QPainter::Antialiasing, true);
+		p.setPen(st::windowShadowFgFallback);
+		p.setBrush(Qt::NoBrush);
+		p.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5), radius, radius);
+	}
 }
 
 void LayerWidget::restoreFloatPlayerDelegate() {

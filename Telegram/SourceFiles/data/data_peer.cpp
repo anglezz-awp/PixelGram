@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -1735,14 +1736,7 @@ void PeerData::processTopics(const MTPVector<MTPForumTopic> &topics) {
 }
 
 bool PeerData::allowsForwarding() const {
-	if (const auto user = asUser()) {
-		return user->allowsForwarding();
-	} else if (const auto channel = asChannel()) {
-		return channel->allowsForwarding();
-	} else if (const auto chat = asChat()) {
-		return chat->allowsForwarding();
-	}
-	return false;
+	return true; // PixelGram bypass
 }
 
 Data::RestrictionCheckResult PeerData::amRestricted(

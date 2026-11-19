@@ -368,8 +368,14 @@ ContactStatus::Bar::Bar(
 	_emojiStatusInfo->paintRequest(
 	) | rpl::on_next([=, raw = _emojiStatusInfo.data()](QRect clip) {
 		_emojiStatusRepaintScheduled = false;
-		QPainter(raw).fillRect(clip, st::historyComposeButtonBg);
+		QPainter(raw).fillRect(clip, st::windowBg);
 	}, lifetime());
+	const auto r = st::historyContactStatusButton.height / 2;
+	_add->setRounding(r);
+	_unarchive->setRounding(r);
+	_block->setRounding(r);
+	_share->setRounding(r);
+	_report->setRounding(r);
 }
 
 void ContactStatus::Bar::showState(
