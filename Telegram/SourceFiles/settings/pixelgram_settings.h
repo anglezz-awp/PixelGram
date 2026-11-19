@@ -87,7 +87,7 @@ struct Config {
 	ChannelBottomAction channelBottomAction = ChannelBottomAction::Discuss;
 	bool quickAdminShortcuts = false;
 	bool disableGreetingSticker = true;
-	bool showMessageShot = true;
+	ContextMenuDisplay menuMessageShot = ContextMenuDisplay::Shown;
 	bool replaceWithIcons = false;
 	bool removeMessageTail = true;
 	bool hideSideShareButton = false;

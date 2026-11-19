@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/chat/chat_style_radius.h"
+#include "settings/pixelgram_settings.h"
 #include "base/options.h"
 #include "ui/chat/message_bubble.h"
 
@@ -30,20 +31,20 @@ int BubbleRadiusSmall() {
 }
 
 int BubbleRadiusLarge() {
-	static const auto result = [] {
-		if (UseSmallMsgBubbleRadius.value()) {
-			return st::bubbleRadiusSmall;
-		} else {
-			return st::bubbleRadiusLarge;
-		}
-	}();
-	return result;
+	if (const auto r = PixelGram::CurrentConfig().messageBubbleRadius; r > 0) {
+		return r;
+	}
+	if (UseSmallMsgBubbleRadius.value()) {
+		return st::bubbleRadiusSmall;
+	}
+	return st::bubbleRadiusLarge;
 }
 
 int BubbleCornerRadius(BubbleCornerRounding corner) {
 	switch (corner) {
-	case BubbleCornerRounding::None:
-	case BubbleCornerRounding::Tail: return 0;
+	case BubbleCornerRounding::None: return 0;
+	case BubbleCornerRounding::Tail:
+		return PixelGram::CurrentConfig().removeMessageTail ? BubbleRadiusLarge() : 0;
 	case BubbleCornerRounding::Small: return BubbleRadiusSmall();
 	case BubbleCornerRounding::Large: return BubbleRadiusLarge();
 	}

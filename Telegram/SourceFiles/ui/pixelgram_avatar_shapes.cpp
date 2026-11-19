@@ -45,6 +45,18 @@ QPainterPath AvatarShapePath(
 	}
 	case AvatarShape::Custom: {
 		const auto radius = std::min(rx, ry) * (std::clamp(cornerRadiusPercent, 0, 50) / 50.0);
+		if (CurrentConfig().singleCornerRadius) {
+			path.moveTo(rect.left() + radius, rect.top());
+			path.lineTo(rect.right() - radius, rect.top());
+			path.quadTo(rect.right(), rect.top(), rect.right(), rect.top() + radius);
+			path.lineTo(rect.right(), rect.bottom() - radius);
+			path.quadTo(rect.right(), rect.bottom(), rect.right() - radius, rect.bottom());
+			path.lineTo(rect.left(), rect.bottom());
+			path.lineTo(rect.left(), rect.top() + radius);
+			path.quadTo(rect.left(), rect.top(), rect.left() + radius, rect.top());
+			path.closeSubpath();
+			return path;
+		}
 		path.addRoundedRect(rect, radius, radius);
 		return path;
 	}

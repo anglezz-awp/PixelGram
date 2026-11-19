@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/chat/chat_style.h"
+#include "settings/pixelgram_settings.h"
 
 #include "ui/chat/chat_theme.h"
 #include "ui/chat/chat_theme_readability.h"
@@ -82,6 +83,11 @@ not_null<const MessageImageStyle*> ChatPaintContext::imageStyle() const {
 not_null<Text::QuotePaintCache*> ChatPaintContext::quoteCache(
 		const std::shared_ptr<ColorCollectible> &colorCollectible,
 		uint8 colorIndex) const {
+	if (PixelGram::CurrentConfig().disableColorfulReplies) {
+		return outbg
+			? messageStyle()->quoteCache[0].get()
+			: st->coloredQuoteCache(selected(), 0).get();
+	}
 	return outbg
 		? messageStyle()->quoteCache[colorCollectible
 			? 2

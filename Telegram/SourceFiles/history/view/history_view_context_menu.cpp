@@ -6,6 +6,10 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_context_menu.h"
+#include "settings/pixelgram_settings.h"
+#include "ui/boxes/confirm_box.h"
+#include <QtGui/QGuiApplication>
+#include <QtGui/QClipboard>
 
 #include "api/api_attached_stickers.h"
 #include "api/api_editing.h"
@@ -1762,6 +1766,102 @@ ContextMenuRequest::ContextMenuRequest(
 : navigation(navigation) {
 }
 
+void AddPixelGramActions(
+		not_null<Ui::PopupMenu*> result,
+		const ContextMenuRequest &request,
+		not_null<ListWidget*> list) {
+	const auto item = request.item;
+	if (!item) {
+		return;
+	}
+	const auto &cfg = PixelGram::CurrentConfig();
+	const auto shouldShow = [](PixelGram::ContextMenuDisplay display) {
+		if (display == PixelGram::ContextMenuDisplay::Hidden) {
+			return false;
+		} else if (display == PixelGram::ContextMenuDisplay::Extended) {
+			return (QGuiApplication::keyboardModifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) != 0;
+		}
+		return true;
+	};
+
+	// 1. Details
+	if (shouldShow(cfg.menuDetails)) {
+		result->addAction(
+			QString::fromUtf8("Детали (Details)"),
+			[=] {
+				const auto itemId = item->fullId();
+				const auto dateStr = ItemDateTime(item).toString("yyyy-MM-dd hh:mm:ss");
+				QString text = QString::fromUtf8("ID сообщения: %1\nID чата: %2\nДата: %3")
+					.arg(itemId.msg.bare)
+					.arg(itemId.peer.value)
+					.arg(dateStr);
+				if (const auto from = item->fromOriginal()) {
+					text += QString::fromUtf8("\nОтправитель: %1 (%2)").arg(from->name()).arg(from->id.value);
+				}
+				if (item->isDeletedByAntiDelete()) {
+					text += QString::fromUtf8("\nСтатус: Сохранено (Anti-Delete)");
+				}
+				list->controller()->show(Ui::MakeInformBox(text));
+			},
+			&st::menuIconShowInChat);
+	}
+
+	// 2. User Messages
+	if (shouldShow(cfg.menuUserMessages)) {
+		if (const auto from = item->fromOriginal()) {
+			result->addAction(
+				QString::fromUtf8("Сообщения пользователя"),
+				[=] {
+					list->controller()->searchInChat(item->history(), from);
+				},
+				&st::menuIconForward);
+		}
+	}
+
+	// 3. Repeat
+	if (shouldShow(cfg.menuRepeat)) {
+		result->addAction(
+			QString::fromUtf8("Повторить (Repeat)"),
+			[=] {
+				const auto text = item->originalText().text;
+				if (!text.isEmpty()) {
+					list->insertTextAtCursor(text);
+				} else {
+					Window::ShowForwardMessagesBox(list->controller(), { item->fullId() });
+				}
+			},
+			&st::menuIconForward);
+	}
+
+	// 4. Show Message Shot
+	if (shouldShow(cfg.menuMessageShot)) {
+		result->addAction(
+			QString::fromUtf8("Скриншот сообщения"),
+			[=] {
+				if (const auto view = request.view) {
+					const auto g = list->elementGlobalRect(view);
+					const auto local = QRect(list->mapFromGlobal(g.topLeft()), g.size());
+					if (local.width() > 0 && local.height() > 0) {
+						const auto image = list->grab(local).toImage();
+						QGuiApplication::clipboard()->setImage(image);
+						list->controller()->showToast(QString::fromUtf8("Скриншот скопирован в буфер!"));
+					}
+				}
+			},
+			&st::menuIconCopy);
+	}
+
+	// 5. Hide Message Locally
+	if (shouldShow(cfg.menuHideLocally)) {
+		result->addAction(
+			QString::fromUtf8("Скрыть локально"),
+			[=] {
+				item->destroy();
+			},
+			&st::menuIconCancel);
+	}
+}
+
 void FillContextMenuItems(
 		not_null<Ui::PopupMenu*> result,
 		not_null<ListWidget*> list,
@@ -1938,6 +2038,7 @@ void FillContextMenuItems(
 
 	AddCopyLinkAction(result, link);
 	AddMessageActions(result, request, list);
+	AddPixelGramActions(result, request, list);
 
 	const auto wasAmount = result->actions().size();
 	if (const auto textItem = view ? view->textItem() : item) {

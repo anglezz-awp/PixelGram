@@ -1,4 +1,5 @@
 #include "ui/pixelgram_m3_scheme.h"
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -1846,6 +1847,18 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 
 	const auto item = data();
 	const auto media = this->media();
+
+	const auto translucent = PixelGram::CurrentConfig().translucentDeletedMessages
+		&& item->isDeletedByAntiDelete();
+	const auto originalOpacity = p.opacity();
+	if (translucent) {
+		p.setOpacity(originalOpacity * 0.65);
+	}
+	const auto restoreOpacity = gsl::finally([&] {
+		if (translucent) {
+			p.setOpacity(originalOpacity);
+		}
+	});
 
 	const auto gestureShift = context.gestureHorizontal.visualTranslationFor(
 		item->id.bare);
@@ -6111,6 +6124,9 @@ std::optional<QSize> Message::rightActionSize() const {
 }
 
 bool Message::displayFastShare() const {
+	if (PixelGram::CurrentConfig().hideSideShareButton) {
+		return false;
+	}
 	const auto item = data();
 	const auto peer = item->history()->peer;
 	if (!item->allowsForward() || IsAnchoredEphemeral(item)) {
@@ -6642,7 +6658,10 @@ QRect Message::countGeometry() const {
 	const auto outbg = hasOutLayout();
 
 	const auto totalWidth = width();
-	const auto maxBubbleWidth = std::clamp(int(totalWidth * 0.72), 480, 800);
+	const auto mult = PixelGram::CurrentConfig().wideMessagesMultiplier;
+	const auto maxBubbleWidth = (mult > 1.001)
+		? std::clamp(int(totalWidth * std::min(0.72 * mult, 0.96)), 480, int(800 * mult))
+		: std::clamp(int(totalWidth * 0.72), 480, 800);
 
 	auto availableWidth = maxBubbleWidth;
 	if (hasFromPhoto()) {
@@ -6752,7 +6771,10 @@ int Message::resizeContentGetHeight(int newWidth) {
 	item->resolveDependent();
 
 	// This code duplicates countGeometry() but also resizes media.
-	const auto maxBubbleWidth = std::clamp(int(newWidth * 0.72), 480, 800);
+	const auto mult = PixelGram::CurrentConfig().wideMessagesMultiplier;
+	const auto maxBubbleWidth = (mult > 1.001)
+		? std::clamp(int(newWidth * std::min(0.72 * mult, 0.96)), 480, int(800 * mult))
+		: std::clamp(int(newWidth * 0.72), 480, 800);
 
 	auto contentWidth = maxBubbleWidth;
 	if (hasFromPhoto()) {
