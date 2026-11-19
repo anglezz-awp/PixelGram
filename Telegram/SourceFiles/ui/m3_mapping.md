@@ -1,10 +1,7 @@
-# Explicit Material You 3 (M3) Token Mapping Table
-
-Total tokens mapped: 586
-Fallback count: 0 (All keys mapped with explicit semantic roles)
+# Material You (M3) Explicit Palette Mapping
 
 | Key | M3 Role | Alpha | Description |
-| :--- | :--- | :--- | :--- |
+| --- | --- | --- | --- |
 | `windowBg` | `surface` | `255` | Window base background |
 | `windowFg` | `onSurface` | `255` | Window base text |
 | `windowBgOver` | `surfaceContainerHigh` | `255` | Window hover background |
@@ -226,10 +223,10 @@ Fallback count: 0 (All keys mapped with explicit semantic roles)
 | `historyFileNameOutFgSelected` | `onPrimaryContainer` | `255` | Outgoing message attached file name selected |
 | `historyOutIconFg` | `onPrimaryContainer` | `180` | Outgoing message sent double check icon |
 | `historyOutIconFgSelected` | `onPrimaryContainer` | `180` | Outgoing message sent check icon selected |
-| `historyIconFgInverted` | `onPrimary` | `255` | Inverted status checkmark icon |
+| `historyIconFgInverted` | `fixedWhite` | `255` | Inverted status checkmark icon over image |
 | `historySendingOutIconFg` | `onPrimaryContainer` | `255` | Outgoing message sending clock icon |
 | `historySendingInIconFg` | `onSurfaceVariant` | `255` | Incoming message downloading clock icon |
-| `historySendingInvertedIconFg` | `onPrimary` | `200` | Inverted message sending icon |
+| `historySendingInvertedIconFg` | `fixedWhite` | `200` | Inverted message sending icon over image |
 | `historyCallArrowInFg` | `primary` | `255` | Incoming call arrow icon |
 | `historyCallArrowInFgSelected` | `primary` | `255` | Incoming call arrow icon selected |
 | `historyCallArrowMissedInFg` | `error` | `255` | Missed call arrow icon |
@@ -321,9 +318,9 @@ Fallback count: 0 (All keys mapped with explicit semantic roles)
 | `msgInMonoFgSelected` | `onSurface` | `255` | Incoming monospace code text selected |
 | `msgOutMonoFgSelected` | `onPrimaryContainer` | `255` | Outgoing monospace code text selected |
 | `msgDateImgFg` | `fixedWhite` | `255` | Media overlaid date timestamp text |
-| `msgDateImgBg` | `scrim` | `84` | Media overlaid date timestamp background |
-| `msgDateImgBgOver` | `scrim` | `116` | Media overlaid date timestamp hover background |
-| `msgDateImgBgSelected` | `scrim` | `135` | Media overlaid date timestamp selected background |
+| `msgDateImgBg` | `scrim` | `140` | Media overlaid date timestamp background |
+| `msgDateImgBgOver` | `scrim` | `180` | Media overlaid date timestamp hover background |
+| `msgDateImgBgSelected` | `scrim` | `190` | Media overlaid date timestamp selected background |
 | `msgFileThumbLinkInFg` | `primary` | `255` | Incoming file thumbnail link |
 | `msgFileThumbLinkInFgSelected` | `primary` | `255` | Incoming file thumbnail link selected |
 | `msgFileThumbLinkOutFg` | `onPrimaryContainer` | `255` | Outgoing file thumbnail link |
@@ -429,9 +426,9 @@ Fallback count: 0 (All keys mapped with explicit semantic roles)
 | `mediaPlayerActiveFg` | `primary` | `255` | Audio player playback control icon |
 | `mediaPlayerInactiveFg` | `outlineVariant` | `255` | Audio player upcoming progress bar |
 | `mediaPlayerDisabledFg` | `outline` | `255` | Audio player disabled control icon |
-| `mediaviewFileBg` | `surfaceContainer` | `255` | Media viewer file rectangle background |
-| `mediaviewFileNameFg` | `onSurface` | `255` | Media viewer file name text |
-| `mediaviewFileSizeFg` | `onSurfaceVariant` | `255` | Media viewer file size text |
+| `mediaviewFileBg` | `scrim` | `200` | Media viewer file rectangle background |
+| `mediaviewFileNameFg` | `fixedWhite` | `230` | Media viewer file name text |
+| `mediaviewFileSizeFg` | `fixedWhite` | `178` | Media viewer file size text |
 | `mediaviewFileRedCornerFg` | `error` | `255` | Media viewer file placeholder red corner |
 | `mediaviewFileYellowCornerFg` | `tertiary` | `255` | Media viewer file placeholder yellow corner |
 | `mediaviewFileGreenCornerFg` | `primary` | `255` | Media viewer file placeholder green corner |
@@ -441,27 +438,27 @@ Fallback count: 0 (All keys mapped with explicit semantic roles)
 | `mediaviewMenuBgOver` | `surfaceContainerHigh` | `255` | Media viewer context menu hover |
 | `mediaviewMenuBgRipple` | `onSurface` | `30` | Media viewer context menu ripple |
 | `mediaviewMenuFg` | `onSurface` | `255` | Media viewer context menu text |
-| `mediaviewBg` | `scrim` | `235` | Media viewer backdrop scrim |
+| `mediaviewBg` | `scrim` | `128` | Media viewer backdrop scrim |
 | `mediaviewVideoBg` | `fixedBlack` | `255` | Media viewer video fullscreen background |
-| `mediaviewControlBg` | `scrim` | `60` | Media viewer control button background |
-| `mediaviewControlFg` | `fixedWhite` | `255` | Media viewer control button icon |
-| `mediaviewCaptionBg` | `scrim` | `128` | Media viewer caption background |
-| `mediaviewCaptionFg` | `fixedWhite` | `255` | Media viewer caption text |
-| `mediaviewTextLinkFg` | `primary` | `255` | Media viewer caption link text |
-| `mediaviewSaveMsgBg` | `inverseSurface` | `229` | Media viewer toast notification background |
-| `mediaviewSaveMsgFg` | `inverseOnSurface` | `255` | Media viewer toast notification text |
+| `mediaviewControlBg` | `scrim` | `166` | Media viewer control button background |
+| `mediaviewControlFg` | `fixedWhite` | `230` | Media viewer control button icon |
+| `mediaviewCaptionBg` | `scrim` | `166` | Media viewer caption background |
+| `mediaviewCaptionFg` | `fixedWhite` | `230` | Media viewer caption text |
+| `mediaviewTextLinkFg` | `inversePrimary` | `255` | Media viewer caption link text |
+| `mediaviewSaveMsgBg` | `scrim` | `166` | Media viewer toast and controls panel background |
+| `mediaviewSaveMsgFg` | `fixedWhite` | `230` | Media viewer toast notification text |
 | `mediaviewPlaybackActive` | `primary` | `255` | Media viewer video played bar |
-| `mediaviewPlaybackInactive` | `surfaceContainerHighest` | `255` | Media viewer video remaining bar |
+| `mediaviewPlaybackInactive` | `fixedWhite` | `76` | Media viewer video remaining bar |
 | `mediaviewPlaybackActiveOver` | `primary` | `255` | Media viewer video played bar hover |
-| `mediaviewPlaybackInactiveOver` | `surfaceContainerHigh` | `255` | Media viewer video remaining bar hover |
-| `mediaviewPlaybackProgressFg` | `inverseOnSurface` | `199` | Media viewer playback progress text |
-| `mediaviewPlaybackIconFg` | `inverseOnSurface` | `255` | Media viewer playback icon |
-| `mediaviewPlaybackIconFgOver` | `primary` | `255` | Media viewer playback icon hover |
-| `mediaviewPlaybackIconRipple` | `inverseOnSurface` | `20` | Media viewer playback icon ripple |
-| `mediaviewPipControlsFg` | `inverseOnSurface` | `217` | PIP controls icon |
-| `mediaviewPipControlsFgOver` | `primary` | `255` | PIP controls icon hover |
-| `mediaviewPipPlaybackActive` | `primary` | `218` | PIP playback active bar |
-| `mediaviewPipPlaybackInactive` | `inverseOnSurface` | `38` | PIP playback inactive bar |
+| `mediaviewPlaybackInactiveOver` | `fixedWhite` | `102` | Media viewer video remaining bar hover |
+| `mediaviewPlaybackProgressFg` | `fixedWhite` | `230` | Media viewer playback progress text |
+| `mediaviewPlaybackIconFg` | `fixedWhite` | `230` | Media viewer playback icon |
+| `mediaviewPlaybackIconFgOver` | `fixedWhite` | `255` | Media viewer playback icon hover |
+| `mediaviewPlaybackIconRipple` | `fixedWhite` | `30` | Media viewer playback icon ripple |
+| `mediaviewPipControlsFg` | `fixedWhite` | `220` | PIP controls icon |
+| `mediaviewPipControlsFgOver` | `fixedWhite` | `255` | PIP controls icon hover |
+| `mediaviewPipPlaybackActive` | `primary` | `220` | PIP playback active bar |
+| `mediaviewPipPlaybackInactive` | `fixedWhite` | `76` | PIP playback inactive bar |
 | `mediaviewTransparentBg` | `surfaceContainer` | `255` | Media viewer transparency checkerboard light |
 | `mediaviewTransparentFg` | `surfaceContainerHigh` | `255` | Media viewer transparency checkerboard dark |
 | `notificationBg` | `surfaceContainerHigh` | `255` | In-app toast notification card background |
