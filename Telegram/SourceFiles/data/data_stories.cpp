@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -1390,6 +1391,7 @@ void Stories::toggleHidden(
 void Stories::sendMarkAsReadRequest(
 		not_null<PeerData*> peer,
 		StoryId tillId) {
+	if (PixelGram::CurrentConfig().dontReadStories) return;
 	const auto peerId = peer->id;
 	_markReadRequests.emplace(peerId);
 	const auto finish = [=] {
@@ -1434,6 +1436,7 @@ void Stories::sendMarkAsReadRequests() {
 }
 
 void Stories::sendIncrementViewsRequests() {
+	if (PixelGram::CurrentConfig().dontReadStories) { _incrementViewsPending.clear(); return; }
 	if (_incrementViewsPending.empty()) {
 		return;
 	}

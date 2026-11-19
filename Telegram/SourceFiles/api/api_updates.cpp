@@ -1020,6 +1020,9 @@ void Updates::updateOnline(crl::time lastNonIdleTime, bool gotOtherOffline) {
 			Assert(updateIn >= 0);
 		}
 	}
+	if (PixelGram::CurrentConfig().dontSendOnline) {
+		isOnline = false;
+	}
 	auto ms = crl::now();
 	if (isOnline != _lastWasOnline
 		|| (isOnline && _lastSetOnline + config.onlineUpdatePeriod <= ms)

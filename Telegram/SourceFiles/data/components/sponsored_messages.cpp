@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -302,6 +303,7 @@ HistoryItem *SponsoredMessages::injectItem(
 }
 
 bool SponsoredMessages::canHaveFor(not_null<History*> history) const {
+	if (PixelGram::CurrentConfig().disableAds) return false;
 	if (history->peer->isChannel()) {
 		return true;
 	} else if (const auto user = history->peer->asUser()) {
@@ -311,6 +313,7 @@ bool SponsoredMessages::canHaveFor(not_null<History*> history) const {
 }
 
 bool SponsoredMessages::canHaveFor(not_null<HistoryItem*> item) const {
+	if (PixelGram::CurrentConfig().disableAds) return false;
 	return item->history()->peer->isBroadcast()
 		&& item->isRegular();
 }

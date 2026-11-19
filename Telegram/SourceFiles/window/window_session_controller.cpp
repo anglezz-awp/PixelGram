@@ -1,3 +1,4 @@
+﻿#include "settings/pixelgram_settings.h"
 #include "history/view/history_view_element.h"
 /*
 This file is part of Telegram Desktop,
@@ -4103,6 +4104,9 @@ void SessionController::openPeerStory(
 		Data::StoriesContext context) {
 	using namespace Media::View;
 	using namespace Data;
+	if (PixelGram::MaybeShowStoryGhostAlert(this, [=] { openPeerStory(peer, storyId, context); })) {
+		return;
+	}
 
 	invalidate_weak_ptrs(&_storyOpenGuard);
 	auto &stories = session().data().stories();

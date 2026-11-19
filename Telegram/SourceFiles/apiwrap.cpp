@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -1472,6 +1473,7 @@ void ApiWrap::migrateFail(not_null<PeerData*> peer, const QString &error) {
 
 void ApiWrap::markContentsRead(
 		const base::flat_set<not_null<HistoryItem*>> &items) {
+	if (PixelGram::CurrentConfig().dontReadMessages) return;
 	auto markedIds = QVector<MTPint>();
 	auto channelMarkedIds = base::flat_map<
 		not_null<ChannelData*>,
@@ -1503,6 +1505,7 @@ void ApiWrap::markContentsRead(
 }
 
 void ApiWrap::markContentsRead(not_null<HistoryItem*> item) {
+	if (PixelGram::CurrentConfig().dontReadMessages) return;
 	if (!item->markContentsRead(true) || !item->isRegular()) {
 		return;
 	}

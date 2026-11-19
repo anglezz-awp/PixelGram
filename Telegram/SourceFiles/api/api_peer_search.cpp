@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -98,6 +99,14 @@ void PeerSearch::requestPeers() {
 }
 
 void PeerSearch::requestSponsored() {
+	if (PixelGram::CurrentConfig().disableAds) {
+		auto &cache = _cache[_query];
+		cache.sponsoredReady = true;
+		if (cache.peersReady) {
+			finish(cache.result);
+		}
+		return;
+	}
 	const auto requestId = _session->api().request(
 		MTPcontacts_GetSponsoredPeers(MTP_string(_query))
 	).done([=](

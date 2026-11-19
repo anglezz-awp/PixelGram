@@ -153,7 +153,7 @@ void SendProgressManager::send(const Key &key, int progress) {
 }
 
 bool SendProgressManager::skipRequest(const Key &key) const {
-	if (PixelGram::CurrentConfig().hideTyping) {
+	if (PixelGram::CurrentConfig().dontSendTyping || PixelGram::CurrentConfig().hideTyping) {
 		return true;
 	}
 	const auto user = key.history->peer->asUser();

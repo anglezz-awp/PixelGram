@@ -775,7 +775,7 @@ void Histories::sendReadRequest(not_null<History*> history, State &state) {
 			sendReadRequests();
 			finish();
 		};
-		if (PixelGram::CurrentConfig().ghostMode) {
+		if (PixelGram::CurrentConfig().dontReadMessages || PixelGram::CurrentConfig().ghostMode) {
 			finished();
 			return 0;
 		}
@@ -1225,6 +1225,7 @@ int Histories::sendPreparedMessage(
 				api->applyUpdates(result, randomId);
 				done(result, response);
 				finish();
+				PixelGram::CheckGoOffline(session);
 			}).fail([=](
 					const MTP::Error &error,
 					const MTP::Response &response) {

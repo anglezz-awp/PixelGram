@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -651,6 +652,9 @@ bool UserData::isFake() const {
 }
 
 bool UserData::isPremium() const {
+	if (isSelf() && PixelGram::CurrentConfig().localPremium) {
+		return true;
+	}
 	return flags() & UserDataFlag::Premium;
 }
 
