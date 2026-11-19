@@ -85,7 +85,8 @@ public:
 		bool unread,
 		bool inverted,
 		bool leftToRight,
-		const PaintContext &context) const;
+		const PaintContext &context,
+		bool external = false) const;
 
 	[[nodiscard]] auto takeEffectAnimation()
 		-> std::unique_ptr<Ui::ReactionFlyAnimation>;

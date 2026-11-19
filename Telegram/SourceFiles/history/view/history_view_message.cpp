@@ -85,6 +85,19 @@ base::options::toggle UnlimitedMessageWidth({
 	.restartRequired = true,
 });
 
+inline int ExternalBottomInfoHeight() {
+	return style::ConvertScale(15);
+}
+inline int ExternalBottomInfoGap() {
+	return style::ConvertScale(2);
+}
+inline int ExternalBottomInfoInset() {
+	return style::ConvertScale(5);
+}
+inline int ExternalBottomInfoTotal() {
+	return ExternalBottomInfoGap() + ExternalBottomInfoHeight();
+}
+
 constexpr auto kPlayStatusLimit = 2;
 constexpr auto kMaxWidth = (1 << 16) - 1;
 constexpr auto kMaxNiceToReadLines = 6;
@@ -866,14 +879,17 @@ bool Message::prepareRichPageTextRect(QRect &trect) const {
 	}
 	const auto reactionsInBubble = _reactions && embedReactionsInBubble();
 	const auto mediaDisplayed = media && media->isDisplayed();
-	if (_reactions && !reactionsInBubble) {
-		g.setHeight(g.height() - st::mediaInBubbleSkip - _reactions->height());
-	}
 	if (const auto keyboard = inlineReplyKeyboard()) {
 		g.setHeight(
 			g.height()
 			- st::msgBotKbButton.margin
 			- keyboard->naturalHeight());
+	}
+	if (_reactions && !reactionsInBubble) {
+		g.setHeight(g.height() - st::mediaInBubbleSkip - _reactions->height());
+	}
+	if (hasExternalBottomInfo()) {
+		g.setHeight(g.height() - ExternalBottomInfoTotal());
 	}
 	auto inner = g;
 	if (_comments) {
@@ -1266,6 +1282,13 @@ void Message::animateReaction(Ui::ReactionFlyAnimationArgs &&args) {
 	const auto reactionsInBubble = _reactions && embedReactionsInBubble();
 	const auto mediaDisplayed = media && media->isDisplayed();
 
+	const auto keyboard = inlineReplyKeyboard();
+	auto keyboardHeight = 0;
+	if (keyboard) {
+		keyboardHeight = keyboard->naturalHeight();
+		g.setHeight(g.height() - st::msgBotKbButton.margin - keyboardHeight);
+	}
+
 	if (_reactions && !reactionsInBubble) {
 		const auto reactionsHeight = st::mediaInBubbleSkip + _reactions->height();
 		const auto reactionsLeft = (!bubble && mediaDisplayed)
@@ -1275,13 +1298,6 @@ void Message::animateReaction(Ui::ReactionFlyAnimationArgs &&args) {
 		const auto reactionsPosition = QPoint(reactionsLeft + g.left(), g.top() + g.height() + st::mediaInBubbleSkip);
 		_reactions->animate(args.translated(-reactionsPosition), repainter);
 		return;
-	}
-
-	const auto keyboard = inlineReplyKeyboard();
-	auto keyboardHeight = 0;
-	if (keyboard) {
-		keyboardHeight = keyboard->naturalHeight();
-		g.setHeight(g.height() - st::msgBotKbButton.margin - keyboardHeight);
 	}
 
 	if (bubble) {
@@ -1550,6 +1566,9 @@ QSize Message::performCountOptimalSize() {
 				? textHeightFor(bubbleTextWidth(textualWidth))
 				: text().minHeight()
 			: 0;
+		if (hasExternalBottomInfo()) {
+			minHeight += ExternalBottomInfoTotal();
+		}
 		if (reactionsInBubble) {
 			const auto reactionsMaxWidth = st::msgPadding.left()
 				+ _reactions->maxWidth()
@@ -1873,18 +1892,23 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 
 	const auto displayInfo = needInfoDisplay();
 	const auto reactionsInBubble = _reactions && embedReactionsInBubble();
+	const auto externalInfo = hasExternalBottomInfo();
+	const auto externalInfoHeight = externalInfo ? ExternalBottomInfoTotal() : 0;
 
 	// We need to count geometry without keyboard and reactions
 	// for bubble selection intervals counting below.
 	auto gForIntervals = g;
-	if (_reactions && !reactionsInBubble) {
-		const auto reactionsHeight = st::mediaInBubbleSkip + _reactions->height();
-		gForIntervals.setHeight(gForIntervals.height() - reactionsHeight);
-	}
 	const auto keyboard = inlineReplyKeyboard();
 	if (keyboard) {
 		const auto keyboardHeight = st::msgBotKbButton.margin + keyboard->naturalHeight();
 		gForIntervals.setHeight(gForIntervals.height() - keyboardHeight);
+	}
+	if (_reactions && !reactionsInBubble) {
+		const auto reactionsHeight = st::mediaInBubbleSkip + _reactions->height();
+		gForIntervals.setHeight(gForIntervals.height() - reactionsHeight);
+	}
+	if (externalInfo) {
+		gForIntervals.setHeight(gForIntervals.height() - externalInfoHeight);
 	}
 
 	auto mediaSelectionIntervals = (!context.selected() && mediaDisplayed)
@@ -1946,6 +1970,23 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 
 	p.setTextPalette(stm->textPalette);
 
+	const auto messageRounding = countMessageRounding();
+	if (keyboard) {
+		const auto keyboardHeight = st::msgBotKbButton.margin + keyboard->naturalHeight();
+		g.setHeight(g.height() - keyboardHeight);
+
+		const auto keyboardPosition = QPoint(g.left(), g.top() + g.height() + st::msgBotKbButton.margin);
+		p.translate(keyboardPosition);
+		keyboard->paint(
+			p,
+			context.st,
+			messageRounding,
+			g.width(),
+			context.clip.translated(-keyboardPosition),
+			context.paused);
+		p.translate(-keyboardPosition);
+	}
+
 	if (_reactions && !reactionsInBubble) {
 		const auto reactionsHeight = st::mediaInBubbleSkip + _reactions->height();
 		const auto reactionsLeft = (!bubble && mediaDisplayed)
@@ -1962,21 +2003,8 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 		p.translate(-reactionsPosition);
 	}
 
-	const auto messageRounding = countMessageRounding();
-	if (keyboard) {
-		const auto keyboardHeight = st::msgBotKbButton.margin + keyboard->naturalHeight();
-		g.setHeight(g.height() - keyboardHeight);
-
-		const auto keyboardPosition = QPoint(g.left(), g.top() + g.height() + st::msgBotKbButton.margin);
-		p.translate(keyboardPosition);
-		keyboard->paint(
-			p,
-			context.st,
-			messageRounding,
-			g.width(),
-			context.clip.translated(-keyboardPosition),
-			context.paused);
-		p.translate(-keyboardPosition);
+	if (externalInfo) {
+		g.setHeight(g.height() - externalInfoHeight);
 	}
 
 	if (context.highlightPathCache) {
@@ -2108,7 +2136,7 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 		if (check) {
 			trect.setHeight(trect.height() - check->height() - st::mediaInBubbleSkip);
 		}
-		if (displayInfo) {
+		if (displayInfo && !externalInfo) {
 			trect.setHeight(trect.height()
 				- (_bottomInfo.height() - st::msgDateFont->height));
 		}
@@ -2208,7 +2236,7 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 			entry->draw(p, entryContext);
 			p.translate(-entryLeft, -entryTop);
 		}
-		if (displayInfo) {
+		if (displayInfo && !externalInfo) {
 			const auto bottomSelected = context.selected()
 				|| (!mediaSelectionIntervals.empty()
 					&& (mediaSelectionIntervals.back().top
@@ -2278,6 +2306,35 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 					!context.outbg,
 					context,
 					g);
+			}
+		}
+
+		if (externalInfo && displayInfo) {
+			const auto size = _bottomInfo.currentSize();
+			const auto dateY = g.top() + g.height() + ExternalBottomInfoGap();
+			const auto dateX = context.outbg
+				? (g.left() + g.width() - size.width() - ExternalBottomInfoInset())
+				: (g.left() + ExternalBottomInfoInset());
+
+			p.setFont(st::msgDateFont);
+			const auto &roles = PixelGram::CurrentM3Roles();
+			p.setPen(roles.onSurfaceVariant);
+
+			_bottomInfo.paint(
+				p,
+				{ dateX, dateY },
+				width(),
+				delegate()->elementShownUnread(this),
+				false,
+				false,
+				context,
+				true);
+			if (context.reactionInfo && !_reactions) {
+				const auto add = QPoint(0, dateY + ExternalBottomInfoHeight());
+				context.reactionInfo->position = add;
+				if (context.reactionInfo->effectPaint) {
+					context.reactionInfo->effectOffset -= add;
+				}
 			}
 		}
 
@@ -3325,6 +3382,9 @@ PointState Message::pointState(QPoint point) const {
 
 	const auto media = this->media();
 	const auto reactionsInBubble = _reactions && embedReactionsInBubble();
+	if (hasExternalBottomInfo()) {
+		g.setHeight(g.height() - ExternalBottomInfoTotal());
+	}
 	if (drawBubble()) {
 		if (!g.contains(point)) {
 			return PointState::Outside;
@@ -3963,6 +4023,22 @@ TextState Message::textState(
 	const auto reactionsInBubble = _reactions && embedReactionsInBubble();
 	const auto mediaDisplayed = media && media->isDisplayed();
 
+	const auto keyboard = inlineReplyKeyboard();
+	auto keyboardHeight = 0;
+	if (keyboard) {
+		keyboardHeight = keyboard->naturalHeight();
+		g.setHeight(g.height() - st::msgBotKbButton.margin - keyboardHeight);
+
+		if (item->isHistoryEntry() || item->isAdminLogEntry()) {
+			const auto keyboardPosition = QPoint(g.left(), g.top() + g.height() + st::msgBotKbButton.margin);
+			if (QRect(keyboardPosition, QSize(g.width(), keyboardHeight)).contains(point)) {
+				AddTextStateOffset(&result, visibleMediaTextLen + visibleTextLen);
+				result.link = keyboard->getLink(point - keyboardPosition);
+				return result;
+			}
+		}
+	}
+
 	if (_reactions && !reactionsInBubble) {
 		const auto reactionsHeight = st::mediaInBubbleSkip + _reactions->height();
 		const auto reactionsLeft = (!bubble && mediaDisplayed)
@@ -3976,18 +4052,27 @@ TextState Message::textState(
 		}
 	}
 
-	const auto keyboard = inlineReplyKeyboard();
-	auto keyboardHeight = 0;
-	if (keyboard) {
-		keyboardHeight = keyboard->naturalHeight();
-		g.setHeight(g.height() - st::msgBotKbButton.margin - keyboardHeight);
-
-		if (item->isHistoryEntry() || item->isAdminLogEntry()) {
-			const auto keyboardPosition = QPoint(g.left(), g.top() + g.height() + st::msgBotKbButton.margin);
-			if (QRect(keyboardPosition, QSize(g.width(), keyboardHeight)).contains(point)) {
-				AddTextStateOffset(&result, visibleMediaTextLen + visibleTextLen);
-				result.link = keyboard->getLink(point - keyboardPosition);
-				return result;
+	const auto externalInfo = hasExternalBottomInfo();
+	if (externalInfo) {
+		const auto externalInfoHeight = ExternalBottomInfoTotal();
+		g.setHeight(g.height() - externalInfoHeight);
+		if (needInfoDisplay()) {
+			const auto size = _bottomInfo.currentSize();
+			const auto dateY = g.top() + g.height() + ExternalBottomInfoGap();
+			const auto dateX = hasOutLayout()
+				? (g.left() + g.width() - size.width() - ExternalBottomInfoInset())
+				: (g.left() + ExternalBottomInfoInset());
+			const auto infoRect = QRect(dateX, dateY, size.width(), size.height());
+			if (infoRect.contains(point)) {
+				const auto bottomInfoResult = _bottomInfo.textState(
+					this,
+					point - QPoint(dateX, dateY));
+				if (bottomInfoResult.link
+					|| bottomInfoResult.cursor != CursorState::None
+					|| bottomInfoResult.customTooltip) {
+					result = bottomInfoResult;
+					return result;
+				}
 			}
 		}
 	}
@@ -4108,6 +4193,9 @@ TextState Message::textState(
 		}
 
 		auto checkBottomInfoState = [&] {
+			if (hasExternalBottomInfo()) {
+				return;
+			}
 			if (mediaOnBottom
 				&& (check || entry || media->customInfoLayout())) {
 				return;
@@ -5315,11 +5403,15 @@ Reactions::ButtonParameters Message::reactionButtonParameters(
 	const auto reactionsHeight = (_reactions && !embedReactionsInBubble())
 		? (st::mediaInBubbleSkip + _reactions->height())
 		: 0;
+	const auto externalInfoHeight = hasExternalBottomInfo()
+		? ExternalBottomInfoTotal()
+		: 0;
 	result.reactionsHeight = reactionsHeight;
 	result.keyboardHeight = keyboardHeight;
 	const auto innerHeight = geometry.height()
 		- keyboardHeight
-		- reactionsHeight;
+		- reactionsHeight
+		- externalInfoHeight;
 	const auto maybeRelativeCenter = outsideBubble
 		? media()->reactionButtonCenterOverride()
 		: std::nullopt;
@@ -5491,8 +5583,12 @@ bool Message::isSignedAuthorElided() const {
 	return _bottomInfo.isSignedAuthorElided();
 }
 
+bool Message::hasExternalBottomInfo() const {
+	return drawBubble() && needInfoDisplay();
+}
+
 bool Message::embedReactionsInBubble() const {
-	return usesMessageInfoLayout();
+	return !hasExternalBottomInfo() && usesMessageInfoLayout();
 }
 
 void Message::validateFromNameText(PeerData *from) const {
@@ -5907,7 +6003,7 @@ int Message::minWidthForMedia() const {
 	if (Get<InstantViewMediaRuntime>() && !hasRichPage()) {
 		return 0;
 	}
-	auto result = hidesBottomInfo()
+	auto result = (hidesBottomInfo() || hasExternalBottomInfo())
 		? 0
 		: infoWidth()
 			+ 2 * (st::msgDateImgDelta + st::msgDateImgPadding.x());
@@ -6847,7 +6943,9 @@ int Message::resizeContentGetHeight(int newWidth) {
 				- st::msgPadding.left()
 				- st::msgPadding.right());
 		}
-		if (needInfoDisplay()) {
+		if (hasExternalBottomInfo()) {
+			newHeight += ExternalBottomInfoTotal();
+		} else if (needInfoDisplay()) {
 			newHeight += (bottomInfoHeight - st::msgDateFont->height);
 		}
 

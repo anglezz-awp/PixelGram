@@ -19,7 +19,7 @@ msgServiceFont: semiboldFont;
 msgServiceNameFont: semiboldFont;
 msgServicePhotoWidth: 100px;
 msgDateFont: font(10px);
-msgMinWidth: 160px;
+msgMinWidth: 40px;
 msgPhotoSize: 33px;
 msgPhotoSkip: 40px;
 msgPadding: margins(16px, 8px, 16px, 8px);
@@ -205,7 +205,7 @@ historyResizeWidth: 6px;
 historyPaddingBottom: 8px;
 
 historyPremiumToast: Toast(defaultToast) {
-	minWidth: msgMinWidth;
+	minWidth: 160px;
 	maxWidth: 380px;
 	padding: margins(19px, 13px, 19px, 12px);
 }
@@ -312,12 +312,12 @@ botKbScroll: defaultSolidScroll;
 historyScrollDateHideTimeout: 1000;
 historyDateFadeDuration: 200;
 historyDiceToast: Toast(defaultToast) {
-	minWidth: msgMinWidth;
+	minWidth: 160px;
 	maxWidth: 640px;
 	durationFadeOut: 200;
 }
 historyInfoToast: Toast(defaultToast) {
-	minWidth: msgMinWidth;
+	minWidth: 160px;
 	maxWidth: 380px;
 	padding: margins(13px, 13px, 19px, 12px);
 }

@@ -515,6 +515,7 @@ public:
 	[[nodiscard]] bool isTopicRootReply() const;
 
 	[[nodiscard]] bool hidesBottomInfo() const;
+	[[nodiscard]] virtual bool hasExternalBottomInfo() const { return false; }
 	[[nodiscard]] int skipBlockWidth() const;
 	[[nodiscard]] int skipBlockHeight() const;
 	[[nodiscard]] virtual int infoWidth() const;

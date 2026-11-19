@@ -296,9 +296,11 @@ void BottomInfo::paint(
 		bool unread,
 		bool inverted,
 		bool leftToRight,
-		const PaintContext &context) const {
+		const PaintContext &context,
+		bool external) const {
 	const auto st = context.st;
 	const auto stm = context.messageStyle();
+	const auto &roles = PixelGram::CurrentM3Roles();
 	// RTL mirrors icons around outer width; this one leaves an icon in place.
 	const auto outer = [&](int left, const style::icon &icon) {
 		return leftToRight ? (2 * left + icon.width()) : outerWidth;
@@ -320,15 +322,26 @@ void BottomInfo::paint(
 				: stm->historyReceivedIcon);
 		const auto iconX = right - icon.width();
 		const auto iconY = position.y() + std::max(0, (st::msgDateFont->height - icon.height()) / 2);
-		icon.paint(
-			p,
-			QPoint(iconX, iconY),
-			outer(iconX, icon));
-		right -= (icon.width() + 2);
+		if (external) {
+			icon.paint(
+				p,
+				QPoint(iconX, iconY),
+				outer(iconX, icon),
+				roles.primary);
+		} else {
+			icon.paint(
+				p,
+				QPoint(iconX, iconY),
+				outer(iconX, icon));
+		}
+		right -= (icon.width() + style::ConvertScale(2));
 	}
 
 	const auto authorEditedWidth = _authorEditedDate.maxWidth();
 	right -= authorEditedWidth;
+	if (external) {
+		p.setPen(roles.onSurfaceVariant);
+	}
 	_authorEditedDate.drawLeft(
 		p,
 		right,
@@ -337,12 +350,11 @@ void BottomInfo::paint(
 		outerWidth);
 
 	if (_data.flags & Data::Flag::Deleted) {
-		const auto &roles = PixelGram::CurrentM3Roles();
-		const auto deletedColor = inverted
-			? (roles.error.lightness() >= 150
+		const auto deletedColor = (external || !inverted)
+			? roles.error
+			: (roles.error.lightness() >= 150
 				? roles.error
-				: QColor(0xFF, 0xB4, 0xAB))
-			: roles.error;
+				: QColor(0xFF, 0xB4, 0xAB));
 		const auto text = AntiDeleteTag();
 		const auto iconSize = style::ConvertScale(10);
 		const auto iconGap = style::ConvertScale(3);
@@ -415,32 +427,56 @@ void BottomInfo::paint(
 	if (!_views.isEmpty()) {
 		const auto viewsWidth = _views.maxWidth();
 		right -= st::historyViewsSpace + viewsWidth;
+		if (external) {
+			p.setPen(roles.onSurfaceVariant);
+		}
 		_views.drawLeft(p, right, position.y(), viewsWidth, outerWidth);
 
 		const auto &icon = inverted
 			? st->historyViewsInvertedIcon()
 			: stm->historyViewsIcon;
 		right -= st::historyViewsWidth;
-		icon.paint(
-			p,
-			right,
-			firstLineBottom + st::historyViewsTop,
-			outer(right, icon));
+		if (external) {
+			icon.paint(
+				p,
+				right,
+				firstLineBottom + st::historyViewsTop,
+				outer(right, icon),
+				roles.onSurfaceVariant);
+		} else {
+			icon.paint(
+				p,
+				right,
+				firstLineBottom + st::historyViewsTop,
+				outer(right, icon));
+		}
 	}
 	if (!_replies.isEmpty()) {
 		const auto repliesWidth = _replies.maxWidth();
 		right -= st::historyViewsSpace + repliesWidth;
+		if (external) {
+			p.setPen(roles.onSurfaceVariant);
+		}
 		_replies.drawLeft(p, right, position.y(), repliesWidth, outerWidth);
 
 		const auto &icon = inverted
 			? st->historyRepliesInvertedIcon()
 			: stm->historyRepliesIcon;
 		right -= st::historyViewsWidth;
-		icon.paint(
-			p,
-			right,
-			firstLineBottom + st::historyViewsTop,
-			outer(right, icon));
+		if (external) {
+			icon.paint(
+				p,
+				right,
+				firstLineBottom + st::historyViewsTop,
+				outer(right, icon),
+				roles.onSurfaceVariant);
+		} else {
+			icon.paint(
+				p,
+				right,
+				firstLineBottom + st::historyViewsTop,
+				outer(right, icon));
+		}
 	}
 	if ((_data.flags & Data::Flag::Sending)
 		&& !(_data.flags & Data::Flag::OutLayout)) {

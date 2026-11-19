@@ -1602,14 +1602,14 @@ bool Element::hasCommentsButton() const {
 }
 
 int Element::skipBlockWidth() const {
-	if (hidesBottomInfo()) {
+	if (hidesBottomInfo() || hasExternalBottomInfo()) {
 		return 0;
 	}
 	return st::msgDateSpace + infoWidth() - st::msgDateDelta.x();
 }
 
 int Element::skipBlockHeight() const {
-	if (hidesBottomInfo()) {
+	if (hidesBottomInfo() || hasExternalBottomInfo()) {
 		return 0;
 	}
 	return st::msgDateFont->height - st::msgDateDelta.y();
