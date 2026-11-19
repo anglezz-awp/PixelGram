@@ -567,6 +567,7 @@ private:
 	// like send button, emoji button and others.
 	void moveFieldControls();
 	void updateFieldSize();
+	void updateComposePillRadius();
 	void initAiButton();
 	void updateAiButtonVisibility();
 	void updateAiButtonGeometry();
@@ -981,6 +982,10 @@ private:
 	base::unique_qptr<CharactersLimitLabel> _charsLimitation;
 	QString _sendRestrictionKey;
 	Ui::Animations::Simple _inPhotoEditOver;
+	QRect _composePillRect;
+	Ui::Animations::Simple _composePillRadiusAnim;
+	float64 _composePillRadiusCurrent = 26.;
+	bool _composePillMultiline = false;
 	bool _inDetails = false;
 	bool _inPhotoEdit = false;
 	bool _inClickable = false;

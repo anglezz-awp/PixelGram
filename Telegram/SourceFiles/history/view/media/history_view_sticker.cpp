@@ -16,6 +16,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/history_view_cursor_state.h"
 #include "history/view/media/history_view_media_common.h"
 #include "history/view/media/history_view_sticker_player.h"
+#include "lang/lang_instance.h"
 #include "lang/lang_keys.h"
 #include "ui/image/image.h"
 #include "ui/chat/chat_style.h"
@@ -23,6 +24,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text/custom_emoji_instance.h"
 #include "ui/emoji_config.h"
 #include "ui/painter.h"
+#include "ui/pixelgram_m3_scheme.h"
 #include "ui/power_saving.h"
 #include "core/application.h"
 #include "core/core_settings.h"
@@ -81,6 +83,16 @@ base::options::option<int> OptionStickerSize({
 	const auto green = (result.green() * ra + add.green() * aa) >> 8;
 	const auto blue = (result.blue() * ra + add.blue() * aa) >> 8;
 	return QColor(red, green, blue, result.alpha());
+}
+
+[[nodiscard]] QString StickerAntiDeleteTag() {
+	const auto id = Lang::GetInstance().id();
+	if (id.startsWith(u"ru"_q)
+		|| id.startsWith(u"be"_q)
+		|| id.startsWith(u"uk"_q)) {
+		return QString::fromUtf8("\xD0\xA3\xD0\xB4\xD0\xB0\xD0\xBB\xD0\xB5\xD0\xBD\xD0\xBE");
+	}
+	return tr::lng_antidelete_deleted(tr::now);
 }
 
 } // namespace
@@ -249,6 +261,11 @@ void Sticker::draw(
 	if (_sensitiveBlurred) {
 		paintSensitiveTag(p, context, r);
 	}
+	if (!customEmojiPart()
+		&& !webpagePart()
+		&& _parent->data()->isDeletedByAntiDelete()) {
+		paintDeletedTag(p, context, r);
+	}
 }
 
 void Sticker::paintSensitiveTag(
@@ -283,6 +300,62 @@ void Sticker::paintSensitiveTag(
 			context.st->msgServiceFg()->c);
 	}
 	text.draw(p, real.x() + iconSkip, real.y(), width);
+}
+
+void Sticker::paintDeletedTag(
+		Painter &p,
+		const PaintContext &context,
+		const QRect &r) {
+	const auto &roles = PixelGram::CurrentM3Roles();
+	const auto text = StickerAntiDeleteTag();
+	const auto iconSize = style::ConvertScale(10);
+	const auto iconGap = style::ConvertScale(4);
+	const auto padH = style::ConvertScale(8);
+	const auto padV = style::ConvertScale(3);
+	const auto textW = st::msgDateFont->width(text);
+	const auto textH = st::msgDateFont->height;
+	const auto badgeW = padH * 2 + iconSize + iconGap + textW;
+	const auto badgeH = padV * 2 + textH;
+	const auto margin = style::ConvertScale(4);
+	const auto badgeX = std::max(
+		r.x() + margin,
+		r.x() + r.width() - badgeW - margin);
+	const auto badgeY = r.y() + margin;
+	const auto badgeRect = QRect(badgeX, badgeY, badgeW, badgeH);
+
+	p.save();
+	PainterHighQualityEnabler hq(p);
+	auto bg = roles.errorContainer;
+	bg.setAlpha(230);
+	const auto fg = roles.onErrorContainer;
+	p.setPen(Qt::NoPen);
+	p.setBrush(bg);
+	p.drawRoundedRect(badgeRect, badgeH / 2., badgeH / 2.);
+
+	const auto iconX = badgeX + padH;
+	const auto iconH = style::ConvertScale(11);
+	const auto iconY = badgeY + (badgeH - iconH) / 2;
+	const auto s = iconSize / 10.;
+	p.setPen(QPen(fg, 1.2 * s, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+	p.setBrush(Qt::NoBrush);
+	p.drawLine(QPointF(iconX + 3 * s, iconY + 1 * s), QPointF(iconX + 7 * s, iconY + 1 * s));
+	p.drawLine(QPointF(iconX + 1 * s, iconY + 3 * s), QPointF(iconX + 9 * s, iconY + 3 * s));
+	QPainterPath body;
+	body.moveTo(iconX + 2 * s, iconY + 4 * s);
+	body.lineTo(iconX + 2.5 * s, iconY + 10.5 * s);
+	body.lineTo(iconX + 7.5 * s, iconY + 10.5 * s);
+	body.lineTo(iconX + 8 * s, iconY + 4 * s);
+	p.drawPath(body);
+	p.drawLine(QPointF(iconX + 4 * s, iconY + 5.5 * s), QPointF(iconX + 4 * s, iconY + 9 * s));
+	p.drawLine(QPointF(iconX + 6 * s, iconY + 5.5 * s), QPointF(iconX + 6 * s, iconY + 9 * s));
+
+	p.setFont(st::msgDateFont);
+	p.setPen(fg);
+	p.drawText(
+		iconX + iconSize + iconGap,
+		badgeY + padV + st::msgDateFont->ascent,
+		text);
+	p.restore();
 }
 
 ClickHandlerPtr Sticker::link() {

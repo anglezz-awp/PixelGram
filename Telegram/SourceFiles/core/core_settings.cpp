@@ -1475,7 +1475,9 @@ void Settings::addFromSerialized(
 	if (!callPanelPosition.isEmpty()) {
 		_callPanelPosition = Deserialize(callPanelPosition);
 	}
-	_customFontFamily = customFontFamily;
+	_customFontFamily = customFontFamily.isEmpty()
+		? u"Roboto Flex"_q
+		: customFontFamily;
 	_systemUnlockEnabled = (systemUnlockEnabled == 1);
 	_weatherInCelsius = !weatherInCelsius
 		? std::optional<bool>()

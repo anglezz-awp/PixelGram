@@ -955,10 +955,12 @@ public:
 	}
 
 	[[nodiscard]] QString customFontFamily() const {
-		return _customFontFamily;
+		return _customFontFamily.isEmpty()
+			? u"Roboto Flex"_q
+			: _customFontFamily;
 	}
 	void setCustomFontFamily(const QString &value) {
-		_customFontFamily = value;
+		_customFontFamily = value.isEmpty() ? u"Roboto Flex"_q : value;
 	}
 
 	[[nodiscard]] bool systemUnlockEnabled() const {
@@ -1183,7 +1185,7 @@ private:
 	rpl::variable<bool> _ttlVoiceClickTooltipHidden = false;
 	WindowPosition _ivPosition;
 	WindowPosition _callPanelPosition;
-	QString _customFontFamily;
+	QString _customFontFamily = u"Roboto Flex"_q;
 	bool _systemUnlockEnabled = false;
 	std::optional<bool> _weatherInCelsius;
 	QByteArray _tonsiteStorageToken;

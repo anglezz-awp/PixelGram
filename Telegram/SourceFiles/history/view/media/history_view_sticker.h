@@ -115,6 +115,10 @@ private:
 		Painter &p,
 		const PaintContext &context,
 		const QRect &r);
+	void paintDeletedTag(
+		Painter &p,
+		const PaintContext &context,
+		const QRect &r);
 
 	void ensureDataMediaCreated() const;
 	void dataMediaCreated() const;

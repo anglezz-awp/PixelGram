@@ -244,6 +244,12 @@ constexpr auto kCommonModifiers = 0
 	| Qt::ShiftModifier
 	| Qt::MetaModifier
 	| Qt::ControlModifier;
+constexpr auto kComposeFloatingSideMargin = 16;
+constexpr auto kComposeFloatingBottomMargin = 10;
+constexpr auto kComposeFloatingSendGap = 8;
+constexpr auto kComposeFloatingMaxWidth = 800;
+constexpr auto kComposeFloatingPillRadiusFull = 26.;
+constexpr auto kComposeFloatingPillRadiusExtraLarge = 20.;
 const auto kPsaAboutPrefix = "cloud_lng_about_psa_";
 
 [[nodiscard]] rpl::producer<PeerData*> ActivePeerValue(
@@ -322,8 +328,8 @@ HistoryWidget::HistoryWidget(
 , _muteUnmute(
 	this,
 	tr::lng_channel_mute(tr::now).toUpper(),
-	st::historyComposeButton)
-, _reportMessages(this, QString(), st::historyComposeButton)
+	st::historyComposeButtonTonal)
+, _reportMessages(this, QString(), st::historyUnblock)
 , _attachToggle(this, st::historyAttach)
 , _tabbedSelectorToggle(this, st::historyAttachEmoji)
 , _botKeyboardShow(this, st::historyBotKeyboardShow)
@@ -469,6 +475,12 @@ HistoryWidget::HistoryWidget(
 	_botStart->addClickHandler([=] { sendBotStartCommand(); });
 	_joinChannel->addClickHandler([=] { joinChannel(); });
 	_muteUnmute->addClickHandler([=] { toggleMuteUnmute(); });
+	const auto bottomButtonRounding = st::historyComposeButton.height / 2;
+	_unblock->setRounding(bottomButtonRounding);
+	_botStart->setRounding(bottomButtonRounding);
+	_joinChannel->setRounding(bottomButtonRounding);
+	_muteUnmute->setRounding(bottomButtonRounding);
+	_reportMessages->setRounding(bottomButtonRounding);
 	setupGiftToChannelButton();
 	setupDirectMessageButton();
 	_reportMessages->addClickHandler([=] { reportSelectedMessages(); });
@@ -2982,8 +2994,16 @@ void HistoryWidget::setupGiftToChannelButton() {
 		_muteUnmute.data(),
 		st::historyGiftToChannel);
 	_giftToChannel->setAccessibleName(tr::lng_gift_channel_title(tr::now));
-	widthValue() | rpl::on_next([=](int width) {
-		_giftToChannel->moveToRight(0, 0, width);
+	const auto reposition = [=](QWidget *parent) {
+		if (parent) {
+			_giftToChannel->moveToRight(4, 0, parent->width());
+		}
+	};
+	rpl::merge(
+		_muteUnmute->widthValue() | rpl::to_empty,
+		_joinChannel->widthValue() | rpl::to_empty
+	) | rpl::on_next([=] {
+		reposition(_giftToChannel->parentWidget());
 	}, _giftToChannel->lifetime());
 	_giftToChannel->setClickedCallback([=] {
 		Ui::ShowStarGiftBox(controller(), _peer);
@@ -2999,7 +3019,7 @@ void HistoryWidget::setupGiftToChannelButton() {
 			: nullptr;
 		if (newParent) {
 			_giftToChannel->setParent(newParent);
-			_giftToChannel->moveToRight(0, 0);
+			reposition(newParent);
 			refreshGiftToChannelShown();
 		}
 	}, _giftToChannel->lifetime());
@@ -3009,9 +3029,17 @@ void HistoryWidget::setupDirectMessageButton() {
 	_directMessage = Ui::CreateChild<Ui::IconButton>(
 		_muteUnmute.data(),
 		st::historyDirectMessage);
-		_directMessage->setAccessibleName(tr::lng_profile_direct_messages(tr::now));
-	widthValue() | rpl::on_next([=](int width) {
-		_directMessage->moveToLeft(0, 0, width);
+	_directMessage->setAccessibleName(tr::lng_profile_direct_messages(tr::now));
+	const auto reposition = [=](QWidget *parent) {
+		if (parent) {
+			_directMessage->moveToLeft(4, 0, parent->width());
+		}
+	};
+	rpl::merge(
+		_muteUnmute->widthValue() | rpl::to_empty,
+		_joinChannel->widthValue() | rpl::to_empty
+	) | rpl::on_next([=] {
+		reposition(_directMessage->parentWidget());
 	}, _directMessage->lifetime());
 	_directMessage->setClickedCallback([=] {
 		if (const auto channel = _peer ? _peer->asChannel() : nullptr) {
@@ -3036,7 +3064,7 @@ void HistoryWidget::setupDirectMessageButton() {
 			: nullptr;
 		if (newParent) {
 			_directMessage->setParent(newParent);
-			_directMessage->moveToLeft(0, 0);
+			reposition(newParent);
 			refreshDirectMessageShown();
 		}
 	}, _directMessage->lifetime());
@@ -7569,7 +7597,10 @@ void HistoryWidget::updateExpandButtonGeometry() {
 	if (_expand->isHidden()) {
 		return;
 	}
-	const auto x = _send->x() + _send->width() - _expand->width();
+	const auto rightEdge = _composePillRect.isEmpty()
+		? (_send->x() + _send->width())
+		: (_composePillRect.x() + _composePillRect.width() - 6);
+	const auto x = rightEdge - _expand->width();
 	_expand->move(QPoint(x, _field->y()) + st::historyAiComposeButtonPosition);
 }
 
@@ -7666,6 +7697,37 @@ void HistoryWidget::updateSendAsFileGeometry() {
 	}
 }
 
+void HistoryWidget::updateComposePillRadius() {
+	if (_composePillRect.isEmpty()) {
+		return;
+	}
+	const auto hasHeader = (_editMsgId
+		|| _replyTo
+		|| readyToForward()
+		|| _kbReplyTo
+		|| _previewDrawPreview
+		|| _suggestOptions);
+	const auto multiline = (fieldHeight() > st::historyComposeField.heightMin + 4)
+		|| hasHeader;
+	const auto fullRadius = std::min(
+		kComposeFloatingPillRadiusFull,
+		_composePillRect.height() / 2.);
+	const auto target = multiline
+		? kComposeFloatingPillRadiusExtraLarge
+		: fullRadius;
+	if (_composePillMultiline != multiline) {
+		_composePillMultiline = multiline;
+		_composePillRadiusAnim.start(
+			[=] { updateField(); },
+			_composePillRadiusCurrent,
+			target,
+			180,
+			anim::easeOutCubic);
+	} else if (!_composePillRadiusAnim.animating()) {
+		_composePillRadiusCurrent = target;
+	}
+}
+
 void HistoryWidget::moveFieldControls() {
 	auto keyboardHeight = 0;
 	auto bottom = height();
@@ -7677,12 +7739,31 @@ void HistoryWidget::moveFieldControls() {
 		_kbScroll->setGeometryToLeft(0, bottom, width(), keyboardHeight);
 	}
 
-// (_botMenu) (_attachToggle|_replaceMedia) (_sendAs) ---- _inlineResults ------------------------------ _tabbedPanel ------ _fieldBarCancel
-// (_attachDocument|_attachPhoto) _field (_ttlInfo) (_scheduled) (_giftToUser) (_silent|_cmdStart|_kbShow) (_toggleSuggestPost) (_kbHide|_tabbedSelectorToggle) _send
-// (_botStart|_unblock|_joinChannel|_muteUnmute|_reportMessages)
+	const auto totalWidth = std::min(
+		std::max(width() - 2 * kComposeFloatingSideMargin, 120),
+		kComposeFloatingMaxWidth);
+	const auto startLeft = (width() - totalWidth) / 2;
+	const auto sendWidth = _send->width();
+	const auto sendOutsideWidth = sendWidth
+		+ (sendWidth > 0 ? kComposeFloatingSendGap : 0);
+	const auto pillWidth = std::max(totalWidth - sendOutsideWidth, 60);
+	const auto pillBottom = bottom - kComposeFloatingBottomMargin;
+	const auto pillRowHeight = std::max(
+		_attachToggle->height(),
+		fieldHeight() + 2 * st::historySendPadding);
+	const auto hasHeader = (_editMsgId
+		|| _replyTo
+		|| readyToForward()
+		|| _kbReplyTo
+		|| _previewDrawPreview
+		|| _suggestOptions);
+	const auto pillTop = pillBottom
+		- pillRowHeight
+		- (hasHeader ? st::historyReplyHeight : 0);
+	_composePillRect = QRect(startLeft, pillTop, pillWidth, pillBottom - pillTop);
 
-	auto buttonsBottom = bottom - _attachToggle->height();
-	auto left = st::historySendRight;
+	auto buttonsBottom = pillBottom - _attachToggle->height();
+	auto left = startLeft + 6;
 	if (_botMenu) {
 		const auto skip = st::historyBotMenuSkip;
 		_botMenu->moveToLeft(left + skip, buttonsBottom + skip);
@@ -7693,44 +7774,55 @@ void HistoryWidget::moveFieldControls() {
 	}
 	_attachToggle->moveToLeft(left, buttonsBottom);
 	left += _attachToggle->width();
+	_tabbedSelectorToggle->moveToLeft(left, buttonsBottom);
+	_botKeyboardHide->moveToLeft(left, buttonsBottom);
+	left += _tabbedSelectorToggle->width();
 	if (_sendAs) {
 		_sendAs->moveToLeft(left, buttonsBottom);
 		left += _sendAs->width();
 	}
-	const auto fieldTop = bottom - fieldHeight() - st::historySendPadding;
+	const auto fieldTop = pillBottom - fieldHeight() - st::historySendPadding;
 	_field->moveToLeft(left, fieldTop);
 	_richDraftPreview->moveToLeft(left, fieldTop);
 	if (_fieldDisabled) {
 		_fieldDisabled->moveToLeft(
 			left,
-			bottom - fieldHeight() - st::historySendPadding);
+			fieldTop);
 	}
-	auto right = st::historySendRight;
-	_send->moveToRight(right, buttonsBottom); right += _send->width();
-	_voiceRecordBar->moveToLeft(0, bottom - _voiceRecordBar->height());
-	_tabbedSelectorToggle->moveToRight(right, buttonsBottom);
-	_botKeyboardHide->moveToRight(right, buttonsBottom);
-	right += _botKeyboardHide->width();
+	const auto outerRight = width() - (startLeft + totalWidth);
+	_send->moveToRight(outerRight, pillBottom - _send->height());
+	_voiceRecordBar->resizeToWidth(totalWidth);
+	_voiceRecordBar->moveToLeft(
+		startLeft,
+		pillBottom - _voiceRecordBar->height());
+
+	auto right = width() - (startLeft + pillWidth) + 6;
 	_botKeyboardShow->moveToRight(right, buttonsBottom);
 	_botCommandStart->moveToRight(right, buttonsBottom);
 	if (_silent) {
 		_silent->moveToRight(right, buttonsBottom);
 	}
 	const auto kbShowShown = _history && !_kbShown && _keyboard->hasMarkup();
-	if (kbShowShown || _cmdStartShown || _silent) {
+	if (kbShowShown || _cmdStartShown || (_silent && !_silent->isHidden())) {
 		right += _botCommandStart->width();
 	}
 	if (_toggleSuggestPost) {
 		_toggleSuggestPost->moveToRight(right, buttonsBottom);
-		right += _toggleSuggestPost->width();
+		if (!_toggleSuggestPost->isHidden()) {
+			right += _toggleSuggestPost->width();
+		}
 	}
 	if (_giftToUser) {
 		_giftToUser->moveToRight(right, buttonsBottom);
-		right += _giftToUser->width();
+		if (!_giftToUser->isHidden()) {
+			right += _giftToUser->width();
+		}
 	}
 	if (_scheduled) {
 		_scheduled->moveToRight(right, buttonsBottom);
-		right += _scheduled->width();
+		if (!_scheduled->isHidden()) {
+			right += _scheduled->width();
+		}
 	}
 	if (_ttlInfo) {
 		_ttlInfo->move(width() - right - _ttlInfo->width(), buttonsBottom);
@@ -7739,26 +7831,29 @@ void HistoryWidget::moveFieldControls() {
 	updateSendAsFileGeometry();
 	updateExpandButtonGeometry();
 	updateDiscardRichDraftGeometry();
+	updateComposePillRadius();
 
-	_fieldBarCancel->moveToRight(
-		0,
-		_field->y() - st::historySendPadding - _fieldBarCancel->height());
+	_fieldBarCancel->moveToLeft(
+		_composePillRect.x() + _composePillRect.width() - _fieldBarCancel->width() - 4,
+		_composePillRect.y());
 	if (_inlineResults) {
-		_inlineResults->moveBottom(_field->y() - st::historySendPadding);
+		_inlineResults->moveBottom(_composePillRect.y() - 4);
 	}
 	if (_tabbedPanel) {
-		_tabbedPanel->moveBottomRight(buttonsBottom, width());
+		_tabbedPanel->moveBottomRight(
+			_composePillRect.y() - 4,
+			_composePillRect.x() + _composePillRect.width());
 	}
 	if (_attachBotsMenu) {
 		_attachBotsMenu->moveToLeft(
-			0,
-			buttonsBottom - _attachBotsMenu->height());
+			_composePillRect.x(),
+			_composePillRect.y() - 4 - _attachBotsMenu->height());
 	}
 
 	const auto fullWidthButtonRect = myrtlrect(
-		0,
-		bottom - _botStart->height(),
-		width(),
+		startLeft,
+		pillBottom - _botStart->height(),
+		totalWidth,
 		_botStart->height());
 	_botStart->setGeometry(fullWidthButtonRect);
 	_unblock->setGeometry(fullWidthButtonRect);
@@ -7771,11 +7866,17 @@ void HistoryWidget::moveFieldControls() {
 }
 
 void HistoryWidget::updateFieldSize() {
+	const auto totalWidth = std::min(
+		std::max(width() - 2 * kComposeFloatingSideMargin, 120),
+		kComposeFloatingMaxWidth);
+	const auto sendWidth = _send->width();
+	const auto sendOutsideWidth = sendWidth
+		+ (sendWidth > 0 ? kComposeFloatingSendGap : 0);
+	const auto pillWidth = std::max(totalWidth - sendOutsideWidth, 60);
 	const auto kbShowShown = _history && !_kbShown && _keyboard->hasMarkup();
-	auto fieldWidth = width()
+	auto fieldWidth = pillWidth
+		- 12
 		- _attachToggle->width()
-		- st::historySendRight
-		- _send->width()
 		- _tabbedSelectorToggle->width();
 	if (_botMenu) {
 		fieldWidth -= st::historyBotMenuSkip + _botMenu->width();
@@ -7804,9 +7905,10 @@ void HistoryWidget::updateFieldSize() {
 	if (_ttlInfo && _ttlInfo->isVisible()) {
 		fieldWidth -= _ttlInfo->width();
 	}
+	fieldWidth = std::max(fieldWidth, 40);
 
 	if (_fieldDisabled) {
-		_fieldDisabled->resize(width(), st::historySendSize.height());
+		_fieldDisabled->resize(fieldWidth, st::historySendSize.height());
 	}
 	if (_field->width() != fieldWidth) {
 		_field->resize(fieldWidth, _field->height());
@@ -11490,29 +11592,66 @@ void HistoryWidget::updateField() {
 		return;
 	}
 	_repaintFieldScheduled = true;
-	const auto fieldAreaTop = _scroll->y() + _scroll->height();
+	const auto fieldAreaTop = std::min(
+		_scroll->y() + _scroll->height(),
+		_composePillRect.isEmpty() ? height() : _composePillRect.y());
 	rtlupdate(0, fieldAreaTop, width(), height() - fieldAreaTop);
 }
 
 void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 	_repaintFieldScheduled = false;
 
-	auto backy = _field->y() - st::historySendPadding;
-	auto backh = fieldHeight() + 2 * st::historySendPadding;
+	auto pill = _composePillRect;
+	if (pill.isEmpty()) {
+		const auto totalWidth = std::min(
+			std::max(width() - 2 * kComposeFloatingSideMargin, 120),
+			kComposeFloatingMaxWidth);
+		const auto startLeft = (width() - totalWidth) / 2;
+		const auto sendOutsideWidth = _send->width()
+			+ (_send->width() > 0 ? kComposeFloatingSendGap : 0);
+		const auto pillWidth = std::max(totalWidth - sendOutsideWidth, 60);
+		const auto backy = _field->y() - st::historySendPadding;
+		const auto backh = std::max(
+			_attachToggle->height(),
+			fieldHeight() + 2 * st::historySendPadding);
+		pill = QRect(startLeft, backy, pillWidth, backh);
+	}
 	auto hasForward = readyToForward();
 	auto drawMsgText = (_editMsgId || _replyTo) ? _replyEditMsg : _kbReplyTo;
-	if (_editMsgId
+	const auto hasHeader = (_editMsgId
 		|| _replyTo
 		|| hasForward
 		|| _kbReplyTo
 		|| _previewDrawPreview
-		|| _suggestOptions) {
-		backy -= st::historyReplyHeight;
-		backh += st::historyReplyHeight;
-	}
+		|| _suggestOptions);
+	const auto pillLeft = pill.x();
+	const auto pillWidth = pill.width();
+	const auto backy = pill.y();
+	const auto rightLimit = pillLeft
+		+ pillWidth
+		- _fieldBarCancel->width()
+		- 4
+		- st::msgReplyPadding.right();
 	p.setInactive(
 		controller()->isGifPausedAtLeastFor(Window::GifPauseReason::Any));
-	p.fillRect(myrtlrect(0, backy, width(), backh), st::historyReplyBg);
+	{
+		PainterHighQualityEnabler hq(p);
+		p.setPen(Qt::NoPen);
+		p.setBrush(st::historyComposeAreaBg);
+		const auto r = std::min(
+			_composePillRadiusAnim.value(_composePillRadiusCurrent),
+			pill.height() / 2.);
+		p.drawRoundedRect(myrtlrect(pill), r, r);
+	}
+	if (hasHeader) {
+		p.fillRect(
+			myrtlrect(
+				pillLeft + 12,
+				backy + st::historyReplyHeight - st::lineWidth,
+				std::max(pillWidth - 24, 0),
+				st::lineWidth),
+			st::menuSeparatorFg);
+	}
 
 	const auto media = (!_previewDrawPreview && drawMsgText)
 		? drawMsgText->media()
@@ -11551,10 +11690,10 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 	if (_previewDrawPreview) {
 		st::historyLinkIcon.paint(
 			p,
-			st::historyReplyIconPosition + QPoint(0, backy),
+			st::historyReplyIconPosition + QPoint(pillLeft, backy),
 			width());
 		const auto textTop = backy + st::msgReplyPadding.top();
-		auto previewLeft = st::historyReplySkip;
+		auto previewLeft = pillLeft + st::historyReplySkip;
 
 		const auto to = QRect(
 			previewLeft,
@@ -11565,10 +11704,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 			previewLeft += st::historyReplyPreview + st::msgReplyBarSkip;
 		}
 		p.setPen(st::historyReplyNameFg);
-		const auto elidedWidth = width()
-			- previewLeft
-			- _fieldBarCancel->width()
-			- st::msgReplyPadding.right();
+		const auto elidedWidth = std::max(rightLimit - previewLeft, 0);
 
 		_previewTitle.drawElided(
 			p,
@@ -11585,9 +11721,9 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 		const auto now = crl::now();
 		const auto paused = p.inactive();
 		const auto pausedSpoiler = paused || On(PowerSaving::kChatSpoiler);
-		auto replyLeft = st::historyReplySkip;
+		auto replyLeft = pillLeft + st::historyReplySkip;
 		if (_suggestOptions) {
-			_suggestOptions->paintIcon(p, 0, backy, width());
+			_suggestOptions->paintIcon(p, pillLeft, backy, width());
 		} else {
 			const auto quoted = _replyTo
 				&& !HistoryView::Reply::ComposePreviewQuote(_replyTo).empty();
@@ -11597,7 +11733,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 				? st::historyQuoteIcon
 				: st::historyReplyIcon).paint(
 					p,
-					st::historyReplyIconPosition + QPoint(0, backy),
+					st::historyReplyIconPosition + QPoint(pillLeft, backy),
 					width());
 		}
 		if (drawMsgText) {
@@ -11649,10 +11785,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 						p,
 						replyLeft,
 						backy + st::msgReplyPadding.top(),
-						width()
-							- replyLeft
-							- _fieldBarCancel->width()
-							- st::msgReplyPadding.right());
+						std::max(rightLimit - replyLeft, 0));
 				}
 				p.setPen(st::historyComposeAreaFg);
 				_replyEditMsgText.draw(p, {
@@ -11661,10 +11794,7 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 						st::msgReplyPadding.top()
 							+ st::msgServiceNameFont->height
 							+ backy),
-					.availableWidth = width()
-						- replyLeft
-						- _fieldBarCancel->width()
-						- st::msgReplyPadding.right(),
+					.availableWidth = std::max(rightLimit - replyLeft, 0),
 					.palette = &st::historyComposeAreaPalette,
 					.spoiler = Ui::Text::DefaultSpoilerCache(),
 					.now = now,
@@ -11683,23 +11813,17 @@ void HistoryWidget::drawField(Painter &p, const QRect &rect) {
 					+ st::msgDateFont->ascent,
 				st::msgDateFont->elided(
 					tr::lng_profile_loading(tr::now),
-					width()
-						- replyLeft
-						- _fieldBarCancel->width()
-						- st::msgReplyPadding.right()));
+					std::max(rightLimit - replyLeft, 0)));
 		}
 	} else if (hasForward) {
 		st::historyForwardIcon.paint(
 			p,
-			st::historyReplyIconPosition + QPoint(0, backy), width());
-		const auto x = st::historyReplySkip;
-		const auto available = width()
-			- x
-			- _fieldBarCancel->width()
-			- st::msgReplyPadding.right();
+			st::historyReplyIconPosition + QPoint(pillLeft, backy), width());
+		const auto x = pillLeft + st::historyReplySkip;
+		const auto available = std::max(rightLimit - x, 0);
 		_forwardPanel->paint(p, x, backy, available, width());
 	} else if (_suggestOptions) {
-		_suggestOptions->paintBar(p, 0, backy, width());
+		_suggestOptions->paintBar(p, pillLeft, backy, width());
 	}
 }
 
