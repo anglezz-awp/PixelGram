@@ -164,6 +164,13 @@ constexpr auto kStarEffectDuration = 2 * crl::time(1000);
 constexpr auto kStarEffectRotationMax = 12;
 constexpr auto kStarEffectScaleMin = 0.3;
 constexpr auto kStarEffectScaleMax = 0.7;
+constexpr auto kFloatingSideMargin = 16;
+constexpr auto kFloatingTopMargin = 4;
+constexpr auto kFloatingBottomMargin = 10;
+constexpr auto kFloatingSendGap = 8;
+constexpr auto kFloatingMaxWidth = 800;
+constexpr auto kFloatingPillRadiusFull = 26.;
+constexpr auto kFloatingPillRadiusExtraLarge = 20.;
 
 constexpr auto kCommonModifiers = 0
 	| Qt::ShiftModifier
@@ -397,7 +404,9 @@ void FieldHeader::init() {
 	) | rpl::on_next([=] {
 		Painter p(this);
 		p.setInactive(_show->paused(Window::GifPauseReason::Any));
-		p.fillRect(rect(), st::historyComposeAreaBg);
+		p.fillRect(
+			QRect(12, height() - st::lineWidth, width() - 24, st::lineWidth),
+			st::menuSeparatorFg);
 
 		const auto position = st::historyReplyIconPosition;
 		if (_suggestOptions) {
@@ -1737,17 +1746,21 @@ void ComposeControls::setAutocompleteBoundingRect(QRect rect) {
 
 rpl::producer<int> ComposeControls::height() const {
 	using namespace rpl::mappers;
+	const auto restrictedHeight = _st.attach.height
+		+ (_backgroundRect ? 0 : (kFloatingTopMargin + kFloatingBottomMargin));
 	return rpl::conditional(
 		rpl::combine(
 			_writeRestriction.value(),
 			_hidden.value()) | rpl::map(!_1 && !_2),
 		_wrap->heightValue(),
-		rpl::single(_st.attach.height));
+		rpl::single(restrictedHeight));
 }
 
 int ComposeControls::heightCurrent() const {
+	const auto restrictedHeight = _st.attach.height
+		+ (_backgroundRect ? 0 : (kFloatingTopMargin + kFloatingBottomMargin));
 	return (_writeRestriction.current() || _hidden.current())
-		? _st.attach.height
+		? restrictedHeight
 		: _wrap->height();
 }
 
@@ -4461,7 +4474,8 @@ void ComposeControls::initWriteRestriction() {
 	}, _writeRestricted->lifetime());
 	_writeRestricted->resize(
 		_writeRestricted->width(),
-		_st.send.inner.height);
+		_st.send.inner.height
+			+ (_backgroundRect ? 0 : (kFloatingTopMargin + kFloatingBottomMargin)));
 	const auto background = [=](QPainter &p, QRect clip) {
 		paintBackground(p, _writeRestricted->rect(), clip);
 	};
@@ -5091,10 +5105,31 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 		&& !_commentsShown->isHidden();
 	const auto giftToUser = _giftToUser
 		&& !_giftToUser->isHidden();
-	const auto fieldWidth = size.width()
-		- (commentsShown
-			? (_commentsShown->width() + _st.commentsSkip)
-			: 0)
+	const auto floating = !_backgroundRect;
+	const auto totalWidth = floating
+		? std::min(std::max(size.width() - 2 * kFloatingSideMargin, 120), kFloatingMaxWidth)
+		: size.width();
+	const auto startLeft = floating ? (size.width() - totalWidth) / 2 : 0;
+	const auto sendOutsideWidth = floating
+		? (_send->width() + (_send->width() > 0 ? kFloatingSendGap : 0))
+		: _send->width();
+	const auto commentsWidth = commentsShown
+		? (_commentsShown->width() + _st.commentsSkip)
+		: 0;
+	const auto starsWidth = _starsReaction
+		? (_st.starsSkip + _starsReaction->width())
+		: 0;
+	const auto pillLeft = startLeft + commentsWidth;
+	const auto pillRight = startLeft + totalWidth - starsWidth - sendOutsideWidth;
+	const auto pillTop = floating ? kFloatingTopMargin : 0;
+	const auto pillBottom = floating ? (size.height() - kFloatingBottomMargin) : size.height();
+	_pillRect = QRect(
+		pillLeft,
+		pillTop,
+		std::max(pillRight - pillLeft, 60),
+		std::max(pillBottom - pillTop, _st.attach.height));
+	const auto fieldWidth = std::max(
+		(floating ? _pillRect.width() : (size.width() - commentsWidth - starsWidth - _send->width()))
 		- ((_attachToggle || _sendAs) ? _st.padding.left() : _st.fieldLeft)
 		- (_botMenu
 			? (st::historyBotMenuSkip + _botMenu->width())
@@ -5102,7 +5137,6 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 		- (_attachToggle ? _attachToggle->width() : 0)
 		- (_sendAs ? _sendAs->width() : 0)
 		- _st.padding.right()
-		- _send->width()
 		- (_editStars ? _editStars->width() : 0)
 		- (_tabbedSelectorToggle->isHidden()
 			? 0
@@ -5119,10 +5153,8 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 			: 0)
 		- (_botKeyboardShow ? _botKeyboardShow->width() : 0)
 		- (_botKeyboardHide ? _botKeyboardHide->width() : 0)
-		- ((_ttlInfo && _ttlInfo->isVisible()) ? _ttlInfo->width() : 0)
-		- (_starsReaction
-			? (_st.starsSkip + _starsReaction->width())
-			: 0);
+		- ((_ttlInfo && _ttlInfo->isVisible()) ? _ttlInfo->width() : 0),
+		40);
 	{
 		_field->resizeToWidth(fieldWidth);
 		if (_richDraftPreview) {
@@ -5139,9 +5171,9 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 		}
 	}
 
-	const auto buttonsTop = size.height() - _st.attach.height;
+	const auto buttonsTop = pillBottom - _st.attach.height;
 
-	auto left = 0;
+	auto left = startLeft;
 	if (commentsShown) {
 		_commentsShown->moveToLeft(left, buttonsTop);
 		left += _commentsShown->width() + _st.commentsSkip;
@@ -5159,41 +5191,61 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 		_attachToggle->moveToLeft(left, buttonsTop);
 		left += _attachToggle->width();
 	}
+	if (floating) {
+		_tabbedSelectorToggle->moveToLeft(left, buttonsTop);
+		if (!_tabbedSelectorToggle->isHidden()) {
+			left += _tabbedSelectorToggle->width();
+		}
+	}
 	if (_sendAs) {
 		_sendAs->moveToLeft(left, buttonsTop);
 		left += _sendAs->width();
 	}
 	const auto fieldHeight = composeFieldHeight();
-	const auto fieldTop = size.height() - _st.padding.bottom() - fieldHeight;
+	const auto fieldTop = pillBottom - _st.padding.bottom() - fieldHeight;
 	_field->moveToLeft(left, fieldTop);
 	if (_richDraftPreview) {
 		_richDraftPreview->moveToLeft(left, fieldTop);
 	}
 	if (_fieldDisabled) {
-		_fieldDisabled->resize(size.width(), st::historySendSize.height());
+		_fieldDisabled->resize(
+			floating ? fieldWidth : size.width(),
+			st::historySendSize.height());
 		_fieldDisabled->moveToLeft(left, fieldTop);
 	}
 
-	_header->resizeToWidth(size.width());
-	_header->moveToLeft(
-		0,
-		fieldTop - _st.padding.top() - _header->height());
+	if (floating) {
+		_header->resizeToWidth(std::max(_pillRect.width() - 16, 40));
+		_header->moveToLeft(_pillRect.x() + 8, pillTop);
+	} else {
+		_header->resizeToWidth(size.width());
+		_header->moveToLeft(
+			0,
+			fieldTop - _st.padding.top() - _header->height());
+	}
 
-	auto right = 0;
+	auto right = floating ? (size.width() - (startLeft + totalWidth)) : 0;
 	if (_starsReaction) {
 		_starsReaction->moveToRight(right, buttonsTop);
 		right += _starsReaction->width() + _st.starsSkip;
 	}
-	right += _st.padding.right();
-	_send->moveToRight(right, buttonsTop);
-	right += _send->width();
+	if (floating) {
+		_send->moveToRight(right, pillBottom - _send->height());
+		right = size.width() - pillRight + _st.padding.right();
+	} else {
+		right += _st.padding.right();
+		_send->moveToRight(right, buttonsTop);
+		right += _send->width();
+	}
 	if (_editStars) {
 		_editStars->moveToRight(right, buttonsTop);
 		right += _editStars->width();
 	}
-	_tabbedSelectorToggle->moveToRight(right, buttonsTop);
-	if (!_tabbedSelectorToggle->isHidden()) {
-		right += _tabbedSelectorToggle->width();
+	if (!floating) {
+		_tabbedSelectorToggle->moveToRight(right, buttonsTop);
+		if (!_tabbedSelectorToggle->isHidden()) {
+			right += _tabbedSelectorToggle->width();
+		}
 	}
 	if (_like) {
 		using Type = Controls::WriteRestrictionType;
@@ -5249,11 +5301,19 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 	updateSendAsFileGeometry();
 	updateExpandButtonGeometry();
 	updateDiscardRichDraftGeometry();
+	updatePillRadius();
 
-	_voiceRecordBar->resizeToWidth(size.width());
-	_voiceRecordBar->moveToLeft(
-		0,
-		size.height() - _voiceRecordBar->height());
+	if (floating) {
+		_voiceRecordBar->resizeToWidth(startLeft + totalWidth - pillLeft);
+		_voiceRecordBar->moveToLeft(
+			pillLeft,
+			pillBottom - _voiceRecordBar->height());
+	} else {
+		_voiceRecordBar->resizeToWidth(size.width());
+		_voiceRecordBar->moveToLeft(
+			0,
+			size.height() - _voiceRecordBar->height());
+	}
 }
 
 void ComposeControls::updateControlsVisibility() {
@@ -5362,7 +5422,10 @@ void ComposeControls::updateExpandButtonGeometry() {
 	if (_expand->isHidden()) {
 		return;
 	}
-	const auto x = _send->x() + _send->width() - _expand->width();
+	const auto rightEdge = _backgroundRect
+		? (_send->x() + _send->width())
+		: (_pillRect.x() + _pillRect.width() - _st.padding.right());
+	const auto x = rightEdge - _expand->width();
 	_expand->move(QPoint(x, _field->y()) + st::historyAiComposeButtonPosition);
 }
 
@@ -5650,12 +5713,18 @@ void ComposeControls::updateOuterGeometry(QRect rect) {
 	if (_inlineResults) {
 		_inlineResults->moveBottom(rect.y());
 	}
-	const auto bottom = rect.y() + rect.height() - _st.attach.height;
+	const auto bottom = _backgroundRect
+		? (rect.y() + rect.height() - _st.attach.height)
+		: (rect.y() + kFloatingTopMargin);
 	if (_tabbedPanel) {
-		_tabbedPanel->moveBottomRight(bottom, rect.x() + rect.width());
+		const auto right = _backgroundRect
+			? (rect.x() + rect.width())
+			: (rect.x() + _pillRect.x() + _pillRect.width());
+		_tabbedPanel->moveBottomRight(bottom, right);
 	}
 	if (_attachBotsMenu) {
-		_attachBotsMenu->moveToLeft(0, bottom - _attachBotsMenu->height());
+		const auto left = _backgroundRect ? 0 : _pillRect.x();
+		_attachBotsMenu->moveToLeft(left, bottom - _attachBotsMenu->height());
 	}
 	if (_aiTooltipManager) {
 		_aiTooltipManager->updateGeometry();
@@ -5791,6 +5860,27 @@ void ComposeControls::updateAttachBotsMenu() {
 	}, _attachBotsMenu->lifetime());
 }
 
+void ComposeControls::updatePillRadius() {
+	if (_backgroundRect) {
+		return;
+	}
+	const auto multiline = (composeFieldHeight() > _st.field.heightMin + 4)
+		|| _header->isDisplayed();
+	const auto fullRadius = std::min(kFloatingPillRadiusFull, _pillRect.height() / 2.);
+	const auto target = multiline ? kFloatingPillRadiusExtraLarge : fullRadius;
+	if (_pillMultiline != multiline) {
+		_pillMultiline = multiline;
+		_pillRadiusAnim.start(
+			[=] { _wrap->update(); },
+			_pillRadiusCurrent,
+			target,
+			180,
+			anim::easeOutCubic);
+	} else if (!_pillRadiusAnim.animating()) {
+		_pillRadiusCurrent = target;
+	}
+}
+
 void ComposeControls::paintBackground(QPainter &p, QRect full, QRect clip) {
 	if (_backgroundRect) {
 		auto hq = PainterHighQualityEnabler(p);
@@ -5810,7 +5900,26 @@ void ComposeControls::paintBackground(QPainter &p, QRect full, QRect clip) {
 		}
 		p.drawRoundedRect(full, _st.radius, _st.radius);
 	} else {
-		p.fillRect(clip, _st.bg);
+		auto hq = PainterHighQualityEnabler(p);
+		p.setBrush(_st.bg);
+		p.setPen(Qt::NoPen);
+		if (full == _wrap->rect() && !_pillRect.isEmpty()) {
+			const auto r = std::min(
+				_pillRadiusAnim.value(_pillRadiusCurrent),
+				_pillRect.height() / 2.);
+			p.drawRoundedRect(_pillRect, r, r);
+		} else {
+			const auto w = std::min(
+				std::max(full.width() - 2 * kFloatingSideMargin, 120),
+				kFloatingMaxWidth);
+			const auto left = (full.width() - w) / 2;
+			const auto h = std::max(
+				full.height() - kFloatingTopMargin - kFloatingBottomMargin,
+				_st.attach.height);
+			const auto pill = QRect(left, kFloatingTopMargin, w, h);
+			const auto r = pill.height() / 2.;
+			p.drawRoundedRect(pill, r, r);
+		}
 	}
 }
 
@@ -5916,10 +6025,15 @@ int ComposeControls::composeFieldHeight() const {
 }
 
 void ComposeControls::updateHeight() {
-	const auto height = (_header->isDisplayed() ? _header->height() : 0)
-		+ _st.padding.top()
-		+ composeFieldHeight()
-		+ _st.padding.bottom();
+	const auto singleRowHeight = std::max(
+		_st.attach.height,
+		_st.padding.top() + composeFieldHeight() + _st.padding.bottom());
+	const auto extraMargins = _backgroundRect
+		? 0
+		: (kFloatingTopMargin + kFloatingBottomMargin);
+	const auto height = extraMargins
+		+ (_header->isDisplayed() ? _header->height() : 0)
+		+ singleRowHeight;
 	if (height != _wrap->height()) {
 		_wrap->resize(_wrap->width(), height);
 	}

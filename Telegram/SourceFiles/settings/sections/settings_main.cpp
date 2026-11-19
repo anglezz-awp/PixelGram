@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "settings/sections/settings_main.h"
+#include "settings/pixelgram_settings.h"
 
 #include "settings/settings_common_session.h"
 
@@ -366,9 +367,12 @@ void BuildSectionButtons(SectionBuilder &builder) {
 	const auto controller = builder.controller();
 	const auto showOther = builder.showOther();
 
+	// Group 1: Profile & Account
 	if (!session->supportMode()) {
 		builder.addButton({
 			.title = tr::lng_settings_my_account(),
+			.description = u"Профиль, номер телефона, имя пользователя, био"_q,
+			.groupPosition = Ui::GroupPosition::Single,
 			.icon = { &st::menuIconProfile },
 			.onClick = [=] {
 				controller->showSection(
@@ -376,10 +380,27 @@ void BuildSectionButtons(SectionBuilder &builder) {
 			},
 			.keywords = { u"profile"_q, u"edit"_q, u"information"_q },
 		});
+		builder.addSkip(14);
 	}
 
+	// Group 2: PixelGram Mods
+	builder.addButton({
+		.title = rpl::single(u"Настройки PixelGram"_q),
+		.description = u"Ghost Mode, Anti-Delete, обход защиты контента"_q,
+		.groupPosition = Ui::GroupPosition::Single,
+		.icon = { &st::menuIconManage },
+		.onClick = [=] {
+			PixelGram::ShowSettingsBox(controller);
+		},
+		.keywords = { u"pixelgram"_q, u"ghost"_q, u"anti-delete"_q, u"bypass"_q },
+	});
+	builder.addSkip(14);
+
+	// Group 3: Communication & Privacy
 	builder.addSectionButton({
 		.title = tr::lng_settings_section_notify(),
+		.description = u"Личные сообщения, группы, каналы, звуки"_q,
+		.groupPosition = Ui::GroupPosition::First,
 		.targetSection = NotificationsId(),
 		.icon = { &st::menuIconNotifications },
 		.keywords = { u"alerts"_q, u"sounds"_q, u"badge"_q },
@@ -387,6 +408,8 @@ void BuildSectionButtons(SectionBuilder &builder) {
 
 	builder.addSectionButton({
 		.title = tr::lng_settings_section_privacy(),
+		.description = u"Код-пароль, двухэтапная аутентификация, черный список"_q,
+		.groupPosition = Ui::GroupPosition::Middle,
 		.targetSection = PrivacySecurityId(),
 		.icon = { &st::menuIconLock },
 		.keywords = { u"security"_q, u"passcode"_q, u"password"_q, u"2fa"_q },
@@ -394,6 +417,8 @@ void BuildSectionButtons(SectionBuilder &builder) {
 
 	builder.addSectionButton({
 		.title = tr::lng_settings_section_chat_settings(),
+		.description = u"Темы, обои, стикеры, эмодзи, пузыри сообщений"_q,
+		.groupPosition = Ui::GroupPosition::Middle,
 		.targetSection = ChatId(),
 		.icon = { &st::menuIconChatBubble },
 		.keywords = { u"themes"_q, u"appearance"_q, u"stickers"_q },
@@ -426,11 +451,14 @@ void BuildSectionButtons(SectionBuilder &builder) {
 
 		builder.addButton({
 			.title = tr::lng_settings_section_filters(),
+			.description = u"Вкладки, фильтры и сортировка диалогов"_q,
+			.groupPosition = Ui::GroupPosition::Last,
 			.icon = { &st::menuIconShowInFolder },
 			.onClick = [=] { showOther(FoldersId()); },
 			.keywords = { u"filters"_q, u"tabs"_q },
 			.shown = std::move(shownProducer),
 		});
+		builder.addSkip(14);
 	}
 
 	builder.addSectionButton({
@@ -480,7 +508,6 @@ void BuildInterfaceScale(SectionBuilder &builder) {
 	}
 
 	builder.addDivider();
-	builder.addSkip();
 
 	builder.add([](const WidgetContext &ctx) {
 		const auto window = &ctx.controller->window();
@@ -508,7 +535,6 @@ void BuildPremiumSection(SectionBuilder &builder) {
 	}
 
 	builder.addDivider();
-	builder.addSkip();
 
 	builder.addPremiumButton({
 		.id = u"main/premium"_q,
@@ -589,7 +615,6 @@ protected:
 
 void BuildHelpSection(SectionBuilder &builder) {
 	builder.addDivider();
-	builder.addSkip();
 
 	const auto controller = builder.controller();
 	const auto faq = builder.addButton({
@@ -753,7 +778,6 @@ void Main::setupContent() {
 			.highlights = highlights,
 		});
 		builder.addDivider();
-		builder.addSkip();
 		BuildValidationSuggestions(builder);
 		BuildSectionButtons(builder);
 		builder.addSkip();
@@ -815,7 +839,6 @@ const auto kMeta = BuildHelper({
 	.icon = &st::menuIconSettings,
 }, [](SectionBuilder &builder) {
 	builder.addDivider();
-	builder.addSkip();
 
 	builder.add(nullptr, [] {
 		return SearchEntry{
@@ -974,10 +997,7 @@ void SetupValidatePhoneNumberSuggestion(
 		yes->moveToLeft(0, 0, width);
 		no->moveToRight(0, 0, width);
 	}, wrap->lifetime());
-	Ui::AddSkip(content);
-	Ui::AddSkip(content);
-	Ui::AddDivider(content);
-	Ui::AddSkip(content);
+	Ui::AddSkip(content, st::settingsSectionGap);
 }
 
 void SetupValidatePasswordSuggestion(
@@ -1045,10 +1065,7 @@ void SetupValidatePasswordSuggestion(
 		yes->moveToLeft(0, 0, width);
 		no->moveToRight(0, 0, width);
 	}, wrap->lifetime());
-	Ui::AddSkip(content);
-	Ui::AddSkip(content);
-	Ui::AddDivider(content);
-	Ui::AddSkip(content);
+	Ui::AddSkip(content, st::settingsSectionGap);
 }
 
 bool HasInterfaceScale() {
@@ -1066,13 +1083,31 @@ void SetupInterfaceScale(
 	const auto toggled = Ui::CreateChild<rpl::event_stream<bool>>(
 		container.get());
 
+	const auto card = container->add(
+		object_ptr<Ui::RpWidget>(container.get()),
+		QMargins(0, 4, 0, 4));
+	card->paintRequest() | rpl::on_next([=] {
+		auto p = QPainter(card);
+		p.setRenderHint(QPainter::Antialiasing, true);
+		p.setPen(Qt::NoPen);
+		p.setBrush(st::windowBgOver); // surfaceContainer
+		const auto hMargin = 16;
+		const auto vMargin = 1;
+		p.drawRoundedRect(
+			QRect(hMargin, vMargin, card->width() - 2 * hMargin, card->height() - 2 * vMargin),
+			24,
+			24);
+	}, card->lifetime());
+
 	const auto switched = (cConfigScale() == style::kScaleAuto);
-	const auto button = AddButtonWithIcon(
-		container,
+	const auto button = CreateButtonWithIcon(
+		card,
 		tr::lng_settings_default_scale(),
 		icon ? st::settingsButton : st::settingsButtonNoIcon,
 		{ icon ? &st::menuIconShowInChat : nullptr }
-	)->toggleOn(toggled->events_starting_with_copy(switched));
+	).release();
+	button->setGroupPosition(Ui::GroupPosition::None);
+	button->toggleOn(toggled->events_starting_with_copy(switched));
 
 	const auto ratio = style::DevicePixelRatio();
 	const auto scaleMin = style::kScaleMin;
@@ -1103,18 +1138,24 @@ void SetupInterfaceScale(
 			/ float64(valuesCount - 1);
 	};
 	auto sliderWithLabel = MakeSliderWithLabel(
-		container,
+		card,
 		st::settingsScale,
 		st::settingsScaleLabel,
 		st::normalFont->spacew * 2,
 		st::settingsScaleLabel.style.font->width("300%"),
 		true);
-	container->add(
-		std::move(sliderWithLabel.widget),
-		icon ? st::settingsScalePadding : st::settingsBigScalePadding);
 	const auto slider = sliderWithLabel.slider;
 	const auto label = sliderWithLabel.label;
+	const auto sliderRaw = sliderWithLabel.widget.release();
 	slider->setAccessibleName(tr::lng_settings_scale(tr::now));
+
+	card->sizeValue() | rpl::on_next([=](QSize size) {
+		button->setGeometry(0, 0, size.width(), 56);
+		const auto left = icon ? 60 : 32;
+		const auto right = 28;
+		sliderRaw->setGeometry(left, 56, std::max(size.width() - left - right, 50), 44);
+	}, card->lifetime());
+	card->resize(card->width(), 56 + 48);
 
 	const auto updateLabel = [=](int scale) {
 		const auto labelText = [&](int scale) {

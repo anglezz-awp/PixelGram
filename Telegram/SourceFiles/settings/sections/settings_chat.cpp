@@ -1,3 +1,4 @@
+#include "ui/pixelgram_m3_scheme.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -277,10 +278,7 @@ void ColorsPalette::show(Type type) {
 	list.insert(list.begin(), scheme->accentColor);
 	const auto &settings = Core::App().settings();
 	const auto color = settings.themesAccentColors().get(type);
-	const auto current = (settings.systemAccentColorEnabled()
-		? Window::Theme::SystemAccentColor()
-		: std::optional<QColor>()).value_or(
-			color.value_or(scheme->accentColor));
+	const auto current = PixelGram::GetM3SeedColor();
 	const auto i = ranges::find(list, current);
 	if (i == end(list)) {
 		list.back() = current;
@@ -1030,7 +1028,7 @@ void BuildSensitiveContentSection(SectionBuilder &builder) {
 	builder.add([controller, highlights](const WidgetContext &ctx) {
 		auto updateOnTick = rpl::single(
 		) | rpl::then(base::timer_each(60 * crl::time(1000)));
-		Ui::AddDivider(ctx.container.get());
+		Ui::AddSkip(ctx.container.get(), st::settingsSectionGap);
 		SetupSensitiveContent(
 			controller,
 			ctx.container.get(),
@@ -1509,8 +1507,7 @@ void SetupMessages(
 		not_null<Window::SessionController*> controller,
 		not_null<Ui::VerticalLayout*> container,
 		HighlightRegistry *highlights) {
-	Ui::AddDivider(container);
-	Ui::AddSkip(container);
+	Ui::AddSkip(container, st::settingsSectionGap);
 
 	const auto title = Ui::AddSubsectionTitle(
 		container,
@@ -1751,8 +1748,7 @@ void SetupChatBackground(
 		not_null<Window::SessionController*> controller,
 		not_null<Ui::VerticalLayout*> container,
 		HighlightRegistry *highlights) {
-	Ui::AddDivider(container);
-	Ui::AddSkip(container);
+	Ui::AddSkip(container, st::settingsSectionGap);
 
 	const auto title = Ui::AddSubsectionTitle(
 		container,
@@ -1852,8 +1848,7 @@ void SetupChatListQuickAction(
 		not_null<Window::SessionController*> controller,
 		not_null<Ui::VerticalLayout*> container,
 		HighlightRegistry *highlights) {
-	Ui::AddDivider(container);
-	Ui::AddSkip(container);
+	Ui::AddSkip(container, st::settingsSectionGap);
 	Ui::AddSubsectionTitle(
 		container,
 		tr::lng_settings_quick_dialog_action_title());
@@ -2078,11 +2073,12 @@ void SetupChatListQuickAction(
 			{ button, { .rippleShape = true } },
 		});
 	}
-	Ui::AddSkip(container);
-	Ui::AddDividerText(
-		container,
-		tr::lng_settings_quick_dialog_action_about());
-	Ui::AddSkip(container);
+	container->add(
+		object_ptr<Ui::FlatLabel>(
+			container,
+			tr::lng_settings_quick_dialog_action_about(),
+			st::settingsDividerAboutLabel),
+		st::settingsDividerAboutPadding);
 }
 
 void SetupDefaultThemes(
@@ -2319,15 +2315,14 @@ void SetupDefaultThemes(
 			systemAccentWrap->entity()->setChecked(false);
 			changed = true;
 		}
-		auto &colors = settings.themesAccentColors();
-		if (colors.get(type) != color) {
-			colors.set(type, color);
-			changed = true;
-		}
+		PixelGram::SetM3SeedColor(color);
+		changed = true;
 		if (changed) {
 			Local::writeSettings();
 		}
 		apply(*scheme);
+		PixelGram::ApplyM3Scheme(color, Window::Theme::IsNightMode());
+		palette->show(type);
 	}, container->lifetime());
 
 	Ui::AddSkip(container);
@@ -2370,8 +2365,7 @@ void SetupCloudThemes(
 	)->setDuration(0);
 	const auto inner = wrap->entity();
 
-	Ui::AddDivider(inner);
-	Ui::AddSkip(inner, st::settingsPrivacySkip);
+	Ui::AddSkip(inner, st::settingsSectionGap);
 
 	const auto title = AddSubsectionTitle(
 		inner,
@@ -2459,8 +2453,7 @@ void SetupThemeSettings(
 		not_null<Window::SessionController*> controller,
 		not_null<Ui::VerticalLayout*> container,
 		HighlightRegistry *highlights) {
-	Ui::AddDivider(container);
-	Ui::AddSkip(container, st::settingsPrivacySkip);
+	Ui::AddSkip(container, st::settingsSectionGap);
 
 	const auto title = Ui::AddSubsectionTitle(
 		container,

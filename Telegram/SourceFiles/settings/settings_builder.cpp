@@ -17,6 +17,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/vertical_list.h"
 #include "ui/widgets/buttons.h"
 #include "ui/widgets/checkbox.h"
+#include "ui/widgets/labels.h"
 #include "ui/wrap/slide_wrap.h"
 #include "ui/wrap/vertical_layout.h"
 #include "window/window_session_controller.h"
@@ -273,6 +274,12 @@ Ui::SettingsButton *SectionBuilder::addButton(ButtonArgs &&args) {
 		if (args.toggled) {
 			button->toggleOn(std::move(args.toggled));
 		}
+		if (!args.description.isEmpty()) {
+			button->setSupportingText(args.description);
+		}
+		if (args.groupPosition != Ui::GroupPosition::Standalone) {
+			button->setGroupPosition(args.groupPosition);
+		}
 		return button;
 	};
 	return static_cast<Ui::SettingsButton*>(addControl({
@@ -293,6 +300,8 @@ Ui::SettingsButton *SectionBuilder::addSectionButton(SectionArgs &&args) {
 	const auto target = args.targetSection;
 	return addButton({
 		.title = std::move(args.title),
+		.description = std::move(args.description),
+		.groupPosition = args.groupPosition,
 		.icon = std::move(args.icon),
 		.onClick = [=] { showOther(target); },
 		.keywords = std::move(args.keywords),
@@ -301,7 +310,7 @@ Ui::SettingsButton *SectionBuilder::addSectionButton(SectionArgs &&args) {
 
 void SectionBuilder::addDivider() {
 	v::match(_context, [&](const WidgetContext &ctx) {
-		Ui::AddDivider(ctx.container);
+		Ui::AddSkip(ctx.container, st::settingsSectionGap);
 	}, [](const SearchContext &) {
 	});
 }
@@ -322,7 +331,12 @@ void SectionBuilder::addSkip(int height) {
 
 void SectionBuilder::addDividerText(rpl::producer<QString> text) {
 	v::match(_context, [&](const WidgetContext &ctx) {
-		Ui::AddDividerText(ctx.container, std::move(text));
+		ctx.container->add(
+			object_ptr<Ui::FlatLabel>(
+				ctx.container,
+				std::move(text),
+				st::settingsDividerAboutLabel),
+			st::settingsDividerAboutPadding);
 	}, [](const SearchContext &) {
 	});
 }

@@ -12,13 +12,19 @@ using "boxes/boxes.style";
 
 settingsButton: SettingsButton(infoProfileButton) {
 	style: boxTextStyle;
-	padding: margins(60px, 10px, 22px, 10px);
-	iconLeft: 20px;
+	padding: margins(78px, 12px, 22px, 12px);
+	iconLeft: 24px;
+	textBg: windowBgOver;
+	textBgOver: windowBgRipple;
+	rightLabel: FlatLabel(defaultSettingsRightLabel) {
+		textFg: windowSubTextFg;
+	}
 }
 settingsButtonRightLabelSpoiler: SettingsButton(settingsButton) {
 	rightLabel: FlatLabel(defaultSettingsRightLabel) {
+		textFg: windowSubTextFg;
 		palette: TextPalette(defaultTextPalette) {
-			spoilerFg: windowActiveTextFg;
+			spoilerFg: windowSubTextFg;
 		}
 	}
 }
@@ -98,7 +104,7 @@ settingsScale: MediaSlider(defaultContinuousSlider) {
 	seekSize: size(15px, 15px);
 }
 settingsScaleLabel: FlatLabel(defaultFlatLabel) {
-	textFg: windowActiveTextFg;
+	textFg: windowSubTextFg;
 }
 settingsUpdateToggle: SettingsButton(settingsButtonNoIcon) {
 	height: 40px;
@@ -193,6 +199,16 @@ settingsPrivacyOption: Checkbox(settingsCheckbox) {
 settingsPrivacySecurityPadding: 12px;
 settingsPrivacySkip: 14px;
 settingsPrivacySkipTop: 4px;
+settingsSectionGap: 14px;
+settingsDividerAboutLabel: FlatLabel(defaultFlatLabel) {
+	minWidth: 100px;
+	textFg: windowSubTextFg;
+	style: TextStyle(defaultTextStyle) {
+		font: font(12px);
+		lineHeight: 17px;
+	}
+}
+settingsDividerAboutPadding: margins(20px, 10px, 20px, 10px);
 settingsPrivacyPremium: icon{{ "profile_premium", premiumButtonFg }};
 
 settingsCloudPasswordIconSize: 100px;

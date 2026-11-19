@@ -12,11 +12,15 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/effects/ripple_animation.h"
 #include "ui/text/text_utilities.h"
 #include "ui/painter.h"
+#include "ui/pixelgram_m3_scheme.h"
+#include "ui/style/style_core.h"
 #include "ui/ui_utility.h"
 #include "styles/style_chat_helpers.h"
 #include "styles/style_credits.h"
 #include "lang/lang_keys.h"
 #include "ui/text/format_values.h"
+
+#include <cmath>
 
 namespace Ui {
 namespace {
@@ -25,6 +29,18 @@ constexpr auto kWideScale = 5;
 constexpr auto kVoiceToRoundIndex = 0;
 constexpr auto kRoundToVoiceIndex = 1;
 constexpr auto kForbiddenOpacity = 0.5;
+constexpr auto kMorphSpringDuration = crl::time(320);
+
+[[nodiscard]] float64 SpringTransition(float64 delta, float64 dt) {
+	if (dt <= 0.) {
+		return 0.;
+	} else if (dt >= 1.) {
+		return delta;
+	}
+	const auto decay = std::exp(-7.5 * dt);
+	const auto oscillation = std::cos(10.5 * dt) + 0.714 * std::sin(10.5 * dt);
+	return delta * (1. - decay * oscillation);
+}
 
 } // namespace
 
@@ -33,6 +49,12 @@ SendButton::SendButton(QWidget *parent, const style::SendButton &st)
 , _st(st)
 , _lastRippleShape(currentRippleShape()) {
 	updateSize();
+	style::PaletteChanged(
+	) | rpl::on_next([=] {
+		_contentFrom = QPixmap();
+		_contentTo = QPixmap();
+		update();
+	}, lifetime());
 }
 
 SendButton::~SendButton() = default;
@@ -140,7 +162,8 @@ void SendButton::setState(State state) {
 			[=] { updateSize(); update(); },
 			0.,
 			1.,
-			st::universalDuration);
+			kMorphSpringDuration,
+			SpringTransition);
 		setPointerCursor(_state.type != Type::Slowmode);
 		updateSize();
 	}
@@ -153,10 +176,61 @@ void SendButton::finishAnimating() {
 	update();
 }
 
+QRect SendButton::circleRect() const {
+	const auto side = std::min(width(), height());
+	return QRect(
+		(width() - side) / 2,
+		(height() - side) / 2,
+		side,
+		side);
+}
+
+QColor SendButton::iconColor(bool over) const {
+	const auto &roles = PixelGram::CurrentM3Roles();
+	auto color = roles.onPrimaryContainer;
+	if (isDisabled()) {
+		color.setAlpha(128);
+	}
+	return color;
+}
+
+void SendButton::paintCircleBg(QPainter &p, bool over) {
+	const auto circle = circleRect();
+	const auto &roles = PixelGram::CurrentM3Roles();
+	const auto bg = _state.fillBgOverride.isValid()
+		? _state.fillBgOverride
+		: roles.primaryContainer;
+	{
+		auto hq = PainterHighQualityEnabler(p);
+		p.setPen(Qt::NoPen);
+		p.setBrush(bg);
+		p.drawEllipse(circle);
+		if (over && !isDisabled()) {
+			auto stateLayer = roles.onPrimaryContainer;
+			stateLayer.setAlpha(20);
+			p.setBrush(stateLayer);
+			p.drawEllipse(circle);
+		}
+	}
+	if (!isDisabled() && !_state.forbidden) {
+		auto rippleColor = roles.onPrimaryContainer;
+		rippleColor.setAlpha(32);
+		paintRipple(p, circle.topLeft(), &rippleColor);
+	}
+}
+
 void SendButton::paintEvent(QPaintEvent *e) {
 	auto p = QPainter(this);
 
 	auto over = (isDown() || isOver());
+
+	const auto drawsCircle = !_grabbingIconOnly
+		&& (_state.type != Type::Slowmode)
+		&& (_state.type != Type::EditPrice)
+		&& !(_state.type == Type::Send && !_starsToSendText.isEmpty());
+	if (drawsCircle) {
+		paintCircleBg(p, over);
+	}
 
 	if (_voiceRoundAnimating) {
 		paintVoiceRoundIcon(p, over);
@@ -167,42 +241,52 @@ void SendButton::paintEvent(QPaintEvent *e) {
 	if (changed < 1.) {
 		PainterHighQualityEnabler hq(p);
 		const auto ratio = style::DevicePixelRatio();
+		const auto clamped = std::clamp(changed, 0., 1.);
+		const auto center = QPointF(width() / 2., height() / 2.);
 
-		p.setOpacity(1. - changed);
-		const auto fromSize = _contentFrom.size() / (kWideScale * ratio);
-		const auto fromShift = QPoint(
-			(width() - fromSize.width()) / 2,
-			(height() - fromSize.height()) / 2);
-		auto fromRect = QRect(
-			(1 - kWideScale) / 2 * fromSize.width(),
-			(1 - kWideScale) / 2 * fromSize.height(),
-			kWideScale * fromSize.width(),
-			kWideScale * fromSize.height()
-		).translated(fromShift);
-		auto hiddenWidth = anim::interpolate(0, (1 - kWideScale) / 2 * fromSize.width(), changed);
-		auto hiddenHeight = anim::interpolate(0, (1 - kWideScale) / 2 * fromSize.height(), changed);
-		p.drawPixmap(
-			fromRect.marginsAdded(
-				{ hiddenWidth, hiddenHeight, hiddenWidth, hiddenHeight }),
-			_contentFrom);
+		if (!_contentFrom.isNull() && clamped < 1.) {
+			const auto fromSize = _contentFrom.size() / (kWideScale * ratio);
+			const auto fromShift = QPoint(
+				(width() - fromSize.width()) / 2,
+				(height() - fromSize.height()) / 2);
+			const auto fromRect = QRect(
+				(1 - kWideScale) / 2 * fromSize.width(),
+				(1 - kWideScale) / 2 * fromSize.height(),
+				kWideScale * fromSize.width(),
+				kWideScale * fromSize.height()
+			).translated(fromShift);
+			const auto scale = 1. - 0.4 * clamped;
+			p.save();
+			p.setOpacity(1. - clamped);
+			p.translate(center);
+			p.rotate(-45. * clamped);
+			p.scale(scale, scale);
+			p.translate(-center);
+			p.drawPixmap(fromRect, _contentFrom);
+			p.restore();
+		}
 
-		p.setOpacity(changed);
-		const auto toSize = _contentTo.size() / (kWideScale * ratio);
-		const auto toShift = QPoint(
-			(width() - toSize.width()) / 2,
-			(height() - toSize.height()) / 2);
-		auto toRect = QRect(
-			(1 - kWideScale) / 2 * toSize.width(),
-			(1 - kWideScale) / 2 * toSize.height(),
-			kWideScale * toSize.width(),
-			kWideScale * toSize.height()
-		).translated(toShift);
-		auto shownWidth = anim::interpolate((1 - kWideScale) / 2 * width(), 0, changed);
-		auto shownHeight = anim::interpolate((1 - kWideScale) / 2 * toSize.height(), 0, changed);
-		p.drawPixmap(
-			toRect.marginsAdded(
-				{ shownWidth, shownHeight, shownWidth, shownHeight }),
-			_contentTo);
+		if (!_contentTo.isNull() && clamped > 0.) {
+			const auto toSize = _contentTo.size() / (kWideScale * ratio);
+			const auto toShift = QPoint(
+				(width() - toSize.width()) / 2,
+				(height() - toSize.height()) / 2);
+			const auto toRect = QRect(
+				(1 - kWideScale) / 2 * toSize.width(),
+				(1 - kWideScale) / 2 * toSize.height(),
+				kWideScale * toSize.width(),
+				kWideScale * toSize.height()
+			).translated(toShift);
+			const auto scale = std::max(0.1, 0.55 + 0.45 * changed);
+			p.save();
+			p.setOpacity(clamped);
+			p.translate(center);
+			p.rotate(45. * (1. - changed));
+			p.scale(scale, scale);
+			p.translate(-center);
+			p.drawPixmap(toRect, _contentTo);
+			p.restore();
+		}
 		return;
 	}
 	switch (_state.type) {
@@ -225,12 +309,6 @@ void SendButton::paintEvent(QPaintEvent *e) {
 }
 
 void SendButton::paintRecord(QPainter &p, bool over) {
-	if (!isDisabled() && !_state.forbidden) {
-		paintRipple(
-			p,
-			(width() - _st.inner.rippleAreaSize) / 2,
-			_st.inner.rippleAreaPosition.y());
-	}
 	if (_state.forbidden) {
 		p.setOpacity(kForbiddenOpacity);
 	}
@@ -241,12 +319,6 @@ void SendButton::paintRecord(QPainter &p, bool over) {
 }
 
 void SendButton::paintRound(QPainter &p, bool over) {
-	if (!isDisabled() && !_state.forbidden) {
-		paintRipple(
-			p,
-			(width() - _st.inner.rippleAreaSize) / 2,
-			_st.inner.rippleAreaPosition.y());
-	}
 	if (_state.forbidden) {
 		p.setOpacity(kForbiddenOpacity);
 	}
@@ -263,83 +335,29 @@ void SendButton::paintLottieIcon(QPainter &p, int index, bool over) {
 	} else if (!_voiceRoundAnimating && icon->frameIndex() != 0) {
 		icon->jumpTo(0, [=] { update(); });
 	}
-	const auto color = (isDisabled() || !over)
-		? st::historyRecordVoiceFg->c
-		: st::historyRecordVoiceFgOver->c;
-	icon->paintInCenter(p, rect(), color);
+	icon->paintInCenter(p, circleRect(), iconColor(over));
 }
 
 void SendButton::paintSave(QPainter &p, bool over) {
-	if (!isDisabled()) {
-		auto color = _st.sendIconFg->c;
-		color.setAlpha(25);
-		paintRipple(
-			p,
-			(width() - _st.inner.rippleAreaSize) / 2,
-			_st.inner.rippleAreaPosition.y(),
-			&color);
-	}
 	const auto &saveIcon = over
 		? st::historyEditSaveIconOver
 		: st::historyEditSaveIcon;
-	saveIcon.paintInCenter(p, rect());
+	saveIcon.paintInCenter(p, circleRect(), iconColor(over));
 }
 
 void SendButton::paintCancel(QPainter &p, bool over) {
-	paintRipple(
-		p,
-		(width() - _st.inner.rippleAreaSize) / 2,
-		_st.inner.rippleAreaPosition.y());
-
 	const auto &cancelIcon = over
 		? st::historyReplyCancelIconOver
 		: st::historyReplyCancelIcon;
-	cancelIcon.paintInCenter(p, rect());
+	cancelIcon.paintInCenter(p, circleRect(), iconColor(over));
 }
 
 void SendButton::paintSend(QPainter &p, bool over) {
 	const auto &sendIcon = over ? _st.inner.iconOver : _st.inner.icon;
-	if (const auto padding = _st.sendIconFillPadding; padding > 0) {
-		const auto ellipse = sendEllipseRect();
-		{
-			auto hq = PainterHighQualityEnabler(p);
-			p.setPen(Qt::NoPen);
-			if (_state.fillBgOverride.isValid()) {
-				p.setBrush(_state.fillBgOverride);
-			} else {
-				p.setBrush(st::windowBgActive);
-			}
-			p.drawEllipse(ellipse);
-		}
-		if (!isDisabled()) {
-			auto color = _st.sendIconFg->c;
-			color.setAlpha(25);
-			paintRipple(p, ellipse.topLeft(), &color);
-		}
-	} else if (!isDisabled()) {
-		auto color = _st.sendIconFg->c;
-		color.setAlpha(25);
-		paintRipple(
-			p,
-			(width() - _st.inner.rippleAreaSize) / 2,
-			_st.inner.rippleAreaPosition.y(),
-			&color);
-	}
-	if (isDisabled()) {
-		const auto color = st::historyRecordVoiceFg->c;
-		sendIcon.paint(p, _st.sendIconPosition, width(), color);
-	} else {
-		sendIcon.paint(p, _st.sendIconPosition, width());
-	}
+	sendIcon.paintInCenter(p, circleRect(), iconColor(over));
 }
 
 void SendButton::paintStop(QPainter &p, bool over) {
-	if (!isDisabled()) {
-		paintRipple(
-			p,
-			(width() - _st.inner.rippleAreaSize) / 2,
-			_st.inner.rippleAreaPosition.y());
-	}
 	auto hq = PainterHighQualityEnabler(p);
 	const auto size = _st.stopSize;
 	const auto inner = QRect(
@@ -348,7 +366,7 @@ void SendButton::paintStop(QPainter &p, bool over) {
 			(height() - size.height()) / 2),
 		size);
 	p.setPen(Qt::NoPen);
-	p.setBrush(over ? st::historySendIconFgOver : st::historySendIconFg);
+	p.setBrush(iconColor(over));
 	p.drawRoundedRect(inner, _st.stopRadius, _st.stopRadius);
 }
 
@@ -379,22 +397,7 @@ void SendButton::paintStarsToSend(QPainter &p, bool over) {
 }
 
 void SendButton::paintSchedule(QPainter &p, bool over) {
-	const auto ellipse = scheduleEllipseRect();
-	{
-		PainterHighQualityEnabler hq(p);
-		p.setPen(Qt::NoPen);
-		p.setBrush(over ? st::historySendIconFgOver : st::historySendIconFg);
-		p.drawEllipse(ellipse);
-	}
-	if (!isDisabled()) {
-		auto color = st::historyComposeAreaBg->c;
-		color.setAlpha(25);
-		paintRipple(p, ellipse.topLeft(), &color);
-	}
-	st::historyScheduleIcon.paint(
-		p,
-		st::historyScheduleIconPosition,
-		width());
+	st::historyScheduleIcon.paintInCenter(p, circleRect(), iconColor(over));
 }
 
 void SendButton::paintSlowmode(QPainter &p) {
@@ -505,11 +508,13 @@ QPixmap SendButton::grabContent() {
 	result.setDevicePixelRatio(style::DevicePixelRatio());
 	result.fill(Qt::transparent);
 	{
+		_grabbingIconOnly = true;
 		auto p = QPainter(&result);
 		p.drawPixmap(
 			(kWideScale - 1) / 2 * width(),
 			(kWideScale - 1) / 2 * height(),
 			GrabWidget(this));
+		_grabbingIconOnly = false;
 	}
 	return PixmapFromImage(std::move(result));
 }
@@ -517,12 +522,10 @@ QPixmap SendButton::grabContent() {
 QImage SendButton::prepareRippleMask() const {
 	switch (_lastRippleShape) {
 	case RippleShape::InnerEllipse: {
-		const auto size = _st.inner.rippleAreaSize;
-		return RippleAnimation::EllipseMask(QSize(size, size));
+		return RippleAnimation::EllipseMask(circleRect().size());
 	}
 	case RippleShape::SendEllipse: {
-		const auto r = sendEllipseRect();
-		return RippleAnimation::EllipseMask(r.size());
+		return RippleAnimation::EllipseMask(circleRect().size());
 	}
 	case RippleShape::StarsRoundRect: {
 		const auto r = starsGeometry().rounded;
@@ -530,8 +533,7 @@ QImage SendButton::prepareRippleMask() const {
 		return RippleAnimation::RoundRectMask(r.size(), radius);
 	}
 	case RippleShape::ScheduleEllipse: {
-		const auto r = scheduleEllipseRect();
-		return RippleAnimation::EllipseMask(r.size());
+		return RippleAnimation::EllipseMask(circleRect().size());
 	}
 	}
 	Unexpected("RippleShape in SendButton::prepareRippleMask.");
@@ -541,16 +543,14 @@ QPoint SendButton::prepareRippleStartPosition() const {
 	const auto real = mapFromGlobal(QCursor::pos());
 	switch (_lastRippleShape) {
 	case RippleShape::InnerEllipse: {
-		const auto size = _st.inner.rippleAreaSize;
-		const auto y = (height() - size) / 2;
-		return real - QPoint((width() - size) / 2, y);
+		return real - circleRect().topLeft();
 	}
 	case RippleShape::SendEllipse:
-		return real - sendEllipseRect().topLeft();
+		return real - circleRect().topLeft();
 	case RippleShape::StarsRoundRect:
 		return real - starsGeometry().rounded.topLeft();
 	case RippleShape::ScheduleEllipse:
-		return real - scheduleEllipseRect().topLeft();
+		return real - circleRect().topLeft();
 	}
 	Unexpected("RippleShape in SendButton::prepareRippleStartPosition.");
 }
@@ -568,22 +568,12 @@ void SendButton::initVoiceRoundIcon(int index) {
 }
 
 void SendButton::paintVoiceRoundIcon(QPainter &p, bool over) {
-	if (!isDisabled() && !_state.forbidden) {
-		paintRipple(
-			p,
-			(width() - _st.inner.rippleAreaSize) / 2,
-			_st.inner.rippleAreaPosition.y());
-	}
-
 	if (_state.forbidden) {
 		p.setOpacity(kForbiddenOpacity);
 	}
-	const auto color = (isDisabled() || !over)
-		? st::historyRecordVoiceFg->c
-		: st::historyRecordVoiceFgOver->c;
 	const auto toVideo = (_state.type == Type::Round);
 	const auto index = toVideo ? kVoiceToRoundIndex : kRoundToVoiceIndex;
-	_voiceRoundIcons[index]->paintInCenter(p, rect(), color);
+	_voiceRoundIcons[index]->paintInCenter(p, circleRect(), iconColor(over));
 	if (_state.forbidden) {
 		p.setOpacity(1.);
 	}

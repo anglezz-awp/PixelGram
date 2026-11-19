@@ -13,6 +13,9 @@
 #include "cpp/dynamiccolor/material_dynamic_colors.h"
 
 #include <QtCore/QFile>
+#include <QtGui/QPixmapCache>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QWidget>
 
 namespace PixelGram {
 
@@ -231,8 +234,8 @@ static const MappingEntry kMappingTable[] = {
 	{ "boxTitleAdditionalFg", &M3SchemeRoles::onSurfaceVariant, 255 },
 	{ "boxTitleCloseFg", &M3SchemeRoles::onSurfaceVariant, 255 },
 	{ "boxTitleCloseFgOver", &M3SchemeRoles::onSurface, 255 },
-	{ "boxDividerBg", &M3SchemeRoles::outlineVariant, 255 },
-	{ "boxDividerFg", &M3SchemeRoles::outlineVariant, 255 },
+	{ "boxDividerBg", &M3SchemeRoles::surface, 0 },
+	{ "boxDividerFg", &M3SchemeRoles::surface, 0 },
 	{ "paymentsTipActive", &M3SchemeRoles::primary, 255 },
 	{ "membersAboutLimitFg", &M3SchemeRoles::error, 255 },
 	{ "contactsBg", &M3SchemeRoles::surface, 255 },
@@ -740,7 +743,11 @@ void ApplyM3Scheme(const QColor &seed, bool isDark) {
 	}
 
 	style::internal::ResetIcons();
+	QPixmapCache::clear();
 	style::NotifyPaletteChanged();
+	for (const auto widget : QApplication::allWidgets()) {
+		widget->update();
+	}
 }
 
 } // namespace PixelGram

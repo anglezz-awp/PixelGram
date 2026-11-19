@@ -50,6 +50,13 @@ QString AntiDeleteTag() {
 	return tr::lng_antidelete_deleted(tr::now);
 }
 
+[[nodiscard]] int DeletedBadgeWidth(const QString &text) {
+	const auto iconSize = style::ConvertScale(10);
+	const auto iconGap = style::ConvertScale(3);
+	const auto trailingGap = style::ConvertScale(4);
+	return iconSize + iconGap + st::msgDateFont->width(text) + trailingGap;
+}
+
 } // namespace
 
 namespace {
@@ -167,6 +174,7 @@ int BottomInfo::firstLineWidth() const {
 
 bool BottomInfo::isWide() const {
 	return (_data.flags & Data::Flag::Edited)
+		|| (_data.flags & Data::Flag::Deleted)
 		|| _data.scheduleRepeatPeriod
 		|| !_data.author.isEmpty()
 		|| !_views.isEmpty()
@@ -191,8 +199,12 @@ TextState BottomInfo::textState(
 	}
 	if (!_views.isEmpty()) {
 		const auto viewsWidth = _views.maxWidth();
+		const auto deletedWidth = (_data.flags & Data::Flag::Deleted)
+			? DeletedBadgeWidth(AntiDeleteTag())
+			: 0;
 		const auto right = width()
 			- withTicksWidth
+			- deletedWidth
 			- ((_data.flags & Data::Flag::Pinned) ? st::historyPinWidth : 0)
 			- st::historyViewsSpace
 			- st::historyViewsWidth
@@ -324,32 +336,44 @@ void BottomInfo::paint(
 
 	if (_data.flags & Data::Flag::Deleted) {
 		const auto &roles = PixelGram::CurrentM3Roles();
-		const auto deletedColor = inverted ? roles.onErrorContainer : roles.error;
+		const auto deletedColor = inverted
+			? (roles.error.lightness() >= 150
+				? roles.error
+				: QColor(0xFF, 0xB4, 0xAB))
+			: roles.error;
 		const auto text = AntiDeleteTag();
-		const auto textWidth = st::msgDateFont->width(text);
-		const auto totalDeletedWidth = 10 + 3 + textWidth + 4;
+		const auto iconSize = style::ConvertScale(10);
+		const auto iconGap = style::ConvertScale(3);
+		const auto totalDeletedWidth = DeletedBadgeWidth(text);
 		right -= totalDeletedWidth;
 
 		const auto iconX = right;
-		const auto iconY = position.y() + (st::msgDateFont->height - 11) / 2;
+		const auto iconH = style::ConvertScale(11);
+		const auto iconY = position.y() + (st::msgDateFont->height - iconH) / 2;
+		const auto s = iconSize / 10.;
 
+		p.save();
 		PainterHighQualityEnabler hq(p);
-		p.setPen(QPen(deletedColor, 1.2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+		p.setPen(QPen(deletedColor, 1.2 * s, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
 		p.setBrush(Qt::NoBrush);
-		p.drawLine(iconX + 3, iconY + 1, iconX + 7, iconY + 1);
-		p.drawLine(iconX + 1, iconY + 3, iconX + 9, iconY + 3);
+		p.drawLine(QPointF(iconX + 3 * s, iconY + 1 * s), QPointF(iconX + 7 * s, iconY + 1 * s));
+		p.drawLine(QPointF(iconX + 1 * s, iconY + 3 * s), QPointF(iconX + 9 * s, iconY + 3 * s));
 		QPainterPath body;
-		body.moveTo(iconX + 2, iconY + 4);
-		body.lineTo(iconX + 2.5, iconY + 10.5);
-		body.lineTo(iconX + 7.5, iconY + 10.5);
-		body.lineTo(iconX + 8, iconY + 4);
+		body.moveTo(iconX + 2 * s, iconY + 4 * s);
+		body.lineTo(iconX + 2.5 * s, iconY + 10.5 * s);
+		body.lineTo(iconX + 7.5 * s, iconY + 10.5 * s);
+		body.lineTo(iconX + 8 * s, iconY + 4 * s);
 		p.drawPath(body);
-		p.drawLine(iconX + 4, iconY + 5.5, iconX + 4, iconY + 9);
-		p.drawLine(iconX + 6, iconY + 5.5, iconX + 6, iconY + 9);
+		p.drawLine(QPointF(iconX + 4 * s, iconY + 5.5 * s), QPointF(iconX + 4 * s, iconY + 9 * s));
+		p.drawLine(QPointF(iconX + 6 * s, iconY + 5.5 * s), QPointF(iconX + 6 * s, iconY + 9 * s));
 
 		p.setFont(st::msgDateFont);
 		p.setPen(deletedColor);
-		p.drawText(iconX + 13, position.y() + st::msgDateFont->ascent, text);
+		p.drawText(
+			iconX + iconSize + iconGap,
+			position.y() + st::msgDateFont->ascent,
+			text);
+		p.restore();
 	}
 
 	if (_data.flags & Data::Flag::Silent) {
@@ -645,9 +669,7 @@ QSize BottomInfo::countOptimalSize() {
 	}
 	width += _authorEditedDate.maxWidth();
 	if (_data.flags & Data::Flag::Deleted) {
-		const auto text = AntiDeleteTag();
-		const auto textWidth = st::msgDateFont->width(text);
-		width += 10 + 3 + textWidth + 4;
+		width += DeletedBadgeWidth(AntiDeleteTag());
 	}
 	if (!_views.isEmpty()) {
 		width += st::historyViewsSpace

@@ -35,6 +35,15 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat_helpers.h"
 
 namespace HistoryView {
+namespace {
+
+constexpr auto kBottomFloatingSideMargin = 16;
+constexpr auto kBottomFloatingTopMargin = 4;
+constexpr auto kBottomFloatingBottomMargin = 10;
+constexpr auto kBottomFloatingMaxWidth = 800;
+constexpr auto kBottomOverlayIconInset = 4;
+
+} // namespace
 
 BottomControls::BottomControls(
 	QWidget *parent,
@@ -240,11 +249,17 @@ void BottomControls::setupButtons() {
 		_muteUnmute = std::make_unique<Ui::FlatButton>(
 			this,
 			tr::lng_channel_mute(tr::now).toUpper(),
-			st::historyComposeButton);
+			st::historyComposeButtonTonal);
 		_reportMessages = std::make_unique<Ui::FlatButton>(
 			this,
 			QString(),
-			st::historyComposeButton);
+			st::historyUnblock);
+		const auto r = st::historyComposeButton.height / 2;
+		_unblock->setRounding(r);
+		_botStart->setRounding(r);
+		_joinChannel->setRounding(r);
+		_muteUnmute->setRounding(r);
+		_reportMessages->setRounding(r);
 		_unblock->hide();
 		_botStart->hide();
 		_joinChannel->hide();
@@ -279,6 +294,7 @@ void BottomControls::setupButtons() {
 			this,
 			QString(),
 			st::historyComposeButton);
+		_joinGroup->setRounding(st::historyComposeButton.height / 2);
 		_joinGroup->hide();
 		_joinGroup->setClickedCallback([=] {
 			_actionRequests.fire(BottomControlsAction::JoinGroup);
@@ -327,12 +343,21 @@ void BottomControls::setupOverlayIconButton(
 		not_null<Ui::IconButton*> button,
 		bool alignRight,
 		Fn<void()> refresh) {
-	widthValue() | rpl::on_next([=](int width) {
-		if (alignRight) {
-			button->moveToRight(0, 0, width);
-		} else {
-			button->moveToLeft(0, 0, width);
+	const auto reposition = [=](QWidget *parent) {
+		if (!parent) {
+			return;
 		}
+		if (alignRight) {
+			button->moveToRight(kBottomOverlayIconInset, 0, parent->width());
+		} else {
+			button->moveToLeft(kBottomOverlayIconInset, 0, parent->width());
+		}
+	};
+	rpl::merge(
+		_muteUnmute->widthValue() | rpl::to_empty,
+		_joinChannel->widthValue() | rpl::to_empty
+	) | rpl::on_next([=] {
+		reposition(button->parentWidget());
 	}, button->lifetime());
 	rpl::combine(
 		_muteUnmute->shownValue(),
@@ -345,11 +370,7 @@ void BottomControls::setupOverlayIconButton(
 			: nullptr;
 		if (newParent) {
 			button->setParent(newParent);
-			if (alignRight) {
-				button->moveToRight(0, 0);
-			} else {
-				button->moveToLeft(0, 0);
-			}
+			reposition(newParent);
 			refresh();
 		}
 	}, button->lifetime());
@@ -373,6 +394,7 @@ void BottomControls::setupOpenChatButton() {
 			? tr::lng_saved_open_chat(tr::now)
 			: tr::lng_saved_open_group(tr::now)),
 		st::historyComposeButton);
+	_openChatButton->setRounding(st::historyComposeButton.height / 2);
 
 	_openChatButton->setClickedCallback([=] {
 		_controller->showPeerHistory(
@@ -395,8 +417,13 @@ void BottomControls::setupAboutHiddenAuthor() {
 	_aboutHiddenAuthor->paintRequest() | rpl::on_next([=] {
 		auto p = QPainter(_aboutHiddenAuthor.get());
 		auto rect = _aboutHiddenAuthor->rect();
-
-		p.fillRect(rect, st::historyReplyBg);
+		{
+			auto hq = PainterHighQualityEnabler(p);
+			p.setPen(Qt::NoPen);
+			p.setBrush(st::historyComposeAreaBg);
+			const auto r = rect.height() / 2.;
+			p.drawRoundedRect(rect, r, r);
+		}
 
 		p.setFont(st::normalFont);
 		p.setPen(st::windowSubTextFg);
@@ -505,12 +532,13 @@ void BottomControls::refreshDirectMessageShown() {
 }
 
 void BottomControls::recomputeContentHeight() {
-	const auto h = _openChatButton
-		? _openChatButton->height()
-		: _aboutHiddenAuthor
-		? st::historyUnblock.height
-		: isButtonActive()
-		? st::historyComposeButton.height
+	const auto hasAny = (_openChatButton != nullptr)
+		|| (_aboutHiddenAuthor != nullptr)
+		|| isButtonActive();
+	const auto h = hasAny
+		? (st::historyComposeButton.height
+			+ kBottomFloatingTopMargin
+			+ kBottomFloatingBottomMargin)
 		: 0;
 	resize(width(), h);
 	setVisible(h > 0);
@@ -584,15 +612,21 @@ bool BottomControls::isChoosingTheme() const {
 void BottomControls::resizeEvent(QResizeEvent *e) {
 	RpWidget::resizeEvent(e);
 	const auto w = width();
+	const auto buttonHeight = st::historyComposeButton.height;
+	const auto buttonTop = height() - kBottomFloatingBottomMargin - buttonHeight;
+	const auto buttonWidth = std::min(
+		std::max(w - 2 * kBottomFloatingSideMargin, 120),
+		kBottomFloatingMaxWidth);
+	const auto buttonLeft = (w - buttonWidth) / 2;
+	const auto fullRect = QRect(buttonLeft, buttonTop, buttonWidth, buttonHeight);
 	if (_openChatButton) {
-		_openChatButton->setGeometry(0, 0, w, _openChatButton->height());
+		_openChatButton->setGeometry(fullRect);
 		return;
 	}
 	if (_aboutHiddenAuthor) {
-		_aboutHiddenAuthor->setGeometry(0, 0, w, st::historyUnblock.height);
+		_aboutHiddenAuthor->setGeometry(fullRect);
 		return;
 	}
-	const auto fullRect = QRect(0, 0, w, st::historyComposeButton.height);
 	if (_botStart) {
 		_botStart->setGeometry(fullRect);
 	}

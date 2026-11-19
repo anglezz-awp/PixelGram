@@ -419,6 +419,7 @@ private:
 	void startMediaReplace();
 	void updateOuterGeometry(QRect rect);
 	void paintBackground(QPainter &p, QRect full, QRect clip);
+	void updatePillRadius();
 
 	[[nodiscard]] auto baseSendButtonType() const;
 	[[nodiscard]] auto computeSendButtonType() const;
@@ -562,6 +563,10 @@ private:
 	rpl::event_stream<FullReplyTo> _jumpToItemRequests;
 
 	std::optional<Ui::RoundRect> _backgroundRect;
+	QRect _pillRect;
+	Ui::Animations::Simple _pillRadiusAnim;
+	float64 _pillRadiusCurrent = 26.;
+	bool _pillMultiline = false;
 
 	const std::shared_ptr<Ui::SendButton> _send;
 	rpl::event_stream<bool> _sendLockBadge;

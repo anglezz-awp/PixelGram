@@ -1044,16 +1044,16 @@ defaultMessageBar: MessageBar {
 }
 
 historyComposeButton: FlatButton {
-	color: windowActiveTextFg;
-	overColor: windowActiveTextFg;
+	color: activeButtonFg;
+	overColor: activeButtonFg;
 
 	bgColor: historyComposeButtonBg;
 	overBgColor: historyComposeButtonBgOver;
 
 	width: -32px;
-	height: 46px;
+	height: 52px;
 
-	textTop: 14px;
+	textTop: 17px;
 
 	font: semiboldFont;
 	overFont: semiboldFont;
@@ -1062,36 +1062,48 @@ historyComposeButton: FlatButton {
 		color: historyComposeButtonBgRipple;
 	}
 }
+historyComposeButtonTonal: FlatButton(historyComposeButton) {
+	color: lightButtonFg;
+	overColor: lightButtonFg;
+
+	bgColor: lightButtonBg;
+	overBgColor: lightButtonBgOver;
+
+	ripple: RippleAnimation(defaultRippleAnimation) {
+		color: lightButtonBgRipple;
+	}
+}
 historyGiftToChannel: IconButton(defaultIconButton) {
-	width: 46px;
-	height: 46px;
+	width: 52px;
+	height: 52px;
 
-	icon: icon{{ "menu/gift_premium", windowActiveTextFg }};
-	iconOver: icon{{ "menu/gift_premium", windowActiveTextFg }};
+	icon: icon{{ "menu/gift_premium", activeButtonFg }};
+	iconOver: icon{{ "menu/gift_premium", activeButtonFg }};
 
-	rippleAreaPosition: point(3px, 3px);
+	rippleAreaPosition: point(6px, 6px);
 	rippleAreaSize: 40px;
 	ripple: universalRippleAnimation;
 }
 historyDirectMessage: IconButton(historyGiftToChannel) {
-	icon: icon{{ "menu/chat_discuss", windowActiveTextFg }};
-	iconOver: icon{{ "menu/chat_discuss", windowActiveTextFg }};
+	icon: icon{{ "menu/chat_discuss", activeButtonFg }};
+	iconOver: icon{{ "menu/chat_discuss", activeButtonFg }};
 }
 historyUnblock: FlatButton(historyComposeButton) {
 	color: attentionButtonFg;
 	overColor: attentionButtonFgOver;
-}
-historyContactStatusButton: FlatButton(historyComposeButton) {
-	height: 49px;
-	textTop: 16px;
-	overBgColor: historyComposeButtonBg;
+	bgColor: attentionButtonBgOver;
+	overBgColor: attentionButtonBgOver;
 	ripple: RippleAnimation(defaultRippleAnimation) {
-		color: historyComposeButtonBgOver;
+		color: attentionButtonBgRipple;
 	}
 }
-historyContactStatusBlock: FlatButton(historyContactStatusButton) {
-	color: attentionButtonFg;
-	overColor: attentionButtonFg;
+historyContactStatusButton: FlatButton(historyComposeButtonTonal) {
+	height: 52px;
+	textTop: 17px;
+}
+historyContactStatusBlock: FlatButton(historyUnblock) {
+	height: 52px;
+	textTop: 17px;
 }
 historyContactStatusLabel: FlatLabel(defaultFlatLabel) {
 	minWidth: 240px;
@@ -1329,17 +1341,17 @@ historyComposeField: InputField(defaultInputField) {
 historyComposeFieldMaxHeight: 224px;
 historyComposeFieldFadeHeight: 6px;
 historySendRight: 2px;
-historySendPadding: 9px;
+historySendPadding: 8px;
 // historyMinHeight: 56px;
 
 historyAttach: IconButton(defaultIconButton) {
 	width: 44px;
-	height: 46px;
+	height: 52px;
 
 	icon: icon {{ "chat/input_attach", historyComposeIconFg }};
 	iconOver: icon {{ "chat/input_attach", historyComposeIconFgOver }};
 
-	rippleAreaPosition: point(2px, 3px);
+	rippleAreaPosition: point(2px, 6px);
 	rippleAreaSize: 40px;
 	ripple: defaultRippleAnimationBgOver;
 }
@@ -1430,9 +1442,9 @@ boxAttachEmojiTop: 20px;
 
 historySendIcon: icon {{ "chat/input_send", historySendIconFg }};
 historySendIconOver: icon {{ "chat/input_send", historySendIconFgOver }};
-historySendSize: size(44px, 46px);
+historySendSize: size(52px, 52px);
 historyScheduleIcon: icon {{ "chat/input_schedule", historyComposeAreaBg }};
-historyScheduleIconPosition: point(7px, 8px);
+historyScheduleIconPosition: point(11px, 11px);
 historyEditSaveIcon: icon {{ "chat/input_save", historySendIconFg }};
 historyEditSaveIconOver: icon {{ "chat/input_save", historySendIconFgOver }};
 
@@ -1523,10 +1535,14 @@ defaultRecordBar: RecordBar {
 }
 
 historySend: SendButton {
-	sendIconPosition: point(10px, 11px);
+	sendIconPosition: point(14px, 14px);
 	inner: IconButton(historyAttach) {
+		width: 52px;
+		height: 52px;
 		icon: historySendIcon;
 		iconOver: historySendIconOver;
+		rippleAreaPosition: point(0px, 0px);
+		rippleAreaSize: 52px;
 	}
 	stars: RoundButton(defaultActiveButton) {
 		height: 28px;
@@ -1618,7 +1634,7 @@ defaultRestrictionLabel: FlatLabel(defaultFlatLabel) {
 }
 defaultSendAsButton: SendAsButton {
 	width: 44px;
-	height: 46px;
+	height: 52px;
 	size: 28px;
 	activeBg: activeButtonBg;
 	activeFg: activeButtonFg;
@@ -1655,7 +1671,7 @@ defaultChooseSendAs: ChooseSendAs {
 defaultComposeControls: ComposeControls {
 	bg: historyComposeAreaBg;
 	radius: 0px;
-	padding: margins(historySendRight, historySendPadding, historySendRight, historySendPadding);
+	padding: margins(6px, historySendPadding, 6px, historySendPadding);
 
 	field: historyComposeField;
 	send: historySend;

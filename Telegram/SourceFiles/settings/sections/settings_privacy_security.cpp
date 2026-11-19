@@ -59,6 +59,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/effects/premium_graphics.h"
 #include "ui/layers/generic_box.h"
 #include "ui/rect.h"
+#include "ui/style/style_core.h"
 #include "ui/text/format_values.h"
 #include "ui/text/text_utilities.h"
 #include "ui/toast/toast.h"
@@ -66,6 +67,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/buttons.h"
 #include "ui/widgets/checkbox.h"
 #include "ui/widgets/fields/input_field.h"
+#include "ui/widgets/labels.h"
 #include "ui/wrap/slide_wrap.h"
 #include "ui/wrap/vertical_layout.h"
 #include "window/window_session_controller.h"
@@ -218,30 +220,42 @@ void AddPrivacyPremiumStar(
 	const auto sampleLeft = st::settingsColorSamplePadding.left();
 	const auto badgeLeft = padding.left() + sampleLeft;
 
-	const auto factor = style::DevicePixelRatio();
 	const auto size = Size(st::settingsButtonNoIcon.style.font->ascent);
-	const auto roles = PixelGram::CurrentM3Roles();
-	const auto starFg = roles.onTertiaryContainer.isValid()
-		? roles.onTertiaryContainer
-		: QColor(0xff, 0xff, 0xff);
-	const auto stops = QGradientStops{ { 0.0, starFg }, { 1.0, starFg.lighter(115) } };
-	auto starImage = QImage(
-		size * factor,
-		QImage::Format_ARGB32_Premultiplied);
-	starImage.setDevicePixelRatio(factor);
-	starImage.fill(Qt::transparent);
-	{
-		auto p = QPainter(&starImage);
-		auto star = QSvgRenderer(
-			Ui::Premium::ColorizedSvg(stops));
-		star.render(&p, Rect(size));
-	}
+	const auto renderStar = [=] {
+		const auto factor = style::DevicePixelRatio();
+		const auto &roles = PixelGram::CurrentM3Roles();
+		const auto starFg = roles.onTertiaryContainer.isValid()
+			? roles.onTertiaryContainer
+			: QColor(0xff, 0xff, 0xff);
+		const auto stops = QGradientStops{
+			{ 0.0, starFg },
+			{ 1.0, starFg.lighter(115) },
+		};
+		auto starImage = QImage(
+			size * factor,
+			QImage::Format_ARGB32_Premultiplied);
+		starImage.setDevicePixelRatio(factor);
+		starImage.fill(Qt::transparent);
+		{
+			auto p = QPainter(&starImage);
+			auto star = QSvgRenderer(
+				Ui::Premium::ColorizedSvg(stops));
+			star.render(&p, Rect(size));
+		}
+		return starImage;
+	};
+	const auto star = badge->lifetime().make_state<QImage>(renderStar());
+	style::PaletteChanged(
+	) | rpl::on_next([=] {
+		*star = renderStar();
+		badge->update();
+	}, badge->lifetime());
 
-	badge->resize(starImage.size() / style::DevicePixelRatio());
+	badge->resize(size);
 	badge->paintRequest(
-	) | rpl::on_next([=, star = std::move(starImage)] {
+	) | rpl::on_next([=] {
 		auto p = QPainter(badge);
-		p.drawImage(0, 0, star);
+		p.drawImage(0, 0, *star);
 	}, badge->lifetime());
 
 	rpl::combine(
@@ -313,8 +327,12 @@ void SetupSensitiveContent(
 		highlights->push_back({ u"chat/show-18-content"_q, { button } });
 	}
 
-	Ui::AddSkip(inner);
-	Ui::AddDividerText(inner, tr::lng_settings_sensitive_about());
+	inner->add(
+		object_ptr<Ui::FlatLabel>(
+			inner,
+			tr::lng_settings_sensitive_about(),
+			st::settingsDividerAboutLabel),
+		st::settingsDividerAboutPadding);
 
 	wrap->toggleOn(session->api().sensitiveContent().canChange());
 }
@@ -382,7 +400,12 @@ void OpenFileConfirmationsBox(not_null<Ui::GenericBox*> box) {
 	extensions->setInputMethodHints(Qt::ImhLatinOnly
 		| Qt::ImhNoAutoUppercase
 		| Qt::ImhNoPredictiveText);
-	Ui::AddDividerText(layout, tr::lng_settings_edit_extensions_about());
+	layout->add(
+		object_ptr<Ui::FlatLabel>(
+			layout,
+			tr::lng_settings_edit_extensions_about(),
+			st::settingsDividerAboutLabel),
+		st::settingsDividerAboutPadding);
 	Ui::AddSkip(layout);
 	const auto ip = layout->add(object_ptr<Ui::SettingsButton>(
 		box,
@@ -390,8 +413,12 @@ void OpenFileConfirmationsBox(not_null<Ui::GenericBox*> box) {
 		st::settingsButtonNoIcon
 	))->toggleOn(rpl::single(settings->ipRevealWarning()));
 	ip->setAllowTextLines();
-	Ui::AddSkip(layout);
-	Ui::AddDividerText(layout, tr::lng_settings_edit_ip_confirm_about());
+	layout->add(
+		object_ptr<Ui::FlatLabel>(
+			layout,
+			tr::lng_settings_edit_ip_confirm_about(),
+			st::settingsDividerAboutLabel),
+		st::settingsDividerAboutPadding);
 
 	box->setFocusCallback([=] {
 		extensions->setFocusFast();
@@ -499,8 +526,12 @@ void SetupArchiveAndMute(
 		highlights->push_back({ u"privacy/archive_and_mute"_q, { button } });
 	}
 
-	Ui::AddSkip(inner);
-	Ui::AddDividerText(inner, tr::lng_settings_auto_archive_about());
+	inner->add(
+		object_ptr<Ui::FlatLabel>(
+			inner,
+			tr::lng_settings_auto_archive_about(),
+			st::settingsDividerAboutLabel),
+		st::settingsDividerAboutPadding);
 
 	auto shown = rpl::single(
 		false
@@ -797,7 +828,6 @@ void BuildSecuritySection(
 		return SectionBuilder::WidgetToAdd{};
 	});
 
-	builder.addSkip();
 	builder.addDividerText(tr::lng_settings_sessions_about());
 }
 
@@ -958,7 +988,6 @@ void BuildPrivacySection(SectionBuilder &builder) {
 
 	session->api().userPrivacy().reload(Privacy::Key::AddedByPhone);
 
-	builder.addSkip(st::settingsPrivacySecurityPadding);
 	builder.addDivider();
 }
 
@@ -999,7 +1028,6 @@ void BuildArchiveAndMuteSection(SectionBuilder &builder) {
 			}, toggle->lifetime());
 		}
 
-		builder.addSkip();
 		builder.addDividerText(tr::lng_settings_auto_archive_about());
 	}, rpl::combine(
 		std::move(shown),
@@ -1028,7 +1056,6 @@ void BuildBotsAndWebsitesSection(SectionBuilder &builder) {
 		.keywords = { u"payment"_q, u"bots"_q, u"clear"_q },
 	});
 
-	builder.addSkip();
 	builder.addDivider();
 }
 
@@ -1065,7 +1092,6 @@ void BuildTopPeersSection(SectionBuilder &builder) {
 		}, toggle->lifetime());
 	}
 
-	builder.addSkip();
 	builder.addDividerText(tr::lng_settings_top_peers_about());
 }
 
@@ -1135,7 +1161,6 @@ void BuildConfirmationExtensions(SectionBuilder &builder) {
 		.keywords = { u"extensions"_q, u"files"_q, u"confirmations"_q },
 	});
 
-	builder.addSkip();
 	builder.addDividerText(tr::lng_settings_edit_extensions_about());
 }
 
