@@ -1994,6 +1994,8 @@ PRIVATE
     settings/pixelgram_settings.h
     ui/pixelgram_m3_scheme.cpp
     ui/pixelgram_m3_scheme.h
+    ui/pixelgram_avatar_shapes.cpp
+    ui/pixelgram_avatar_shapes.h
     settings/sections/settings_main.cpp
     settings/sections/settings_main.h
     settings/settings_recent_searches.cpp
@@ -2949,6 +2951,8 @@ target_sources(Telegram PRIVATE
     ${mcu_loc}/dislike/dislike.h
     ${src_loc}/ui/pixelgram_m3_scheme.cpp
     ${src_loc}/ui/pixelgram_m3_scheme.h
+    ${src_loc}/ui/pixelgram_avatar_shapes.cpp
+    ${src_loc}/ui/pixelgram_avatar_shapes.h
 )
 
 target_compile_definitions(Telegram

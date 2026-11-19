@@ -1,3 +1,5 @@
+#include "ui/pixelgram_avatar_shapes.h"
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -140,13 +142,13 @@ void ValidateUserpicCache(
 	Expects(cloud != nullptr || empty != nullptr);
 
 	const auto full = QSize(size, size);
-	const auto version = style::PaletteVersion();
+	const auto version = style::PaletteVersion() ^ (PixelGram::AvatarShapeVersion() << 16);
 	const auto shapeValue = static_cast<uint32>(shape) & 3;
 	const auto regenerate = (view.cached.size() != QSize(size, size))
 		|| (view.shape != shapeValue)
 		|| (cloud && !view.empty.null())
 		|| (empty && empty != view.empty.get())
-		|| (empty && view.paletteVersion != version);
+		|| (view.paletteVersion != version);
 	if (!regenerate) {
 		return;
 	}
@@ -154,6 +156,7 @@ void ValidateUserpicCache(
 	view.shape = shapeValue;
 	view.paletteVersion = version;
 
+	const auto &config = PixelGram::CurrentConfig();
 	if (cloud) {
 		view.cached = cloud->scaled(
 			full,
@@ -161,14 +164,17 @@ void ValidateUserpicCache(
 			Qt::SmoothTransformation);
 		if (shape == PeerUserpicShape::Monoforum) {
 			view.cached = Ui::ApplyMonoforumShape(std::move(view.cached));
-		} else if (shape == PeerUserpicShape::Forum) {
+		} else if (shape == PeerUserpicShape::Forum && !config.singleCornerRadius) {
 			view.cached = Images::Round(
 				std::move(view.cached),
 				Images::CornersMask(size
 					* Ui::ForumUserpicRadiusMultiplier()
 					/ style::DevicePixelRatio()));
 		} else {
-			view.cached = Images::Circle(std::move(view.cached));
+			view.cached = PixelGram::ApplyAvatarMask(
+				std::move(view.cached),
+				config.avatarShape,
+				config.avatarCornerRadius);
 		}
 	} else {
 		if (view.cached.size() != full) {
@@ -179,7 +185,7 @@ void ValidateUserpicCache(
 		auto p = QPainter(&view.cached);
 		if (shape == PeerUserpicShape::Monoforum) {
 			empty->paintMonoforum(p, 0, 0, size, size);
-		} else if (shape == PeerUserpicShape::Forum) {
+		} else if (shape == PeerUserpicShape::Forum && !config.singleCornerRadius) {
 			empty->paintRounded(
 				p,
 				0,
@@ -188,7 +194,15 @@ void ValidateUserpicCache(
 				size,
 				size * Ui::ForumUserpicRadiusMultiplier());
 		} else {
-			empty->paintCircle(p, 0, 0, size, size);
+			PixelGram::PaintEmptyUserpicCustom(
+				p,
+				empty,
+				0,
+				0,
+				size,
+				size,
+				config.avatarShape,
+				config.avatarCornerRadius);
 		}
 	}
 }

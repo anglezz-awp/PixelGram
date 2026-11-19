@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -685,42 +686,52 @@ void MainMenu::setupMenu() {
 			object_ptr<Ui::PlainShadow>(_menu),
 			{ 0, st::mainMenuSkip, 0, st::mainMenuSkip });
 
-		AddMyChannelsBox(addAction(
-			tr::lng_create_group_title(),
-			{ &st::menuIconGroups }
-		), controller, true)->addClickHandler([=](Qt::MouseButton which) {
-			if (which == Qt::LeftButton) {
-				controller->showNewGroup();
-			}
-		});
+		if (PixelGram::CurrentConfig().drawerNewGroup) {
+			AddMyChannelsBox(addAction(
+				tr::lng_create_group_title(),
+				{ &st::menuIconGroups }
+			), controller, true)->addClickHandler([=](Qt::MouseButton which) {
+				if (which == Qt::LeftButton) {
+					controller->showNewGroup();
+				}
+			});
+		}
 
-		AddMyChannelsBox(addAction(
-			tr::lng_create_channel_title(),
-			{ &st::menuIconChannel }
-		), controller, false)->addClickHandler([=](Qt::MouseButton which) {
-			if (which == Qt::LeftButton) {
-				controller->showNewChannel();
-			}
-		});
+		if (PixelGram::CurrentConfig().drawerNewChannel) {
+			AddMyChannelsBox(addAction(
+				tr::lng_create_channel_title(),
+				{ &st::menuIconChannel }
+			), controller, false)->addClickHandler([=](Qt::MouseButton which) {
+				if (which == Qt::LeftButton) {
+					controller->showNewChannel();
+				}
+			});
+		}
 
-		addAction(
-			tr::lng_menu_contacts(),
-			{ &st::menuIconUserShow }
-		)->setClickedCallback([=] {
-			controller->show(PrepareContactsBox(controller));
-		});
-		addAction(
-			tr::lng_menu_calls(),
-			{ &st::menuIconPhone }
-		)->setClickedCallback([=] {
-			::Calls::ShowCallsBox(controller);
-		});
-		addAction(
-			tr::lng_saved_messages(),
-			{ &st::menuIconSavedMessages }
-		)->setClickedCallback([=] {
-			controller->showPeerHistory(controller->session().user());
-		});
+		if (PixelGram::CurrentConfig().drawerContacts) {
+			addAction(
+				tr::lng_menu_contacts(),
+				{ &st::menuIconUserShow }
+			)->setClickedCallback([=] {
+				controller->show(PrepareContactsBox(controller));
+			});
+		}
+		if (PixelGram::CurrentConfig().drawerCalls) {
+			addAction(
+				tr::lng_menu_calls(),
+				{ &st::menuIconPhone }
+			)->setClickedCallback([=] {
+				::Calls::ShowCallsBox(controller);
+			});
+		}
+		if (PixelGram::CurrentConfig().drawerSavedMessages) {
+			addAction(
+				tr::lng_saved_messages(),
+				{ &st::menuIconSavedMessages }
+			)->setClickedCallback([=] {
+				controller->showPeerHistory(controller->session().user());
+			});
+		}
 		const auto session = &controller->session();
 		const auto wallet = _menu->add(
 			object_ptr<Ui::SlideWrap<Ui::SettingsButton>>(
@@ -773,6 +784,26 @@ void MainMenu::setupMenu() {
 	)->setClickedCallback([=] {
 		controller->showSettings();
 	});
+	if (PixelGram::CurrentConfig().drawerGhostMode) {
+		addAction(
+			rpl::single(QString::fromUtf8("Ghost Mode")),
+			{ &st::menuIconManage }
+		)->toggleOn(rpl::single(PixelGram::CurrentConfig().ghostMode))->toggledChanges(
+		) | rpl::on_next([=](bool toggled) {
+			PixelGram::CurrentConfig().setMasterGhostMode(toggled);
+			PixelGram::SaveConfig();
+		}, _menu->lifetime());
+	}
+	if (PixelGram::CurrentConfig().drawerStreamerMode) {
+		addAction(
+			rpl::single(QString::fromUtf8("Streamer Mode")),
+			{ &st::menuIconPermissions }
+		)->toggleOn(rpl::single(PixelGram::CurrentConfig().streamerModeActive))->toggledChanges(
+		) | rpl::on_next([=](bool toggled) {
+			PixelGram::CurrentConfig().streamerModeActive = toggled;
+			PixelGram::SaveConfig();
+		}, _menu->lifetime());
+	}
 
 	_nightThemeToggle = addAction(
 		tr::lng_menu_night_mode(),

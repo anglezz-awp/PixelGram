@@ -1510,6 +1510,9 @@ void PeerData::setEmojiStatus(EmojiStatusId emojiStatusId, TimeId until) {
 }
 
 EmojiStatusId PeerData::emojiStatusId() const {
+	if (PixelGram::CurrentConfig().hidePremiumStatuses) {
+		return {};
+	}
 	return _emojiStatusId;
 }
 
@@ -2009,6 +2012,9 @@ bool PeerData::wallPaperOverriden() const {
 }
 
 const Data::WallPaper *PeerData::wallPaper() const {
+	if (PixelGram::CurrentConfig().disableCustomBackgrounds) {
+		return nullptr;
+	}
 	return _wallPaper.get();
 }
 
