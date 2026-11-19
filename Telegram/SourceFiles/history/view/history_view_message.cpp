@@ -1346,6 +1346,13 @@ QRect Message::effectIconGeometry() const {
 		keyboardHeight = keyboard->naturalHeight();
 		g.setHeight(g.height() - st::msgBotKbButton.margin - keyboardHeight);
 	}
+	if (_reactions && !reactionsInBubble) {
+		const auto reactionsHeight = st::mediaInBubbleSkip + _reactions->height();
+		g.setHeight(g.height() - reactionsHeight);
+	}
+	if (hasExternalBottomInfo()) {
+		g.setHeight(g.height() - ExternalBottomInfoTotal());
+	}
 
 	const auto fromBottomInfo = [&](QPoint bottomRight) {
 		const auto size = _bottomInfo.currentSize();
@@ -1400,6 +1407,13 @@ QRect Message::effectIconGeometry() const {
 			auto mediaLeft = trect.x() - st::msgPadding.left();
 			auto mediaTop = (trect.y() + trect.height() - mediaHeight);
 			return fromBottomInfo(QPoint(mediaLeft, mediaTop) + media->resolveCustomInfoRightBottom());
+		} else if (hasExternalBottomInfo()) {
+			const auto size = _bottomInfo.currentSize();
+			const auto dateY = g.top() + g.height() + ExternalBottomInfoGap();
+			const auto dateX = hasOutLayout()
+				? (g.left() + g.width() - size.width() - ExternalBottomInfoInset())
+				: (g.left() + ExternalBottomInfoInset());
+			return fromBottomInfo({ dateX + size.width(), dateY + size.height() });
 		} else {
 			return fromBottomInfo({
 				inner.left() + inner.width() - (st::msgPadding.right() - st::msgDateDelta.x()),
@@ -1566,9 +1580,6 @@ QSize Message::performCountOptimalSize() {
 				? textHeightFor(bubbleTextWidth(textualWidth))
 				: text().minHeight()
 			: 0;
-		if (hasExternalBottomInfo()) {
-			minHeight += ExternalBottomInfoTotal();
-		}
 		if (reactionsInBubble) {
 			const auto reactionsMaxWidth = st::msgPadding.left()
 				+ _reactions->maxWidth()
@@ -5391,7 +5402,8 @@ Reactions::ButtonParameters Message::reactionButtonParameters(
 		const TextState &reactionState) const {
 	using namespace Reactions;
 	auto result = ButtonParameters{ .context = data()->fullId() };
-	const auto outsideBubble = (!_comments && !embedReactionsInBubble());
+	const auto media = this->media();
+	const auto outsideBubble = !drawBubble();
 	const auto geometry = countGeometry();
 	result.pointer = position;
 	const auto onTheLeft = hasRightLayout();
@@ -5412,8 +5424,8 @@ Reactions::ButtonParameters Message::reactionButtonParameters(
 		- keyboardHeight
 		- reactionsHeight
 		- externalInfoHeight;
-	const auto maybeRelativeCenter = outsideBubble
-		? media()->reactionButtonCenterOverride()
+	const auto maybeRelativeCenter = (outsideBubble && media)
+		? media->reactionButtonCenterOverride()
 		: std::nullopt;
 	const auto addOnTheRight = [&] {
 		return (maybeRelativeCenter
