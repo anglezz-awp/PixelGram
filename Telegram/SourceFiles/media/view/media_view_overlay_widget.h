@@ -732,6 +732,7 @@ private:
 
 	ContentGeometry _oldGeometry;
 	Ui::Animations::Simple _geometryAnimation;
+	Ui::Animations::Simple _backgroundOpacityAnimation;
 	QImage _backgroundBlurImage;
 	QRect _fromChatRect;
 	QRect _fromGlobalRect;

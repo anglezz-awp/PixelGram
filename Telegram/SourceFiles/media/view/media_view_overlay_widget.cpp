@@ -3199,11 +3199,9 @@ QImage OverlayWidget::grabForScreenshot() {
 
 float64 OverlayWidget::backgroundOpacity() const {
 	if (_isClosingAnimation) {
-		return std::clamp(1. - _geometryAnimation.value(1.), 0., 1.);
-	} else if (_geometryAnimation.animating()) {
-		return std::clamp(_geometryAnimation.value(1.) * 1.5, 0., 1.);
+		return std::clamp(_backgroundOpacityAnimation.value(0.), 0., 1.);
 	}
-	return 1.;
+	return std::clamp(_backgroundOpacityAnimation.value(1.), 0., 1.);
 }
 
 void OverlayWidget::close() {
@@ -3212,14 +3210,15 @@ void OverlayWidget::close() {
 	}
 	if (_isClosingAnimation) {
 		_geometryAnimation.stop();
+		_backgroundOpacityAnimation.stop();
 		_isClosingAnimation = false;
 		hide();
-		_backgroundBlurImage = QImage();
 		_helper->clearState();
 		return;
 	}
-	_isClosingAnimation = true;
+	const auto startBgOpacity = backgroundOpacity();
 	_closeFromRect = contentGeometry().rect;
+	_isClosingAnimation = true;
 	if (_fromGlobalRect.isValid() && _widget->isVisible()) {
 		_closeToRect = QRectF(_widget->mapFromGlobal(_fromGlobalRect.topLeft()), _fromGlobalRect.size());
 	} else if (_fromChatRect.isValid()) {
@@ -3234,19 +3233,36 @@ void OverlayWidget::close() {
 			targetW,
 			targetH);
 	}
+	constexpr auto kCloseDuration = crl::time(220);
+	_backgroundOpacityAnimation.stop();
+	_backgroundOpacityAnimation.start(
+		[=] { _widget->update(); },
+		startBgOpacity,
+		0.,
+		kCloseDuration,
+		anim::sineInOut);
 	_geometryAnimation.stop();
 	_geometryAnimation.start(
-		[=] { _widget->update(); },
+		[=] {
+			_helper->setControlsOpacity(
+				_controlsOpacity.current() * backgroundOpacity());
+			_widget->update();
+			if (!_geometryAnimation.animating() && _isClosingAnimation) {
+				InvokeQueued(_widget, [=] {
+					if (_isClosingAnimation
+						&& !_geometryAnimation.animating()) {
+						_isClosingAnimation = false;
+						_backgroundOpacityAnimation.stop();
+						hide();
+						_helper->clearState();
+					}
+				});
+			}
+		},
 		0.,
 		1.,
-		220,
+		kCloseDuration,
 		anim::sineInOut);
-	_geometryAnimation.setFinishedCallback([=] {
-		_isClosingAnimation = false;
-		hide();
-		_backgroundBlurImage = QImage();
-		_helper->clearState();
-	});
 }
 
 void OverlayWidget::minimize() {
@@ -4623,6 +4639,7 @@ not_null<QWidget*> OverlayWidget::widget() const {
 
 void OverlayWidget::hide() {
 	_geometryAnimation.stop();
+	_backgroundOpacityAnimation.stop();
 	_isClosingAnimation = false;
 	_backgroundBlurImage = QImage();
 	clearBeforeHide();
@@ -4669,26 +4686,49 @@ void OverlayWidget::show(OpenRequest request) {
 	const auto contextMonoforumPeerId = request.monoforumPeerId();
 	_drawButtonEnabled = request.showDrawButton();
 
+	if (!request.continueStreaming() && !request.startTime() && !_reShow) {
+		if (_message && (_message == contextItem)) {
+			return close();
+		} else if (_user && (_user == contextPeer)) {
+			if ((_photo && (_photo == photo))
+				|| (_document && (_document == document))) {
+				return close();
+			}
+		}
+	}
+
 	_openedFrom = request.controller() ? base::make_weak(&request.controller()->window()) : nullptr;
 	const auto window = _openedFrom.get();
-	if (window && PixelGram::CurrentConfig().blurMediaBackground) {
-		if (const auto winWidget = window->widget()) {
-			QImage snapImg(winWidget->size(), QImage::Format_ARGB32_Premultiplied);
-			snapImg.fill(Qt::transparent);
-			winWidget->render(&snapImg);
-			const auto snapshot = QPixmap::fromImage(snapImg);
-			if (!snapshot.isNull()) {
-				const auto smallSize = QSize(
-					std::max(snapshot.width() / 6, 1),
-					std::max(snapshot.height() / 6, 1));
-				auto small = snapshot.scaled(smallSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation).toImage();
-				auto blurred = Images::BlurLargeImage(std::move(small), 16);
-				auto ready = blurred.scaled(snapshot.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-				{
-					QPainter p(&ready);
-					p.fillRect(ready.rect(), QColor(10, 10, 15, 115));
+	if (PixelGram::CurrentConfig().blurMediaBackground) {
+		if (_backgroundBlurImage.isNull() && window) {
+			if (const auto winWidget = window->widget()) {
+				const auto snapSize = winWidget->size();
+				if (!snapSize.isEmpty()) {
+					QImage snapImg(snapSize, QImage::Format_ARGB32_Premultiplied);
+					snapImg.fill(Qt::black);
+					winWidget->render(&snapImg);
+					const auto smallSize = QSize(
+						std::max(snapImg.width() / 6, 1),
+						std::max(snapImg.height() / 6, 1));
+				auto small = snapImg.scaled(
+						smallSize,
+						Qt::IgnoreAspectRatio,
+						Qt::SmoothTransformation);
+					auto blurred = Images::BlurLargeImage(std::move(small), 16);
+					auto ready = blurred.scaled(
+						snapSize,
+						Qt::IgnoreAspectRatio,
+						Qt::SmoothTransformation);
+					if (ready.format() != QImage::Format_ARGB32_Premultiplied) {
+						ready = std::move(ready).convertToFormat(
+							QImage::Format_ARGB32_Premultiplied);
+					}
+					{
+						QPainter p(&ready);
+						p.fillRect(ready.rect(), QColor(10, 10, 15, 115));
+					}
+					_backgroundBlurImage = std::move(ready);
 				}
-				_backgroundBlurImage = std::move(ready);
 			}
 		}
 	} else {
@@ -4703,16 +4743,6 @@ void OverlayWidget::show(OpenRequest request) {
 		_fromGlobalRect = QRect();
 	}
 	_fromChatRect = _fromGlobalRect;
-	if (!request.continueStreaming() && !request.startTime() && !_reShow) {
-		if (_message && (_message == contextItem)) {
-			return close();
-		} else if (_user && (_user == contextPeer)) {
-			if ((_photo && (_photo == photo))
-				|| (_document && (_document == document))) {
-				return close();
-			}
-		}
-	}
 	if (isHidden() || isMinimized()) {
 		// Count top notch on macOS before counting geometry.
 		_helper->beforeShow(_fullscreen);
@@ -5123,6 +5153,8 @@ void OverlayWidget::updateThemePreviewGeometry() {
 }
 
 void OverlayWidget::displayFinished(anim::activation activation) {
+	const auto wasHidden = isHidden() || isMinimized();
+	const auto wasClosing = _isClosingAnimation;
 	updateControls();
 	if (isHidden()) {
 		_helper->beforeShow(_fullscreen);
@@ -5138,17 +5170,27 @@ void OverlayWidget::displayFinished(anim::activation activation) {
 	}
 
 	_isClosingAnimation = false;
-	const auto fromRect = (_fromGlobalRect.isValid() && _widget->isVisible())
-		? QRectF(_widget->mapFromGlobal(_fromGlobalRect.topLeft()), _fromGlobalRect.size())
-		: QRectF(_x + _w * 0.075, _y + _h * 0.075, _w * 0.85, _h * 0.85);
-	_oldGeometry = { fromRect, 0. };
-	_geometryAnimation.stop();
-	_geometryAnimation.start(
-		[=] { _widget->update(); },
-		0.,
-		1.,
-		320,
-		anim::easeOutBack);
+	if (wasHidden || wasClosing) {
+		const auto startBgOpacity = wasHidden ? 0. : backgroundOpacity();
+		const auto fromRect = (_fromGlobalRect.isValid() && _widget->isVisible())
+			? QRectF(_widget->mapFromGlobal(_fromGlobalRect.topLeft()), _fromGlobalRect.size())
+			: QRectF(_x + _w * 0.075, _y + _h * 0.075, _w * 0.85, _h * 0.85);
+		_oldGeometry = { fromRect, 0. };
+		_geometryAnimation.stop();
+		_geometryAnimation.start(
+			[=] { _widget->update(); },
+			0.,
+			1.,
+			320,
+			anim::easeOutBack);
+		_backgroundOpacityAnimation.stop();
+		_backgroundOpacityAnimation.start(
+			[=] { _widget->update(); },
+			startBgOpacity,
+			1.,
+			220,
+			anim::sineInOut);
+	}
 }
 
 void OverlayWidget::showAndActivate() {
@@ -5680,6 +5722,9 @@ void OverlayWidget::playbackControlsToPictureInPicture() {
 }
 
 void OverlayWidget::playbackControlsRotate() {
+	if (_isClosingAnimation) {
+		return;
+	}
 	_oldGeometry = contentGeometry();
 	_geometryAnimation.stop();
 	if (_photo) {
@@ -6688,7 +6733,9 @@ void OverlayWidget::paint(not_null<Renderer*> renderer) {
 		renderer->paintSpeedBoost(_speedBoostRect);
 	}
 
-	const auto opacity = _fullScreenVideo ? 0. : _controlsOpacity.current();
+	const auto opacity = _fullScreenVideo
+		? 0.
+		: (_controlsOpacity.current() * backgroundOpacity());
 	if (opacity > 0) {
 		paintControls(renderer, opacity);
 		if (!_stories) {
@@ -7818,6 +7865,7 @@ void OverlayWidget::setZoomLevel(
 		bool force,
 		std::optional<QPoint> anchor) {
 	if (_stories
+		|| _isClosingAnimation
 		|| (!force && _zoom == newZoom)
 		|| (_fullScreenVideo && newZoom != kZoomToScreenLevel)) {
 		return;

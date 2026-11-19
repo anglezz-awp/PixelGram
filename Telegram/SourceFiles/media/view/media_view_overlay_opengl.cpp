@@ -23,7 +23,8 @@ namespace {
 
 using namespace Ui::GL;
 
-constexpr auto kNotchOffset = 4;
+constexpr auto kBackgroundBlurOffset = 4;
+constexpr auto kNotchOffset = kBackgroundBlurOffset + 4;
 constexpr auto kRadialLoadingOffset = kNotchOffset + 4;
 constexpr auto kThemePreviewOffset = kRadialLoadingOffset + 4;
 constexpr auto kDocumentBubbleOffset = kThemePreviewOffset + 4;
@@ -169,7 +170,7 @@ OverlayWidget::RendererGL::RendererGL(not_null<OverlayWidget*> owner)
 }
 
 void OverlayWidget::RendererGL::init(QOpenGLFunctions &f) {
-	constexpr auto kQuads = 11;
+	constexpr auto kQuads = 12;
 	constexpr auto kQuadVertices = kQuads * 4;
 	constexpr auto kQuadValues = kQuadVertices * 4;
 	constexpr auto kControlsValues = kControlsCount * kControlValues;
@@ -293,6 +294,8 @@ void OverlayWidget::RendererGL::deinit(QOpenGLFunctions *f) {
 	_fillProgram = std::nullopt;
 	_controlsProgram = std::nullopt;
 	_contentBuffer = std::nullopt;
+	_bgBlurImage.destroy(f);
+	_bgBlurCacheKey = 0;
 	_controlsFadeImage.destroy(f);
 	_radialImage.destroy(f);
 	_documentBubbleImage.destroy(f);
@@ -339,13 +342,17 @@ void OverlayWidget::RendererGL::paint(
 }
 
 std::optional<QColor> OverlayWidget::RendererGL::clearColor() {
-	if (_owner->_hideWorkaround) {
+	if (_owner->_hideWorkaround || !_owner->_backgroundBlurImage.isNull()) {
 		return QColor(0, 0, 0, 0);
-	} else if (_owner->_fullScreenVideo) {
-		return st::mediaviewVideoBg->c;
-	} else {
-		return st::mediaviewBg->c;
 	}
+	const auto opacity = _owner->backgroundOpacity();
+	auto color = (_owner->_fullScreenVideo
+		? st::mediaviewVideoBg
+		: st::mediaviewBg)->c;
+	if (opacity < 1.) {
+		color.setAlphaF(color.alphaF() * opacity);
+	}
+	return color;
 }
 
 bool OverlayWidget::RendererGL::handleHideWorkaround(QOpenGLFunctions &f) {
@@ -356,6 +363,52 @@ bool OverlayWidget::RendererGL::handleHideWorkaround(QOpenGLFunctions &f) {
 
 void OverlayWidget::RendererGL::paintBackground() {
 	_contentBuffer->bind();
+	if (!_owner->_backgroundBlurImage.isNull()) {
+		const auto opacity = _owner->backgroundOpacity();
+		if (opacity > 0.001) {
+			const auto key = _owner->_backgroundBlurImage.cacheKey();
+			if (_bgBlurCacheKey != key) {
+				_bgBlurCacheKey = key;
+				_bgBlurImage.setImage(_owner->_backgroundBlurImage);
+			}
+			_f->glActiveTexture(GL_TEXTURE0);
+			_bgBlurImage.bind(*_f);
+
+			const auto rect = QRect(QPoint(), _viewport);
+			const auto textured = _bgBlurImage.texturedRect(
+				rect,
+				QRect(QPoint(), _owner->_backgroundBlurImage.size()));
+			const auto geometry = transformRect(rect);
+			const GLfloat coords[] = {
+				geometry.left(), geometry.top(),
+				textured.texture.left(), textured.texture.bottom(),
+
+				geometry.right(), geometry.top(),
+				textured.texture.right(), textured.texture.bottom(),
+
+				geometry.right(), geometry.bottom(),
+				textured.texture.right(), textured.texture.top(),
+
+				geometry.left(), geometry.bottom(),
+				textured.texture.left(), textured.texture.top(),
+			};
+			_contentBuffer->bind();
+			_contentBuffer->write(
+				kBackgroundBlurOffset * 4 * sizeof(GLfloat),
+				coords,
+				sizeof(coords));
+
+			_controlsProgram->bind();
+			_controlsProgram->setUniformValue("viewport", _uniformViewport);
+			_controlsProgram->setUniformValue("s_texture", GLint(0));
+			_controlsProgram->setUniformValue("g_opacity", GLfloat(opacity));
+			toggleBlending(opacity < 0.999);
+			FillTexturedRectangle(*_f, &*_controlsProgram, kBackgroundBlurOffset);
+		}
+	} else if (_bgBlurCacheKey != 0) {
+		_bgBlurImage.destroy(_f);
+		_bgBlurCacheKey = 0;
+	}
 	if (const auto notch = _owner->topNotchSkip()) {
 		const auto top = transformRect(QRect(0, 0, _owner->width(), notch));
 		const GLfloat coords[] = {

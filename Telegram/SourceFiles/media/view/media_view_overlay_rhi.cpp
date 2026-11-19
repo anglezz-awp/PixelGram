@@ -742,14 +742,17 @@ void OverlayWidget::RendererRhi::releaseResources() {
 }
 
 QColor OverlayWidget::RendererRhi::rhiClearColor() {
-	if (!_owner->_backgroundBlurImage.isNull()) {
+	if (!_owner->_backgroundBlurImage.isNull()
+		|| _owner->backgroundOpacity() < 1.) {
 		return QColor(0, 0, 0, 0);
 	}
 	return clearColor().value_or(QColor(0, 0, 0, 0));
 }
 
 std::optional<QColor> OverlayWidget::RendererRhi::clearColor() {
-	if (_owner->_hideWorkaround || !_owner->_backgroundBlurImage.isNull()) {
+	if (_owner->_hideWorkaround
+		|| !_owner->_backgroundBlurImage.isNull()
+		|| _owner->backgroundOpacity() < 1.) {
 		return QColor(0, 0, 0, 0);
 	} else if (_owner->_fullScreenVideo) {
 		return st::mediaviewVideoBg->c;
@@ -1093,7 +1096,10 @@ void OverlayWidget::RendererRhi::paintBackground() {
 	const auto vh = float(_viewport.height() * _factor);
 	const auto opacity = float(_owner->backgroundOpacity());
 
-	if (!_owner->_backgroundBlurImage.isNull() && opacity > 0.001f) {
+	if (!_owner->_backgroundBlurImage.isNull()) {
+		if (opacity <= 0.001f) {
+			return;
+		}
 		const auto key = _owner->_backgroundBlurImage.cacheKey();
 		const auto desiredSize = _owner->_backgroundBlurImage.size();
 		if (!_bgBlurTexture || _bgBlurCacheKey != key || _bgBlurTexture->pixelSize() != desiredSize) {
@@ -1104,6 +1110,7 @@ void OverlayWidget::RendererRhi::paintBackground() {
 			if (!_bgBlurTexture->create()) {
 				delete _bgBlurTexture;
 				_bgBlurTexture = nullptr;
+				_bgBlurCacheKey = 0;
 			} else {
 				_bgBlurCacheKey = key;
 				const auto converted = _owner->_backgroundBlurImage.convertToFormat(QImage::Format_RGBA8888_Premultiplied);
@@ -1122,13 +1129,21 @@ void OverlayWidget::RendererRhi::paintBackground() {
 				vw,  0.f, 1.f, 1.f,
 			};
 			drawTexturedQuad(
-				(opacity < 0.999f && _imageBlendPipeline) ? _imageBlendPipeline : _imagePipeline,
+				_imagePipeline,
 				_bgBlurTexture,
 				coords,
 				opacity,
 				opacity < 0.999f);
-			return;
 		}
+		return;
+	} else if (_bgBlurTexture) {
+		delete _bgBlurTexture;
+		_bgBlurTexture = nullptr;
+		_bgBlurCacheKey = 0;
+	}
+
+	if (opacity <= 0.001f) {
+		return;
 	}
 
 	const auto &bg = _owner->_fullScreenVideo
@@ -1155,7 +1170,12 @@ void OverlayWidget::RendererRhi::paintBackground() {
 		0.f, 0.f, 0.f, 1.f,
 		vw,  0.f, 1.f, 1.f,
 	};
-	drawTexturedQuad(_imagePipeline, tex, coords);
+	drawTexturedQuad(
+		_imagePipeline,
+		tex,
+		coords,
+		opacity,
+		opacity < 0.999f);
 }
 
 void OverlayWidget::RendererRhi::paintVideoStream() {

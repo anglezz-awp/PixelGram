@@ -143,6 +143,8 @@ private:
 	bool _chromaNV12 = false;
 	GLenum _nv12ChromaFormat = GL_RG;
 
+	Ui::GL::Image _bgBlurImage;
+	qint64 _bgBlurCacheKey = 0;
 	Ui::GL::Image _controlsFadeImage;
 	Ui::GL::Image _radialImage;
 	Ui::GL::Image _documentBubbleImage;
