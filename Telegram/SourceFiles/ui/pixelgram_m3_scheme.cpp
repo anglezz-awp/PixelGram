@@ -553,7 +553,7 @@ static const MappingEntry kMappingTable[] = {
 	{ "mediaviewMenuBgOver", &M3SchemeRoles::surfaceContainerHigh, 255 },
 	{ "mediaviewMenuBgRipple", &M3SchemeRoles::onSurface, 30 },
 	{ "mediaviewMenuFg", &M3SchemeRoles::onSurface, 255 },
-	{ "mediaviewBg", &M3SchemeRoles::scrim, 235 },
+	{ "mediaviewBg", &M3SchemeRoles::scrim, 128 },
 	{ "mediaviewVideoBg", &M3SchemeRoles::fixedBlack, 255 },
 	{ "mediaviewControlBg", &M3SchemeRoles::scrim, 60 },
 	{ "mediaviewControlFg", &M3SchemeRoles::fixedWhite, 255 },

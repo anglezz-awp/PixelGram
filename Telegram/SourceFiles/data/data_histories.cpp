@@ -1,3 +1,4 @@
+#include "settings/pixelgram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -774,6 +775,10 @@ void Histories::sendReadRequest(not_null<History*> history, State &state) {
 			sendReadRequests();
 			finish();
 		};
+		if (PixelGram::CurrentConfig().ghostMode) {
+			finished();
+			return 0;
+		}
 		if (const auto channel = history->peer->asChannel()) {
 			return session().api().request(MTPchannels_ReadHistory(
 				channel->inputChannel(),
@@ -1047,6 +1052,13 @@ void Histories::deleteMessages(const MessageIdsList &ids, bool revoke) {
 	}
 	for (const auto &document : savedMusic) {
 		document->owner().savedMusic().remove(document);
+	}
+
+	if (PixelGram::CurrentConfig().antiDelete) {
+		for (const auto &item : remove) {
+			item->markDeletedByAntiDelete();
+		}
+		return;
 	}
 
 	if (!remove.empty()) {

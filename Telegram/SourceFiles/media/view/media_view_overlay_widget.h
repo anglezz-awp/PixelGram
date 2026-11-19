@@ -734,6 +734,7 @@ private:
 	Ui::Animations::Simple _geometryAnimation;
 	QImage _backgroundBlurImage;
 	QRect _fromChatRect;
+	QRect _fromGlobalRect;
 	bool _isClosingAnimation = false;
 	QRectF _closeFromRect;
 	QRectF _closeToRect;

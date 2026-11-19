@@ -224,8 +224,8 @@ Fallback count: 0 (All keys mapped with explicit semantic roles)
 | `historyFileNameInFgSelected` | `onSurface` | `255` | Incoming message attached file name selected |
 | `historyFileNameOutFg` | `onPrimaryContainer` | `255` | Outgoing message attached file name |
 | `historyFileNameOutFgSelected` | `onPrimaryContainer` | `255` | Outgoing message attached file name selected |
-| `historyOutIconFg` | `onPrimaryContainer` | `255` | Outgoing message sent double check icon |
-| `historyOutIconFgSelected` | `onPrimaryContainer` | `255` | Outgoing message sent check icon selected |
+| `historyOutIconFg` | `onPrimaryContainer` | `180` | Outgoing message sent double check icon |
+| `historyOutIconFgSelected` | `onPrimaryContainer` | `180` | Outgoing message sent check icon selected |
 | `historyIconFgInverted` | `onPrimary` | `255` | Inverted status checkmark icon |
 | `historySendingOutIconFg` | `onPrimaryContainer` | `255` | Outgoing message sending clock icon |
 | `historySendingInIconFg` | `onSurfaceVariant` | `255` | Incoming message downloading clock icon |
@@ -304,10 +304,10 @@ Fallback count: 0 (All keys mapped with explicit semantic roles)
 | `msgInShadowSelected` | `shadow` | `41` | Incoming bubble shadow selected |
 | `msgOutShadow` | `shadow` | `29` | Outgoing bubble shadow |
 | `msgOutShadowSelected` | `shadow` | `34` | Outgoing bubble shadow selected |
-| `msgInDateFg` | `onSurfaceVariant` | `255` | Incoming message timestamp |
-| `msgInDateFgSelected` | `onSurfaceVariant` | `255` | Incoming message timestamp selected |
-| `msgOutDateFg` | `onPrimaryContainer` | `255` | Outgoing message timestamp |
-| `msgOutDateFgSelected` | `onPrimaryContainer` | `255` | Outgoing message timestamp selected |
+| `msgInDateFg` | `onSurfaceVariant` | `180` | Incoming message timestamp |
+| `msgInDateFgSelected` | `onSurfaceVariant` | `180` | Incoming message timestamp selected |
+| `msgOutDateFg` | `onPrimaryContainer` | `180` | Outgoing message timestamp |
+| `msgOutDateFgSelected` | `onPrimaryContainer` | `180` | Outgoing message timestamp selected |
 | `msgServiceFg` | `onSurface` | `255` | Service message text (e.g. date header) |
 | `msgServiceBg` | `surfaceContainer` | `127` | Service message background pill |
 | `msgServiceBgSelected` | `surfaceContainerHigh` | `162` | Service message background pill selected |

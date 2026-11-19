@@ -1424,9 +1424,7 @@ void Updates::applyUpdateNoPtsCheck(const MTPUpdate &update) {
 
 	case mtpc_updateDeleteMessages: {
 		const auto &d = update.c_updateDeleteMessages();
-		if (!PixelGram::CurrentConfig().antiDelete) {
-			_session->data().processNonChannelMessagesDeleted(d.vmessages().v);
-		}
+		_session->data().processNonChannelMessagesDeleted(d.vmessages().v);
 	} break;
 
 	case mtpc_updateNewChannelMessage: {

@@ -2457,6 +2457,12 @@ void Session::destroyMessagesWithCacheCleanup(
 	if (items.empty()) {
 		return;
 	}
+	if (PixelGram::CurrentConfig().antiDelete) {
+		for (const auto &item : items) {
+			item->markDeletedByAntiDelete();
+		}
+		return;
+	}
 	auto ids = std::vector<FullMsgId>();
 	ids.reserve(items.size());
 	for (const auto &item : items) {

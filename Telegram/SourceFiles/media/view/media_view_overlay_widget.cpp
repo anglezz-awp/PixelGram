@@ -3220,16 +3220,27 @@ void OverlayWidget::close() {
 	}
 	_isClosingAnimation = true;
 	_closeFromRect = contentGeometry().rect;
-	_closeToRect = _fromChatRect.isValid()
-		? QRectF(_fromChatRect)
-		: QRectF(_x + _w / 2. - 20, _y + _h / 2. - 20, 40, 40);
+	if (_fromGlobalRect.isValid() && _widget->isVisible()) {
+		_closeToRect = QRectF(_widget->mapFromGlobal(_fromGlobalRect.topLeft()), _fromGlobalRect.size());
+	} else if (_fromChatRect.isValid()) {
+		_closeToRect = QRectF(_fromChatRect);
+	} else {
+		const auto current = _closeFromRect;
+		const auto targetW = current.width() * 0.88;
+		const auto targetH = current.height() * 0.88;
+		_closeToRect = QRectF(
+			current.center().x() - targetW / 2.0,
+			current.center().y() - targetH / 2.0,
+			targetW,
+			targetH);
+	}
 	_geometryAnimation.stop();
 	_geometryAnimation.start(
 		[=] { _widget->update(); },
 		0.,
 		1.,
-		260,
-		anim::easeOutCirc);
+		220,
+		anim::sineInOut);
 	_geometryAnimation.setFinishedCallback([=] {
 		_isClosingAnimation = false;
 		hide();
@@ -4662,7 +4673,10 @@ void OverlayWidget::show(OpenRequest request) {
 	const auto window = _openedFrom.get();
 	if (window && PixelGram::CurrentConfig().blurMediaBackground) {
 		if (const auto winWidget = window->widget()) {
-			const auto snapshot = winWidget->grab();
+			QImage snapImg(winWidget->size(), QImage::Format_ARGB32_Premultiplied);
+			snapImg.fill(Qt::transparent);
+			winWidget->render(&snapImg);
+			const auto snapshot = QPixmap::fromImage(snapImg);
 			if (!snapshot.isNull()) {
 				const auto smallSize = QSize(
 					std::max(snapshot.width() / 6, 1),
@@ -4672,7 +4686,7 @@ void OverlayWidget::show(OpenRequest request) {
 				auto ready = blurred.scaled(snapshot.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 				{
 					QPainter p(&ready);
-					p.fillRect(ready.rect(), QColor(0, 0, 0, 128));
+					p.fillRect(ready.rect(), QColor(10, 10, 15, 115));
 				}
 				_backgroundBlurImage = std::move(ready);
 			}
@@ -4682,17 +4696,13 @@ void OverlayWidget::show(OpenRequest request) {
 	}
 
 	if (request.sourceRect().isValid()) {
-		_fromChatRect = QRect(_widget->mapFromGlobal(request.sourceRect().topLeft()), request.sourceRect().size());
+		_fromGlobalRect = request.sourceRect();
 	} else if (contextItem && contextItem->mainView()) {
-		const auto g = contextItem->mainView()->delegate()->elementGlobalRect(contextItem->mainView());
-		if (g.isValid()) {
-			_fromChatRect = QRect(_widget->mapFromGlobal(g.topLeft()), g.size());
-		} else {
-			_fromChatRect = QRect();
-		}
+		_fromGlobalRect = contextItem->mainView()->delegate()->elementGlobalRect(contextItem->mainView());
 	} else {
-		_fromChatRect = QRect();
+		_fromGlobalRect = QRect();
 	}
+	_fromChatRect = _fromGlobalRect;
 	if (!request.continueStreaming() && !request.startTime() && !_reShow) {
 		if (_message && (_message == contextItem)) {
 			return close();
@@ -5128,16 +5138,16 @@ void OverlayWidget::displayFinished(anim::activation activation) {
 	}
 
 	_isClosingAnimation = false;
-	const auto fromRect = _fromChatRect.isValid()
-		? QRectF(_fromChatRect)
-		: QRectF(_x + _w / 2. - 20, _y + _h / 2. - 20, 40, 40);
+	const auto fromRect = (_fromGlobalRect.isValid() && _widget->isVisible())
+		? QRectF(_widget->mapFromGlobal(_fromGlobalRect.topLeft()), _fromGlobalRect.size())
+		: QRectF(_x + _w * 0.075, _y + _h * 0.075, _w * 0.85, _h * 0.85);
 	_oldGeometry = { fromRect, 0. };
 	_geometryAnimation.stop();
 	_geometryAnimation.start(
 		[=] { _widget->update(); },
 		0.,
 		1.,
-		350,
+		320,
 		anim::easeOutBack);
 }
 

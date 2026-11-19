@@ -435,7 +435,7 @@ mediaviewMenuBg	surfaceContainer	255	Media viewer context menu background
 mediaviewMenuBgOver	surfaceContainerHigh	255	Media viewer context menu hover
 mediaviewMenuBgRipple	onSurface	30	Media viewer context menu ripple
 mediaviewMenuFg	onSurface	255	Media viewer context menu text
-mediaviewBg	scrim	235	Media viewer backdrop scrim
+mediaviewBg	scrim	128	Media viewer backdrop scrim
 mediaviewVideoBg	fixedBlack	255	Media viewer video fullscreen background
 mediaviewControlBg	scrim	60	Media viewer control button background
 mediaviewControlFg	fixedWhite	255	Media viewer control button icon

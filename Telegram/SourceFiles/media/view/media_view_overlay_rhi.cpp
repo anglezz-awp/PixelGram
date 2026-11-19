@@ -1,4 +1,4 @@
-/*
+﻿/*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
 
@@ -1089,12 +1089,52 @@ void OverlayWidget::RendererRhi::paintBackground() {
 	if (!_initialized) {
 		return;
 	}
+	const auto vw = float(_viewport.width() * _factor);
+	const auto vh = float(_viewport.height() * _factor);
+	const auto opacity = float(_owner->backgroundOpacity());
+
+	if (!_owner->_backgroundBlurImage.isNull() && opacity > 0.001f) {
+		const auto key = _owner->_backgroundBlurImage.cacheKey();
+		const auto desiredSize = _owner->_backgroundBlurImage.size();
+		if (!_bgBlurTexture || _bgBlurCacheKey != key || _bgBlurTexture->pixelSize() != desiredSize) {
+			delete _bgBlurTexture;
+			_bgBlurTexture = _rhi->newTexture(
+				QRhiTexture::RGBA8,
+				desiredSize);
+			if (!_bgBlurTexture->create()) {
+				delete _bgBlurTexture;
+				_bgBlurTexture = nullptr;
+			} else {
+				_bgBlurCacheKey = key;
+				const auto converted = _owner->_backgroundBlurImage.convertToFormat(QImage::Format_RGBA8888_Premultiplied);
+				_rub->uploadTexture(
+					_bgBlurTexture,
+					QRhiTextureUploadDescription(
+						QRhiTextureUploadEntry(0, 0,
+							QRhiTextureSubresourceUploadDescription(converted))));
+			}
+		}
+		if (_bgBlurTexture) {
+			const float coords[] = {
+				0.f, vh, 0.f, 0.f,
+				vw,  vh, 1.f, 0.f,
+				0.f, 0.f, 0.f, 1.f,
+				vw,  0.f, 1.f, 1.f,
+			};
+			drawTexturedQuad(
+				(opacity < 0.999f && _imageBlendPipeline) ? _imageBlendPipeline : _imagePipeline,
+				_bgBlurTexture,
+				coords,
+				opacity,
+				opacity < 0.999f);
+			return;
+		}
+	}
+
 	const auto &bg = _owner->_fullScreenVideo
 		? st::mediaviewVideoBg
 		: st::mediaviewBg;
 	const auto c = bg->c;
-	const auto vw = float(_viewport.width() * _factor);
-	const auto vh = float(_viewport.height() * _factor);
 
 	auto bgImage = QImage(1, 1, QImage::Format_ARGB32_Premultiplied);
 	bgImage.fill(c);
