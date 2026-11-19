@@ -223,8 +223,7 @@ void ApplyTopFade(QImage &image, not_null<InputField*> field) {
 	if (PaintsOutsideBubble(view, context)) {
 		return whole;
 	}
-	const auto &st = context.st->messageStyle(view->hasOutLayout(), false);
-	const auto tail = std::max(st.tailLeft.width(), st.tailRight.width());
+	const auto tail = 0;
 	const auto body = view->innerGeometry();
 	return whole.intersected(QRect(
 		body.x() - tail,

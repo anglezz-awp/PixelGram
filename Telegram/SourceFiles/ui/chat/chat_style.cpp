@@ -359,18 +359,6 @@ ChatStyle::ChatStyle(rpl::producer<ColorIndicesCompressed> colorIndices) {
 		st::messageMarkdownOut,
 		st::messageMarkdownOutSelected);
 	make(
-		&MessageStyle::tailLeft,
-		st::historyBubbleTailInLeft,
-		st::historyBubbleTailInLeftSelected,
-		st::historyBubbleTailOutLeft,
-		st::historyBubbleTailOutLeftSelected);
-	make(
-		&MessageStyle::tailRight,
-		st::historyBubbleTailInRight,
-		st::historyBubbleTailInRightSelected,
-		st::historyBubbleTailOutRight,
-		st::historyBubbleTailOutRightSelected);
-	make(
 		&MessageStyle::historyRepliesIcon,
 		st::historyRepliesInIcon,
 		st::historyRepliesInSelectedIcon,
@@ -764,13 +752,11 @@ const MessageStyle &ChatStyle::messageStyle(bool outbg, bool selected) const {
 	EnsureCorners(
 		result.msgBgCornersSmall,
 		BubbleRadiusSmall(),
-		result.msgBg,
-		&result.msgShadow);
+		result.msgBg);
 	EnsureCorners(
 		result.msgBgCornersLarge,
 		BubbleRadiusLarge(),
-		result.msgBg,
-		&result.msgShadow);
+		result.msgBg);
 	const auto &replyBar = result.msgReplyBarColor->c;
 	for (auto i = 0; i != kColorPatternsCount; ++i) {
 		EnsureBlockquoteCache(

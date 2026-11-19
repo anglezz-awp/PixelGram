@@ -3699,18 +3699,13 @@ BottomRippleMask Message::bottomRippleMask(int buttonHeight) const {
 	const auto &large = CachedCornersMasks(Radius::BubbleLarge);
 	const auto &small = CachedCornersMasks(Radius::BubbleSmall);
 	const auto rounding = countBubbleRounding();
-	const auto icon = (rounding.bottomLeft == Corner::Tail)
-		? &st::historyBubbleTailInLeft
-		: (rounding.bottomRight == Corner::Tail)
-		? &st::historyBubbleTailInRight
-		: nullptr;
-	const auto shift = (rounding.bottomLeft == Corner::Tail)
-		? icon->width()
-		: 0;
-	const auto added = shift ? shift : icon ? icon->width() : 0;
+	const style::icon *icon = nullptr;
+	const auto shift = 0;
+	const auto added = 0;
 	auto corners = CornersMaskRef();
 	const auto set = [&](int index) {
-		corners.p[index] = (rounding[index] == Corner::Large)
+		corners.p[index] = (rounding[index] == Corner::Large
+			|| rounding[index] == Corner::Tail)
 			? &large[index]
 			: (rounding[index] == Corner::Small)
 			? &small[index]

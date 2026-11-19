@@ -300,7 +300,8 @@ void Media::fillImageShadow(
 	const auto choose = [&](int index) -> QPixmap {
 		using Corner = Ui::BubbleCornerRounding;
 		switch (rounding[index]) {
-		case Corner::Large: return sti->msgShadowCornersLarge.p[index];
+		case Corner::Large:
+		case Corner::Tail: return sti->msgShadowCornersLarge.p[index];
 		case Corner::Small: return sti->msgShadowCornersSmall.p[index];
 		}
 		return QPixmap();
@@ -331,7 +332,8 @@ void Media::fillImageOverlay(
 		switch (corner) {
 		case Corner::None: return Radius::kCount;
 		case Corner::Small: return Radius::BubbleSmall;
-		case Corner::Large: return Radius::BubbleLarge;
+		case Corner::Large:
+		case Corner::Tail: return Radius::BubbleLarge;
 		}
 		Unexpected("Corner value in Document::fillThumbnailOverlay.");
 	};
@@ -630,8 +632,10 @@ Ui::BubbleRounding Media::adjustedBubbleRounding(RectParts square) const {
 	auto result = bubbleRounding();
 	using Corner = Ui::BubbleCornerRounding;
 	const auto adjust = [&](bool round, Corner already, RectPart corner) {
-		return (already == Corner::Tail || !round || (square & corner))
+		return (!round || (square & corner))
 			? Corner::None
+			: (already == Corner::Tail)
+			? Corner::Large
 			: already;
 	};
 	const auto top = isBubbleTop();
@@ -670,7 +674,8 @@ Images::CornersMaskRef MediaRoundingMask(
 	for (auto i = 0; i != 4; ++i) {
 		switch ((*rounding)[i]) {
 		case Corner::Small: result.p[i] = &small[i]; break;
-		case Corner::Large: result.p[i] = &large[i]; break;
+		case Corner::Large:
+		case Corner::Tail: result.p[i] = &large[i]; break;
 		}
 	}
 	return result;

@@ -85,10 +85,10 @@ historyFileThumbPauseSelected: icon {{ "history_file_pause", historyFileThumbIco
 historyFileThumbPlaySelected: icon {{ "history_file_play", historyFileThumbIconFgSelected }};
 historyFileThumbWaiting: icon {{ "mediaview/save_check", historyFileThumbIconFg }};
 historyFileThumbWaitingSelected: icon {{ "mediaview/save_check", historyFileThumbIconFgSelected }};
-historySentSelectedIcon: icon {{ "history_sent", historyOutIconFgSelected, point(2px, 4px) }};
-historySentInvertedIcon: icon {{ "history_sent", historyIconFgInverted, point(2px, 4px) }};
-historyReceivedSelectedIcon: icon {{ "history_received", historyOutIconFgSelected, point(2px, 4px) }};
-historyReceivedInvertedIcon: icon {{ "history_received", historyIconFgInverted, point(2px, 4px) }};
+historySentSelectedIcon: icon {{ "history_sent", historyOutIconFgSelected, point(1px, 0px) }};
+historySentInvertedIcon: icon {{ "history_sent", historyIconFgInverted, point(1px, 0px) }};
+historyReceivedSelectedIcon: icon {{ "history_received", historyOutIconFgSelected, point(0px, 0px) }};
+historyReceivedInvertedIcon: icon {{ "history_received", historyIconFgInverted, point(0px, 0px) }};
 historyViewsInIcon: icon {{ "history_views", msgInDateFg }};
 historyViewsInSelectedIcon: icon {{ "history_views", msgInDateFgSelected }};
 historyViewsOutIcon: icon {{ "history_views", historyOutIconFg }};
@@ -211,8 +211,8 @@ historyFileThumbDownloadSelected: icon {{ "history_file_download", historyFileTh
 historyFileThumbCancel: icon {{ "history_file_cancel", historyFileThumbIconFg }};
 historyFileThumbCancelSelected: icon {{ "history_file_cancel", historyFileThumbIconFgSelected }};
 historyFileThumbPlay: icon {{ "history_file_play", historyFileThumbIconFg }};
-historySentIcon: icon {{ "history_sent", historyOutIconFg, point(2px, 4px) }};
-historyReceivedIcon: icon {{ "history_received", historyOutIconFg, point(2px, 4px) }};
+historySentIcon: icon {{ "history_sent", historyOutIconFg, point(1px, 0px) }};
+historyReceivedIcon: icon {{ "history_received", historyOutIconFg, point(0px, 0px) }};
 historyBubbleTailInLeft: icon {{ "bubble_tail", msgInBg }};
 historyBubbleTailOutLeft: icon {{ "bubble_tail", msgOutBg }};
 historyBubbleTailInRight: icon {{ "bubble_tail-flip_horizontal", msgInBg }};
