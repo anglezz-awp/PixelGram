@@ -94,6 +94,8 @@ M3SchemeRoles GenerateM3SchemeFromSeed(
 	roles.inverseSurface = ArgbToQColor(MaterialDynamicColors::InverseSurface().GetArgb(*scheme));
 	roles.inverseOnSurface = ArgbToQColor(MaterialDynamicColors::InverseOnSurface().GetArgb(*scheme));
 	roles.inversePrimary = ArgbToQColor(MaterialDynamicColors::InversePrimary().GetArgb(*scheme));
+	roles.fixedWhite = QColor(255, 255, 255);
+	roles.fixedBlack = QColor(0, 0, 0);
 
 	return roles;
 }
@@ -559,7 +561,7 @@ static const MappingEntry kMappingTable[] = {
 	{ "mediaviewControlFg", &M3SchemeRoles::fixedWhite, 230 },
 	{ "mediaviewCaptionBg", &M3SchemeRoles::scrim, 166 },
 	{ "mediaviewCaptionFg", &M3SchemeRoles::fixedWhite, 230 },
-	{ "mediaviewTextLinkFg", &M3SchemeRoles::inversePrimary, 255 },
+	{ "mediaviewTextLinkFg", &M3SchemeRoles::primary, 255 },
 	{ "mediaviewSaveMsgBg", &M3SchemeRoles::scrim, 166 },
 	{ "mediaviewSaveMsgFg", &M3SchemeRoles::fixedWhite, 230 },
 	{ "mediaviewPlaybackActive", &M3SchemeRoles::primary, 255 },

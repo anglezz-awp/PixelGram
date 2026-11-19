@@ -444,7 +444,7 @@
 | `mediaviewControlFg` | `fixedWhite` | `230` | Media viewer control button icon |
 | `mediaviewCaptionBg` | `scrim` | `166` | Media viewer caption background |
 | `mediaviewCaptionFg` | `fixedWhite` | `230` | Media viewer caption text |
-| `mediaviewTextLinkFg` | `inversePrimary` | `255` | Media viewer caption link text |
+| `mediaviewTextLinkFg` | `primary` | `255` | Media viewer caption link text |
 | `mediaviewSaveMsgBg` | `scrim` | `166` | Media viewer toast and controls panel background |
 | `mediaviewSaveMsgFg` | `fixedWhite` | `230` | Media viewer toast notification text |
 | `mediaviewPlaybackActive` | `primary` | `255` | Media viewer video played bar |

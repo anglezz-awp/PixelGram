@@ -38,8 +38,8 @@ struct M3SchemeRoles {
 	QColor inverseSurface;
 	QColor inverseOnSurface;
 	QColor inversePrimary;
-	QColor fixedWhite;
-	QColor fixedBlack;
+	QColor fixedWhite = QColor(255, 255, 255);
+	QColor fixedBlack = QColor(0, 0, 0);
 };
 
 [[nodiscard]] M3SchemeRoles GenerateM3SchemeFromSeed(
