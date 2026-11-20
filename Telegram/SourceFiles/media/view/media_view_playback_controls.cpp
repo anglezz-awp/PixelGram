@@ -403,6 +403,7 @@ void PlaybackControls::updatePlayPauseResumeState(const Player::TrackState &stat
 	if (showPause != _showPause) {
 		_showPause = showPause;
 		_playPauseResume->setIconOverride(_showPause ? &st::mediaviewPauseIcon : nullptr, _showPause ? &st::mediaviewPauseIconOver : nullptr);
+		_playbackSlider->setIsPlaying(_showPause);
 	}
 }
 

@@ -94,7 +94,6 @@ struct Config {
 	bool disableColorfulReplies = false;
 	bool translucentDeletedMessages = true;
 	int messageBubbleRadius = 16;
-	double wideMessagesMultiplier = 1.0;
 	ContextMenuDisplay menuReactions = ContextMenuDisplay::Shown;
 	ContextMenuDisplay menuViews = ContextMenuDisplay::Shown;
 	ContextMenuDisplay menuHideLocally = ContextMenuDisplay::Extended;

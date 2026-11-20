@@ -58,6 +58,11 @@ public:
 
 	void setMoveByWheel(bool move);
 
+	void setIsPlaying(bool playing);
+	[[nodiscard]] bool isPlaying() const {
+		return _isPlaying;
+	}
+
 	QAccessible::Role accessibilityRole() override {
 		return QAccessible::Role::Slider;
 	}
@@ -113,6 +118,8 @@ private:
 	bool _disabled = false;
 
 	std::unique_ptr<base::Timer> _byWheelFinished;
+	std::unique_ptr<base::Timer> _waveTimer;
+	bool _isPlaying = false;
 
 	Fn<float64(float64)> _adjustCallback;
 	Fn<void(float64)> _changeProgressCallback;

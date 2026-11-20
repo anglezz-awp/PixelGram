@@ -6,6 +6,8 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "media/player/media_player_widget.h"
+#include "ui/pixelgram_m3_scheme.h"
+#include "ui/painter.h"
 
 #include "platform/platform_specific.h"
 #include "data/data_document.h"
@@ -706,6 +708,7 @@ void Widget::handleSongUpdate(const TrackState &state) {
 		: showPause
 		? PlayButton::State::Pause
 		: PlayButton::State::Play);
+	_playbackSlider->setIsPlaying(showPause);
 	_playPause->setAccessibleName(showPause
 		? tr::lng_shortcuts_media_pause(tr::now)
 		: tr::lng_shortcuts_media_play(tr::now));
@@ -799,15 +802,38 @@ void Widget::handlePlaylistUpdate() {
 	}
 }
 
+class PlayerSideButton final : public Ui::IconButton {
+public:
+	PlayerSideButton(QWidget *parent, const style::IconButton &st)
+	: Ui::IconButton(parent, st) {
+	}
+protected:
+	void paintEvent(QPaintEvent *e) override {
+		auto p = QPainter(this);
+		PainterHighQualityEnabler hq(p);
+		const auto &roles = PixelGram::CurrentM3Roles();
+		p.setPen(Qt::NoPen);
+		p.setBrush(roles.secondaryContainer.isValid() ? roles.secondaryContainer : QColor(0xE8, 0xDE, 0xF8));
+		p.drawRoundedRect(rect(), 14.0, 14.0);
+		if (roles.onSecondaryContainer.isValid()) {
+			setIconColorOverride(roles.onSecondaryContainer);
+		}
+		Ui::IconButton::paintEvent(e);
+	}
+	QImage prepareRippleMask() const override {
+		return Ui::RippleAnimation::RoundRectMask(size(), 14.0);
+	}
+};
+
 void Widget::createPrevNextButtons() {
 	if (!_previousTrack) {
-		_previousTrack.create(this, st::mediaPlayerPreviousButton);
+		_previousTrack = object_ptr<PlayerSideButton>(this, st::mediaPlayerPreviousButton);
 		_previousTrack->show();
 		_previousTrack->setClickedCallback([=]() {
 			instance()->previous(_type);
 		});
 		_previousTrack->setAccessibleName(tr::lng_shortcuts_media_previous(tr::now));
-		_nextTrack.create(this, st::mediaPlayerNextButton);
+		_nextTrack = object_ptr<PlayerSideButton>(this, st::mediaPlayerNextButton);
 		_nextTrack->show();
 		_nextTrack->setClickedCallback([=]() {
 			instance()->next(_type);

@@ -1,0 +1,676 @@
+/*
+This file is part of Telegram Desktop,
+the official desktop application for the Telegram messaging service.
+
+For license and copyright information please follow this link:
+https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
+*/
+#include "settings/sections/settings_pixelgram.h"
+
+#include "settings/settings_common.h"
+#include "settings/settings_common_session.h"
+#include "settings/settings_builder.h"
+#include "settings/sections/settings_main.h"
+#include "settings/pixelgram_settings.h"
+#include "ui/pixelgram_avatar_shapes.h"
+#include "ui/pixelgram_m3_scheme.h"
+#include "ui/wrap/vertical_layout.h"
+#include "ui/vertical_list.h"
+#include "ui/widgets/buttons.h"
+#include "ui/widgets/checkbox.h"
+#include "ui/widgets/discrete_sliders.h"
+#include "ui/widgets/labels.h"
+#include "ui/painter.h"
+#include "window/window_session_controller.h"
+#include "lang/lang_keys.h"
+#include "styles/style_settings.h"
+#include "styles/style_layers.h"
+#include "styles/style_boxes.h"
+#include "styles/style_menu_icons.h"
+
+#include <QtGui/QPainterPath>
+#include <QtGui/QLinearGradient>
+
+namespace Settings {
+namespace {
+
+using namespace Builder;
+using namespace PixelGram;
+
+// ------------------ Helper: Full-width Native Toggle Row ------------------
+not_null<Ui::SettingsButton*> AddToggle(
+		not_null<Ui::VerticalLayout*> container,
+		rpl::producer<QString> text,
+		bool checked,
+		Fn<void(bool)> callback) {
+	const auto button = AddButtonWithIcon(container, std::move(text), st::settingsButton);
+	const auto [toggle, checkView] = AddSeparatedToggle(button, st::settingsButton, checked);
+	toggle->clicks() | rpl::on_next([=] {
+		const auto val = !checkView->checked();
+		checkView->setChecked(val, anim::type::normal);
+		callback(val);
+	}, button->lifetime());
+	return button;
+}
+
+// ------------------ Top Header Widget ------------------
+class PixelGramHeaderWidget : public Ui::RpWidget {
+public:
+	PixelGramHeaderWidget(QWidget *parent) : RpWidget(parent) {
+		resize(parent->width(), 120);
+	}
+protected:
+	void paintEvent(QPaintEvent *e) override {
+		Painter p(this);
+		PainterHighQualityEnabler hq(p);
+
+		const auto &roles = CurrentM3Roles();
+		const auto iconSize = 48;
+		const auto iconRect = QRect((width() - iconSize) / 2, 12, iconSize, iconSize);
+
+		// Icon background (squircle)
+		p.setPen(Qt::NoPen);
+		p.setBrush(roles.primaryContainer.isValid() ? roles.primaryContainer : QColor(0xE8, 0xDE, 0xF8));
+		p.drawRoundedRect(iconRect, 16.0, 16.0);
+
+		// Star / logo inside
+		st::menuIconManage.paintInCenter(p, iconRect, roles.onPrimaryContainer.isValid() ? roles.onPrimaryContainer : QColor(0x21, 0x00, 0x5D));
+
+		// Title
+		p.setFont(st::semiboldFont->f);
+		p.setPen(roles.onSurface.isValid() ? roles.onSurface : st::windowFg->c);
+		p.drawText(QRect(0, 66, width(), 24), Qt::AlignCenter, u"PixelGram Desktop"_q);
+
+		// Subtitle
+		p.setFont(st::normalFont->f);
+		p.setPen(roles.onSurfaceVariant.isValid() ? roles.onSurfaceVariant : st::windowSubTextFg->c);
+		p.drawText(QRect(0, 92, width(), 20), Qt::AlignCenter, u"Material You 3 client with advanced mods"_q);
+	}
+};
+
+// ------------------ Live Avatar Shape Preview Widget ------------------
+class LiveAvatarPreview : public Ui::RpWidget {
+public:
+	LiveAvatarPreview(QWidget *parent) : RpWidget(parent) {
+		resize(parent->width(), 88);
+	}
+protected:
+	void paintEvent(QPaintEvent *e) override {
+		Painter p(this);
+		PainterHighQualityEnabler hq(p);
+
+		const auto size = 64;
+		const auto rect = QRect((width() - size) / 2, (height() - size) / 2, size, size);
+		const auto &cfg = CurrentConfig();
+		const auto path = AvatarShapePath(QRectF(rect), cfg.avatarShape, cfg.avatarCornerRadius);
+
+		p.save();
+		p.setClipPath(path);
+		const auto &roles = CurrentM3Roles();
+		QLinearGradient grad(rect.topLeft(), rect.bottomRight());
+		grad.setColorAt(0.0, roles.primary.isValid() ? roles.primary : QColor(0x67, 0x50, 0xA4));
+		grad.setColorAt(1.0, roles.tertiary.isValid() ? roles.tertiary : QColor(0x7D, 0x52, 0x60));
+		p.fillRect(rect, grad);
+
+		p.setFont(st::semiboldFont->f);
+		p.setPen(QColor(0xFF, 0xFF, 0xFF));
+		p.drawText(rect, Qt::AlignCenter, u"PG"_q);
+		p.restore();
+	}
+};
+
+// ------------------ Live Message Bubble Preview Widget ------------------
+class LiveBubblePreview : public Ui::RpWidget {
+public:
+	LiveBubblePreview(QWidget *parent) : RpWidget(parent) {
+		resize(parent->width(), 104);
+	}
+protected:
+	void paintEvent(QPaintEvent *e) override {
+		Painter p(this);
+		PainterHighQualityEnabler hq(p);
+
+		const auto &cfg = CurrentConfig();
+		const auto radius = (cfg.messageBubbleRadius > 0) ? cfg.messageBubbleRadius : 16;
+		const auto tailRadius = cfg.removeMessageTail ? radius : 2;
+
+		const auto &roles = CurrentM3Roles();
+		const auto inBg = roles.surfaceContainerHigh.isValid() ? roles.surfaceContainerHigh : QColor(0x2B, 0x29, 0x30);
+		const auto inFg = roles.onSurface.isValid() ? roles.onSurface : QColor(0xE6, 0xE0, 0xE9);
+		const auto outBg = roles.primary.isValid() ? roles.primary : QColor(0x67, 0x50, 0xA4);
+		const auto outFg = roles.onPrimary.isValid() ? roles.onPrimary : QColor(0xFF, 0xFF, 0xFF);
+
+		// Incoming bubble (left)
+		{
+			const QRect inRect(24, 10, 210, 36);
+			QPainterPath inPath;
+			inPath.moveTo(inRect.left() + radius, inRect.top());
+			inPath.lineTo(inRect.right() - radius, inRect.top());
+			inPath.quadTo(inRect.right(), inRect.top(), inRect.right(), inRect.top() + radius);
+			inPath.lineTo(inRect.right(), inRect.bottom() - radius);
+			inPath.quadTo(inRect.right(), inRect.bottom(), inRect.right() - radius, inRect.bottom());
+			inPath.lineTo(inRect.left() + tailRadius, inRect.bottom());
+			inPath.quadTo(inRect.left(), inRect.bottom(), inRect.left(), inRect.bottom() - tailRadius);
+			inPath.lineTo(inRect.left(), inRect.top() + radius);
+			inPath.quadTo(inRect.left(), inRect.top(), inRect.left() + radius, inRect.top());
+
+			p.fillPath(inPath, inBg);
+			p.setPen(inFg);
+			p.setFont(st::normalFont->f);
+			p.drawText(inRect.adjusted(12, 0, -12, 0), Qt::AlignLeft | Qt::AlignVCenter, u"PixelGram Incoming"_q);
+		}
+
+		// Outgoing bubble (right)
+		{
+			const QRect outRect(width() - 234, 56, 210, 36);
+			QPainterPath outPath;
+			outPath.moveTo(outRect.left() + radius, outRect.top());
+			outPath.lineTo(outRect.right() - radius, outRect.top());
+			outPath.quadTo(outRect.right(), outRect.top(), outRect.right(), outRect.top() + radius);
+			outPath.lineTo(outRect.right(), outRect.bottom() - tailRadius);
+			outPath.quadTo(outRect.right(), outRect.bottom(), outRect.right() - tailRadius, outRect.bottom());
+			outPath.lineTo(outRect.left() + radius, outRect.bottom());
+			outPath.quadTo(outRect.left(), outRect.bottom(), outRect.left() - radius, outRect.bottom());
+			outPath.lineTo(outRect.left(), outRect.top() + radius);
+			outPath.quadTo(outRect.left(), outRect.top(), outRect.left() + radius, outRect.top());
+
+			p.fillPath(outPath, outBg);
+			p.setPen(outFg);
+			p.setFont(st::normalFont->f);
+			p.drawText(outRect.adjusted(12, 0, -12, 0), Qt::AlignLeft | Qt::AlignVCenter, u"PixelGram Outgoing"_q);
+		}
+	}
+};
+
+// ============================================================================
+// 1. Root Section: PixelGram
+// ============================================================================
+class PixelGramSection final : public Section<PixelGramSection> {
+public:
+	PixelGramSection(QWidget *parent, not_null<Window::SessionController*> controller)
+	: Section(parent, controller) {
+		setupContent();
+	}
+
+	[[nodiscard]] rpl::producer<QString> title() override {
+		return rpl::single(u"PixelGram Desktop"_q);
+	}
+
+private:
+	void setupContent() {
+		const auto content = Ui::CreateChild<Ui::VerticalLayout>(this);
+
+		content->add(object_ptr<PixelGramHeaderWidget>(content));
+		Ui::AddSkip(content, 12);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		// 1. Ghost Mode with live count label
+		const auto ghostLabel = rpl::single(QString::number(CurrentConfig().activeGhostCount()) + u"/5"_q);
+		const auto ghostButton = AddButtonWithLabel(
+			content,
+			rpl::single(u"Невидимка (Ghost Mode)"_q),
+			ghostLabel,
+			st::settingsButton,
+			{ &st::menuIconStealth });
+		ghostButton->setClickedCallback([=] {
+			controller()->showSettings(PixelGramGhostId());
+		});
+
+		// 2. Appearance
+		const auto appearanceButton = AddButtonWithIcon(
+			content,
+			rpl::single(u"Внешний вид (Appearance)"_q),
+			st::settingsButton,
+			{ &st::menuIconChatBubble });
+		appearanceButton->setClickedCallback([=] {
+			controller()->showSettings(PixelGramAppearanceId());
+		});
+
+		// 3. Chats
+		const auto chatsButton = AddButtonWithIcon(
+			content,
+			rpl::single(u"Чаты (Chats)"_q),
+			st::settingsButton,
+			{ &st::menuIconChatBubble });
+		chatsButton->setClickedCallback([=] {
+			controller()->showSettings(PixelGramChatsId());
+		});
+
+		// 4. Other
+		const auto otherButton = AddButtonWithIcon(
+			content,
+			rpl::single(u"Другое (Other)"_q),
+			st::settingsButton,
+			{ &st::menuIconManage });
+		otherButton->setClickedCallback([=] {
+			controller()->showSettings(PixelGramOtherId());
+		});
+
+		Ui::AddSkip(content, 16);
+		Ui::ResizeFitChild(this, content);
+	}
+};
+
+// ============================================================================
+// 2. Subpage: Ghost Mode
+// ============================================================================
+class PixelGramGhostSection final : public Section<PixelGramGhostSection> {
+public:
+	PixelGramGhostSection(QWidget *parent, not_null<Window::SessionController*> controller)
+	: Section(parent, controller) {
+		setupContent();
+	}
+
+	[[nodiscard]] rpl::producer<QString> title() override {
+		return rpl::single(u"Невидимка"_q);
+	}
+
+private:
+	void setupContent() {
+		const auto content = Ui::CreateChild<Ui::VerticalLayout>(this);
+		auto &cfg = CurrentConfig();
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Режим инкогнито"_q));
+
+		AddToggle(content, rpl::single(u"Не передавать статус «В сети»"_q), cfg.dontSendOnline, [](bool val) {
+			CurrentConfig().dontSendOnline = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Скрывать статус набора текста"_q), cfg.dontSendTyping, [](bool val) {
+			CurrentConfig().dontSendTyping = val;
+			CurrentConfig().hideTyping = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Не отмечать сообщения прочитанными"_q), cfg.dontReadMessages, [](bool val) {
+			CurrentConfig().dontReadMessages = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Не отмечать истории просмотренными"_q), cfg.dontReadStories, [](bool val) {
+			CurrentConfig().dontReadStories = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Автоматически переходить в офлайн"_q), cfg.goOfflineAutomatically, [](bool val) {
+			CurrentConfig().goOfflineAutomatically = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 8);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Истории"_q));
+		AddToggle(content, rpl::single(u"Предупреждать перед открытием историй"_q), cfg.storyGhostAlert, [](bool val) {
+			CurrentConfig().storyGhostAlert = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 16);
+		Ui::ResizeFitChild(this, content);
+	}
+};
+
+// ============================================================================
+// 3. Subpage: Appearance
+// ============================================================================
+class PixelGramAppearanceSection final : public Section<PixelGramAppearanceSection> {
+public:
+	PixelGramAppearanceSection(QWidget *parent, not_null<Window::SessionController*> controller)
+	: Section(parent, controller) {
+		setupContent();
+	}
+
+	[[nodiscard]] rpl::producer<QString> title() override {
+		return rpl::single(u"Внешний вид"_q);
+	}
+
+private:
+	void setupContent() {
+		const auto content = Ui::CreateChild<Ui::VerticalLayout>(this);
+		auto &cfg = CurrentConfig();
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Форма аватарок Material 3"_q));
+
+		const auto preview = content->add(object_ptr<LiveAvatarPreview>(content));
+		Ui::AddSkip(content, 6);
+
+		const auto shapeGroup = std::make_shared<Ui::RadioenumGroup<AvatarShape>>(cfg.avatarShape);
+		const auto addRadio = [&](AvatarShape val, const QString &label) {
+			content->add(
+				object_ptr<Ui::Radioenum<AvatarShape>>(content, shapeGroup, val, label, st::defaultBoxCheckbox),
+				style::margins(16, 4, 16, 4));
+		};
+
+		addRadio(AvatarShape::Circle, u"Круг (Circle)"_q);
+		addRadio(AvatarShape::Squircle, u"Сквиркл (Squircle)"_q);
+		addRadio(AvatarShape::Cookie, u"Печенье (Cookie M3)"_q);
+		addRadio(AvatarShape::Sunflower, u"Цветок (Sunflower M3)"_q);
+		addRadio(AvatarShape::Clover, u"Клевер (Clover M3)"_q);
+		addRadio(AvatarShape::Hexagon, u"Шестиугольник (Hexagon M3)"_q);
+		addRadio(AvatarShape::Custom, u"Свой радиус (Кастом)"_q);
+
+		Ui::AddSkip(content, 6);
+		content->add(object_ptr<Ui::FlatLabel>(
+			content,
+			rpl::single(u"Радиус углов (только для своего радиуса)"_q),
+			st::boxDividerLabel),
+			style::margins(16, 6, 16, 4));
+
+		const auto radiusSlider = content->add(
+			object_ptr<Ui::SettingsSlider>(content, st::settingsSlider),
+			style::margins(16, 4, 16, 4));
+		radiusSlider->addSection("10%");
+		radiusSlider->addSection("20%");
+		radiusSlider->addSection("30%");
+		radiusSlider->addSection("40%");
+		radiusSlider->addSection("50%");
+		radiusSlider->setActiveSectionFast(std::clamp((cfg.avatarCornerRadius - 10) / 10, 0, 4));
+
+		const auto singleCornerCheckbox = content->add(object_ptr<Ui::Checkbox>(
+			content,
+			u"Скруглять только один угол"_q,
+			cfg.singleCornerRadius,
+			st::defaultBoxCheckbox),
+			style::margins(16, 6, 16, 8));
+
+		const auto updateControlsState = [=] {
+			const auto isCustom = (CurrentConfig().avatarShape == AvatarShape::Custom);
+			radiusSlider->setDisabled(!isCustom);
+			singleCornerCheckbox->setDisabled(!isCustom);
+		};
+		updateControlsState();
+
+		shapeGroup->setChangedCallback([=](AvatarShape val) {
+			CurrentConfig().avatarShape = val;
+			SaveConfig();
+			updateControlsState();
+			preview->update();
+			IncrementAvatarShapeVersion();
+		});
+
+		radiusSlider->sectionActivated() | rpl::on_next([=](int section) {
+			CurrentConfig().avatarCornerRadius = (section + 1) * 10;
+			SaveConfig();
+			preview->update();
+			IncrementAvatarShapeVersion();
+		}, content->lifetime());
+
+		singleCornerCheckbox->checkedChanges() | rpl::on_next([=](bool checked) {
+			CurrentConfig().singleCornerRadius = checked;
+			SaveConfig();
+			preview->update();
+			IncrementAvatarShapeVersion();
+		}, content->lifetime());
+
+		Ui::AddSkip(content, 8);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Интерфейс"_q));
+		AddToggle(content, rpl::single(u"Отключить кастомные фоны чатов"_q), cfg.disableCustomBackgrounds, [](bool val) {
+			CurrentConfig().disableCustomBackgrounds = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Скрывать эмодзи-статусы пользователей"_q), cfg.hidePremiumStatuses, [](bool val) {
+			CurrentConfig().hidePremiumStatuses = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Моноширинный шрифт сообщений"_q), !cfg.monospaceFont.isEmpty(), [](bool val) {
+			CurrentConfig().monospaceFont = val ? u"Roboto Mono"_q : QString();
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 8);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Папки и системный трей"_q));
+		AddToggle(content, rpl::single(u"Скрывать счётчики в папках"_q), cfg.hideFolderCounters, [](bool val) {
+			CurrentConfig().hideFolderCounters = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Скрыть вкладку «Все чаты»"_q), cfg.hideAllChatsTab, [](bool val) {
+			CurrentConfig().hideAllChatsTab = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Монохромная иконка в трее"_q), cfg.trayGhostMode, [](bool val) {
+			CurrentConfig().trayGhostMode = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 16);
+		Ui::ResizeFitChild(this, content);
+	}
+};
+
+// ============================================================================
+// 4. Subpage: Chats
+// ============================================================================
+class PixelGramChatsSection final : public Section<PixelGramChatsSection> {
+public:
+	PixelGramChatsSection(QWidget *parent, not_null<Window::SessionController*> controller)
+	: Section(parent, controller) {
+		setupContent();
+	}
+
+	[[nodiscard]] rpl::producer<QString> title() override {
+		return rpl::single(u"Чаты"_q);
+	}
+
+private:
+	void setupContent() {
+		const auto content = Ui::CreateChild<Ui::VerticalLayout>(this);
+		auto &cfg = CurrentConfig();
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Пузыри сообщений Material 3"_q));
+
+		const auto bubblePreview = content->add(object_ptr<LiveBubblePreview>(content));
+		Ui::AddSkip(content, 6);
+
+		content->add(object_ptr<Ui::FlatLabel>(
+			content,
+			rpl::single(u"Радиус скругления пузырей (px)"_q),
+			st::boxDividerLabel),
+			style::margins(16, 6, 16, 4));
+
+		const auto bubbleRadiusSlider = content->add(
+			object_ptr<Ui::SettingsSlider>(content, st::settingsSlider),
+			style::margins(16, 4, 16, 8));
+		bubbleRadiusSlider->addSection("8px");
+		bubbleRadiusSlider->addSection("12px");
+		bubbleRadiusSlider->addSection("16px");
+		bubbleRadiusSlider->addSection("20px");
+		bubbleRadiusSlider->addSection("24px");
+		const auto radiusIndex = std::clamp((cfg.messageBubbleRadius - 8) / 4, 0, 4);
+		bubbleRadiusSlider->setActiveSectionFast(radiusIndex);
+
+		bubbleRadiusSlider->sectionActivated() | rpl::on_next([=](int section) {
+			CurrentConfig().messageBubbleRadius = 8 + section * 4;
+			SaveConfig();
+			bubblePreview->update();
+		}, content->lifetime());
+
+		AddToggle(content, rpl::single(u"Отключить хвостик у сообщений"_q), cfg.removeMessageTail, [=](bool val) {
+			CurrentConfig().removeMessageTail = val;
+			SaveConfig();
+			bubblePreview->update();
+		});
+
+		AddToggle(content, rpl::single(u"Полупрозрачность удалённых сообщений"_q), cfg.translucentDeletedMessages, [](bool val) {
+			CurrentConfig().translucentDeletedMessages = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Скрыть стрелку пересылки рядом с сообщением"_q), cfg.hideSideShareButton, [](bool val) {
+			CurrentConfig().hideSideShareButton = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Отключить цветные цитаты и ответы"_q), cfg.disableColorfulReplies, [](bool val) {
+			CurrentConfig().disableColorfulReplies = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 8);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Контекстное меню сообщений"_q));
+
+		const auto addMenuCycle = [&](const QString &title, ContextMenuDisplay &valRef) {
+			const auto cycleVal = [=](ContextMenuDisplay curr) {
+				return (curr == ContextMenuDisplay::Shown)
+					? ContextMenuDisplay::Extended
+					: (curr == ContextMenuDisplay::Extended)
+					? ContextMenuDisplay::Hidden
+					: ContextMenuDisplay::Shown;
+			};
+			const auto textForVal = [](ContextMenuDisplay v) {
+				return (v == ContextMenuDisplay::Shown)
+					? u"Всегда"_q
+					: (v == ContextMenuDisplay::Extended)
+					? u"Shift + Ctrl"_q
+					: u"Скрыто"_q;
+			};
+
+			const auto btn = AddButtonWithLabel(
+				content,
+				rpl::single(title),
+				rpl::single(textForVal(valRef)),
+				st::settingsButton);
+
+			btn->setClickedCallback([=, &valRef] {
+				valRef = cycleVal(valRef);
+				SaveConfig();
+			});
+		};
+
+		addMenuCycle(u"Снимок сообщения"_q, cfg.menuMessageShot);
+		addMenuCycle(u"Список реакций"_q, cfg.menuReactions);
+		addMenuCycle(u"Просмотры сообщения"_q, cfg.menuViews);
+		addMenuCycle(u"Скрыть локально"_q, cfg.menuHideLocally);
+		addMenuCycle(u"Сообщения автора"_q, cfg.menuUserMessages);
+
+		Ui::AddSkip(content, 16);
+		Ui::ResizeFitChild(this, content);
+	}
+};
+
+// ============================================================================
+// 5. Subpage: Other
+// ============================================================================
+class PixelGramOtherSection final : public Section<PixelGramOtherSection> {
+public:
+	PixelGramOtherSection(QWidget *parent, not_null<Window::SessionController*> controller)
+	: Section(parent, controller) {
+		setupContent();
+	}
+
+	[[nodiscard]] rpl::producer<QString> title() override {
+		return rpl::single(u"Другое"_q);
+	}
+
+private:
+	void setupContent() {
+		const auto content = Ui::CreateChild<Ui::VerticalLayout>(this);
+		auto &cfg = CurrentConfig();
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Расширенные функции"_q));
+
+		AddToggle(content, rpl::single(u"Локальный Telegram Premium"_q), cfg.localPremium, [](bool val) {
+			CurrentConfig().localPremium = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Отключить рекламу (Disable Ads)"_q), cfg.disableAds, [](bool val) {
+			CurrentConfig().disableAds = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Анти-удаление сообщений"_q), cfg.antiDelete, [](bool val) {
+			CurrentConfig().antiDelete = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Обход защиты от копирования"_q), cfg.bypassProtection, [](bool val) {
+			CurrentConfig().bypassProtection = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Размытие фона медиавьювера"_q), cfg.blurMediaBackground, [](bool val) {
+			CurrentConfig().blurMediaBackground = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 16);
+		Ui::ResizeFitChild(this, content);
+	}
+};
+
+// Register build metadata for router navigation and back-stack
+const auto kPixelGramMeta = BuildHelper({
+	.id = PixelGramSection::Id(),
+	.parentId = MainId(),
+	.title = &tr::lng_menu_settings,
+	.icon = &st::menuIconManage,
+}, [](SectionBuilder &builder) {});
+
+const auto kGhostMeta = BuildHelper({
+	.id = PixelGramGhostSection::Id(),
+	.parentId = PixelGramSection::Id(),
+	.title = &tr::lng_settings_section_privacy,
+	.icon = &st::menuIconStealth,
+}, [](SectionBuilder &builder) {});
+
+const auto kAppearanceMeta = BuildHelper({
+	.id = PixelGramAppearanceSection::Id(),
+	.parentId = PixelGramSection::Id(),
+	.title = &tr::lng_settings_section_chat_settings,
+	.icon = &st::menuIconChatBubble,
+}, [](SectionBuilder &builder) {});
+
+const auto kChatsMeta = BuildHelper({
+	.id = PixelGramChatsSection::Id(),
+	.parentId = PixelGramSection::Id(),
+	.title = &tr::lng_settings_section_chat_settings,
+	.icon = &st::menuIconChatBubble,
+}, [](SectionBuilder &builder) {});
+
+const auto kOtherMeta = BuildHelper({
+	.id = PixelGramOtherSection::Id(),
+	.parentId = PixelGramSection::Id(),
+	.title = &tr::lng_settings_advanced,
+	.icon = &st::menuIconManage,
+}, [](SectionBuilder &builder) {});
+
+} // namespace
+
+Type PixelGramId() {
+	return PixelGramSection::Id();
+}
+
+Type PixelGramGhostId() {
+	return PixelGramGhostSection::Id();
+}
+
+Type PixelGramAppearanceId() {
+	return PixelGramAppearanceSection::Id();
+}
+
+Type PixelGramChatsId() {
+	return PixelGramChatsSection::Id();
+}
+
+Type PixelGramOtherId() {
+	return PixelGramOtherSection::Id();
+}
+
+} // namespace Settings

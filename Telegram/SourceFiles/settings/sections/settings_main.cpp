@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "settings/sections/settings_main.h"
 #include "settings/pixelgram_settings.h"
+#include "settings/sections/settings_pixelgram.h"
 
 #include "settings/settings_common_session.h"
 
@@ -384,14 +385,12 @@ void BuildSectionButtons(SectionBuilder &builder) {
 	}
 
 	// Group 2: PixelGram Mods
-	builder.addButton({
+	builder.addSectionButton({
 		.title = rpl::single(u"Настройки PixelGram"_q),
-		.description = u"Ghost Mode, Anti-Delete, обход защиты контента"_q,
+		.description = u"Ghost Mode, внешний вид, чаты, другое"_q,
 		.groupPosition = Ui::GroupPosition::Single,
+		.targetSection = PixelGramId(),
 		.icon = { &st::menuIconManage },
-		.onClick = [=] {
-			PixelGram::ShowSettingsBox(controller);
-		},
 		.keywords = { u"pixelgram"_q, u"ghost"_q, u"anti-delete"_q, u"bypass"_q },
 	});
 	builder.addSkip(14);

@@ -6,6 +6,8 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/widgets/continuous_sliders.h"
+#include "ui/pixelgram_wavy_progress.h"
+#include "base/timer.h"
 
 #include "ui/painter.h"
 #include "ui/rect.h"
@@ -209,6 +211,22 @@ void ContinuousSlider::leaveEventHook(QEvent *e) {
 	setOver(false);
 }
 
+void ContinuousSlider::setIsPlaying(bool playing) {
+	if (_isPlaying == playing) {
+		return;
+	}
+	_isPlaying = playing;
+	if (_isPlaying) {
+		if (!_waveTimer) {
+			_waveTimer = std::make_unique<base::Timer>([=] { update(); });
+		}
+		_waveTimer->callEach(33);
+	} else if (_waveTimer) {
+		_waveTimer->cancel();
+	}
+	update();
+}
+
 void ContinuousSlider::setOver(bool over) {
 	if (_over == over) return;
 
@@ -231,37 +249,33 @@ float64 FilledSlider::getOverDuration() const {
 
 void FilledSlider::paintEvent(QPaintEvent *e) {
 	auto p = QPainter(this);
-	PainterHighQualityEnabler hq(p);
+	p.setOpacity(fadeOpacity());
 
-	p.setPen(Qt::NoPen);
-
-	const auto masterOpacity = fadeOpacity();
-	const auto disabled = isDisabled();
-	const auto over = getCurrentOverFactor();
-	const auto lineWidth = _st.lineWidth + ((_st.fullWidth - _st.lineWidth) * over);
-	const auto lineWidthRounded = std::floor(lineWidth);
-	const auto lineWidthPartial = lineWidth - lineWidthRounded;
-	const auto seekRect = getSeekRect();
 	const auto value = getCurrentValue();
-	const auto from = seekRect.x();
-	const auto mid = int(base::SafeRound(from + value * seekRect.width()));
-	const auto end = from + seekRect.width();
-	if (mid > from) {
-		p.setOpacity(masterOpacity);
-		p.fillRect(from, height() - lineWidthRounded, (mid - from), lineWidthRounded, disabled ? _st.disabledFg : _st.activeFg);
-		if (lineWidthPartial > 0.01) {
-			p.setOpacity(masterOpacity * lineWidthPartial);
-			p.fillRect(from, height() - lineWidthRounded - 1, (mid - from), 1, disabled ? _st.disabledFg : _st.activeFg);
-		}
+	const auto seekRect = getSeekRect();
+	const auto over = getCurrentOverFactor();
+	const auto disabled = isDisabled();
+
+	PixelGram::WavyTrackOptions options;
+	options.progress = value;
+	options.isPlaying = isPlaying() || ((value > 0.0 && value < 1.0) && !disabled);
+	options.showThumb = (over > 0.01 || isChanging());
+	options.amplitude = 3.2;
+	options.wavelength = 26.0;
+	options.strokeWidth = 3.5;
+	options.thumbSize = QSize(4, std::max(16, height() - 2));
+	options.thumbRadius = 2.0;
+	options.thumbGap = 3.5;
+	if (disabled) {
+		options.activeColor = _st.disabledFg->c;
+		options.inactiveColor = _st.disabledFg->c;
+		options.thumbColor = _st.disabledFg->c;
+	} else {
+		options.activeColor = _st.activeFg->c;
+		options.inactiveColor = _st.inactiveFg->c;
 	}
-	if (end > mid && over > 0) {
-		p.setOpacity(masterOpacity * over);
-		p.fillRect(mid, height() - lineWidthRounded, (end - mid), lineWidthRounded, _st.inactiveFg);
-		if (lineWidthPartial > 0.01) {
-			p.setOpacity(masterOpacity * over * lineWidthPartial);
-			p.fillRect(mid, height() - lineWidthRounded - 1, (end - mid), 1, _st.inactiveFg);
-		}
-	}
+
+	PixelGram::PaintWavyTrack(p, seekRect, options);
 }
 
 MediaSlider::MediaSlider(QWidget *parent, const style::MediaSlider &st) : ContinuousSlider(parent)
@@ -338,6 +352,63 @@ void MediaSlider::setColorOverrides(ColorOverrides overrides) {
 
 void MediaSlider::paintEvent(QPaintEvent *e) {
 	if (_paintDisabled) {
+		return;
+	}
+	if (isHorizontal()) {
+		auto p = QPainter(this);
+		p.setOpacity(fadeOpacity());
+
+		const auto disabled = isDisabled();
+		const auto over = getCurrentOverFactor();
+		const auto value = getCurrentValue();
+		const auto seekRect = getSeekRect();
+		const auto showMarker = _alwaysDisplayMarker || (over > 0.01) || isChanging();
+
+		PixelGram::WavyTrackOptions options;
+		options.progress = value;
+		options.isPlaying = isPlaying() || ((value > 0.0 && value < 1.0) && !disabled);
+		options.showThumb = showMarker;
+		options.amplitude = 3.5;
+		options.wavelength = 26.0;
+		options.strokeWidth = 3.5;
+		options.thumbSize = QSize(4, std::min(22, height()));
+		options.thumbRadius = 2.0;
+		options.thumbGap = 4.0;
+
+		if (_overrides.activeFg) {
+			options.activeColor = *_overrides.activeFg;
+		} else if (disabled) {
+			options.activeColor = _st.activeFgDisabled->c;
+		} else {
+			options.activeColor = anim::color(_st.activeFg, _st.activeFgOver, over);
+		}
+
+		if (_overrides.inactiveFg) {
+			options.inactiveColor = *_overrides.inactiveFg;
+		} else if (disabled) {
+			options.inactiveColor = _st.inactiveFgDisabled->c;
+		} else {
+			options.inactiveColor = anim::color(_st.inactiveFg, _st.inactiveFgOver, over);
+		}
+
+		const auto trackRect = QRectF(0, 0, width(), height());
+		PixelGram::PaintWavyTrack(p, trackRect, options);
+
+		if (_dividerStyle != DividerStyle::Gaps && !_dividers.empty()) {
+			p.setClipRect(rect());
+			for (const auto &divider : _dividers) {
+				const auto dividerMid = base::SafeRound(divider.atValue * width());
+				const auto &s = divider.size;
+				const auto r = QRect(
+					dividerMid - s.width() / 2,
+					(height() - s.height()) / 2,
+					s.width(),
+					s.height());
+				p.setBrush((value < divider.atValue) ? options.inactiveColor : options.activeColor);
+				p.setPen(Qt::NoPen);
+				p.drawRoundedRect(r, s.width() / 2., s.width() / 2.);
+			}
+		}
 		return;
 	}
 	auto p = QPainter(this);

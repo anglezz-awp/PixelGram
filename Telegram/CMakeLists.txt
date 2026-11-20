@@ -1992,10 +1992,14 @@ PRIVATE
     settings/sections/settings_local_storage.h
     settings/pixelgram_settings.cpp
     settings/pixelgram_settings.h
+    settings/sections/settings_pixelgram.cpp
+    settings/sections/settings_pixelgram.h
     ui/pixelgram_m3_scheme.cpp
     ui/pixelgram_m3_scheme.h
     ui/pixelgram_avatar_shapes.cpp
     ui/pixelgram_avatar_shapes.h
+    ui/pixelgram_wavy_progress.cpp
+    ui/pixelgram_wavy_progress.h
     settings/sections/settings_main.cpp
     settings/sections/settings_main.h
     settings/settings_recent_searches.cpp
@@ -2953,6 +2957,8 @@ target_sources(Telegram PRIVATE
     ${src_loc}/ui/pixelgram_m3_scheme.h
     ${src_loc}/ui/pixelgram_avatar_shapes.cpp
     ${src_loc}/ui/pixelgram_avatar_shapes.h
+    ${src_loc}/ui/pixelgram_wavy_progress.cpp
+    ${src_loc}/ui/pixelgram_wavy_progress.h
 )
 
 target_compile_definitions(Telegram

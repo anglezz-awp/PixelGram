@@ -5609,7 +5609,34 @@ bool Message::isSignedAuthorElided() const {
 }
 
 bool Message::hasExternalBottomInfo() const {
-	return drawBubble() && needInfoDisplay();
+	if (!drawBubble() || !needInfoDisplay()) {
+		return false;
+	}
+	if (isBubbleAttachedToNext() || isAttachedToNext()) {
+		if (_reactions != nullptr) {
+			return true;
+		}
+		const auto item = data();
+		if (item->isDeletedByAntiDelete()) {
+			return true;
+		}
+		if (displayedEditDate() != 0) {
+			return true;
+		}
+		if (item->isPinned() && context() != Context::Pinned) {
+			return true;
+		}
+		if (const auto views = item->Get<HistoryMessageViews>()) {
+			if (views->views.count >= 0) {
+				return true;
+			}
+		}
+		if (item->isSponsored() || item->effectId() != 0) {
+			return true;
+		}
+		return false;
+	}
+	return true;
 }
 
 bool Message::embedReactionsInBubble() const {
@@ -6658,10 +6685,7 @@ QRect Message::countGeometry() const {
 	const auto outbg = hasOutLayout();
 
 	const auto totalWidth = width();
-	const auto mult = PixelGram::CurrentConfig().wideMessagesMultiplier;
-	const auto maxBubbleWidth = (mult > 1.001)
-		? std::clamp(int(totalWidth * std::min(0.72 * mult, 0.96)), 480, int(800 * mult))
-		: std::clamp(int(totalWidth * 0.72), 480, 800);
+	const auto maxBubbleWidth = std::clamp(int(totalWidth * 0.72), 480, 800);
 
 	auto availableWidth = maxBubbleWidth;
 	if (hasFromPhoto()) {
@@ -6671,7 +6695,7 @@ QRect Message::countGeometry() const {
 		}
 	}
 	auto contentWidth = availableWidth;
-	accumulate_min(contentWidth, (mult > 1.001) ? int(maxWidth() * mult) : maxWidth());
+	accumulate_min(contentWidth, maxWidth());
 	accumulate_min(contentWidth, int(_bubbleWidthLimit));
 	if (mediaWidth < contentWidth) {
 		const auto textualWidth = bubbleTextualWidth();
@@ -6773,10 +6797,7 @@ int Message::resizeContentGetHeight(int newWidth) {
 	item->resolveDependent();
 
 	// This code duplicates countGeometry() but also resizes media.
-	const auto mult = PixelGram::CurrentConfig().wideMessagesMultiplier;
-	const auto maxBubbleWidth = (mult > 1.001)
-		? std::clamp(int(newWidth * std::min(0.72 * mult, 0.96)), 480, int(800 * mult))
-		: std::clamp(int(newWidth * 0.72), 480, 800);
+	const auto maxBubbleWidth = std::clamp(int(newWidth * 0.72), 480, 800);
 
 	auto contentWidth = maxBubbleWidth;
 	if (hasFromPhoto()) {
@@ -6785,7 +6806,7 @@ int Message::resizeContentGetHeight(int newWidth) {
 			contentWidth -= size->width() + (st::msgPhotoSkip - st::historyFastShareSize);
 		}
 	}
-	accumulate_min(contentWidth, (mult > 1.001) ? int(maxWidth() * mult) : maxWidth());
+	accumulate_min(contentWidth, maxWidth());
 	_bubbleWidthLimit = (UnlimitedMessageWidth.value() && !mediaDisplayed)
 		? 0x3FFFFFF
 		: std::max({
@@ -6981,8 +7002,6 @@ int Message::resizeContentGetHeight(int newWidth) {
 		}
 		if (hasExternalBottomInfo()) {
 			newHeight += ExternalBottomInfoTotal();
-		} else if (needInfoDisplay()) {
-			newHeight += (bottomInfoHeight - st::msgDateFont->height);
 		}
 
 		if (hasCommentsButton()) {

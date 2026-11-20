@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "media/player/media_player_button.h"
+#include "ui/pixelgram_m3_scheme.h"
 
 #include "media/media_common.h"
 #include "ui/effects/ripple_animation.h"
@@ -257,10 +258,19 @@ void PlayButton::finishTransform() {
 
 void PlayButton::paintEvent(QPaintEvent *e) {
 	auto p = QPainter(this);
+	PainterHighQualityEnabler hq(p);
+
+	const auto &roles = PixelGram::CurrentM3Roles();
+	const auto bg = roles.primary.isValid() ? roles.primary : _st.color->c;
+	const auto iconFg = roles.onPrimary.isValid() ? roles.onPrimary : QColor(0xFF, 0xFF, 0xFF);
+
+	p.setPen(Qt::NoPen);
+	p.setBrush(bg);
+	p.drawRoundedRect(rect(), 14.0, 14.0);
 
 	paintRipple(p, _st.rippleAreaPosition);
 	p.translate(_st.iconPosition);
-	_layout.paint(p, _st.color);
+	_layout.paint(p, iconFg);
 }
 
 QPoint PlayButton::prepareRippleStartPosition() const {
@@ -273,8 +283,7 @@ QPoint PlayButton::prepareRippleStartPosition() const {
 }
 
 QImage PlayButton::prepareRippleMask() const {
-	return Ui::RippleAnimation::EllipseMask(
-		QSize(_st.rippleAreaSize, _st.rippleAreaSize));
+	return Ui::RippleAnimation::RoundRectMask(size(), 14.0);
 }
 
 SpeedButtonLayout::SpeedButtonLayout(

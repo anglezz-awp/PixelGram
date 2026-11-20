@@ -345,7 +345,6 @@ void SaveConfig() {
 	root["disableColorfulReplies"] = cfg.disableColorfulReplies;
 	root["translucentDeletedMessages"] = cfg.translucentDeletedMessages;
 	root["messageBubbleRadius"] = cfg.messageBubbleRadius;
-	root["wideMessagesMultiplier"] = cfg.wideMessagesMultiplier;
 	root["menuReactions"] = static_cast<int>(cfg.menuReactions);
 	root["menuViews"] = static_cast<int>(cfg.menuViews);
 	root["menuHideLocally"] = static_cast<int>(cfg.menuHideLocally);
@@ -436,7 +435,6 @@ void LoadConfig() {
 	if (root.contains("disableColorfulReplies")) cfg.disableColorfulReplies = root["disableColorfulReplies"].toBool();
 	if (root.contains("translucentDeletedMessages")) cfg.translucentDeletedMessages = root["translucentDeletedMessages"].toBool();
 	if (root.contains("messageBubbleRadius")) cfg.messageBubbleRadius = root["messageBubbleRadius"].toInt();
-	if (root.contains("wideMessagesMultiplier")) cfg.wideMessagesMultiplier = root["wideMessagesMultiplier"].toDouble();
 	if (root.contains("menuReactions")) cfg.menuReactions = static_cast<ContextMenuDisplay>(root["menuReactions"].toInt());
 	if (root.contains("menuViews")) cfg.menuViews = static_cast<ContextMenuDisplay>(root["menuViews"].toInt());
 	if (root.contains("menuHideLocally")) cfg.menuHideLocally = static_cast<ContextMenuDisplay>(root["menuHideLocally"].toInt());
@@ -849,20 +847,7 @@ void ShowSettingsBox(Window::SessionController *controller) {
 					st::boxDividerLabel),
 					style::margins(14, 10, 14, 4));
 
-				const auto wideSlider = cardDisplay->add(
-					object_ptr<Ui::SettingsSlider>(cardDisplay, st::settingsSlider),
-					style::margins(14, 4, 14, 4));
-				wideSlider->addSection("1.0x");
-				wideSlider->addSection("1.2x");
-				wideSlider->addSection("1.4x");
-				wideSlider->addSection("1.6x");
-				const auto initialWideIndex = std::clamp(int(std::round((CurrentConfig().wideMessagesMultiplier - 1.0) / 0.2)), 0, 3);
-				wideSlider->setActiveSectionFast(initialWideIndex);
-				wideSlider->sectionActivated() | rpl::on_next([=](int section) {
-					CurrentConfig().wideMessagesMultiplier = 1.0 + section * 0.2;
-					SaveConfig();
-					controller->updateColumnLayout();
-				}, box->lifetime());
+
 
 				addToggle(
 					cardDisplay,
