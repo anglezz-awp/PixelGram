@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "window/notifications_manager.h"
+#include "settings/pixelgram_settings.h"
 
 #include "base/options.h"
 #include "base/platform/base_platform_info.h"
@@ -1683,7 +1684,11 @@ void NativeManager::doShowNotification(NotificationFields &&fields) {
 			? Data::ItemNotificationType::PollVote
 			: Data::ItemNotificationType::Reaction)
 		: Data::ItemNotificationType::Message;
-	const auto options = getNotificationOptions(fields.item, type);
+	auto options = getNotificationOptions(fields.item, type);
+	if (PixelGram::CurrentConfig().streamerModeActive) {
+		options.hideMessageText = true;
+		options.hideNameAndPhoto = true;
+	}
 	const auto item = fields.item;
 	const auto peer = item->history()->peer;
 	const auto reactionFrom = fields.reactionFrom;

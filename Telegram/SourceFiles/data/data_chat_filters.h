@@ -162,6 +162,9 @@ public:
 	void remove(FilterId id);
 	void moveAllToFront();
 	[[nodiscard]] const std::vector<ChatFilter> &list() const;
+	void notifyChanged() {
+		_listChanged.fire({});
+	}
 	[[nodiscard]] rpl::producer<> changed() const;
 	[[nodiscard]] rpl::producer<FilterId> isChatlistChanged() const;
 	[[nodiscard]] rpl::producer<TagColorChanged> tagColorChanged() const;
@@ -237,6 +240,7 @@ private:
 	const not_null<Session*> _owner;
 
 	std::vector<ChatFilter> _list;
+	mutable std::vector<ChatFilter> _filteredList;
 	base::flat_map<FilterId, std::unique_ptr<Dialogs::MainList>> _chatsLists;
 	rpl::event_stream<> _listChanged;
 	rpl::event_stream<FilterId> _isChatlistChanged;

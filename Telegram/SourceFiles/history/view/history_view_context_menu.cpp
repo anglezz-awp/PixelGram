@@ -1787,7 +1787,7 @@ void AddPixelGramActions(
 	// 1. Details
 	if (shouldShow(cfg.menuDetails)) {
 		result->addAction(
-			QString::fromUtf8("Детали (Details)"),
+			QString::fromUtf8("Детали сообщения"),
 			[=] {
 				const auto itemId = item->fullId();
 				const auto dateStr = ItemDateTime(item).toString("yyyy-MM-dd hh:mm:ss");
@@ -1796,7 +1796,7 @@ void AddPixelGramActions(
 					.arg(itemId.peer.value)
 					.arg(dateStr);
 				if (const auto from = item->fromOriginal()) {
-					text += QString::fromUtf8("\nОтправитель: %1 (%2)").arg(from->name()).arg(from->id.value);
+					text += QString::fromUtf8("\nАвтор: %1 (%2)").arg(from->name()).arg(from->id.value);
 				}
 				if (item->isDeletedByAntiDelete()) {
 					text += QString::fromUtf8("\nСтатус: Сохранено (Anti-Delete)");
@@ -1810,7 +1810,7 @@ void AddPixelGramActions(
 	if (shouldShow(cfg.menuUserMessages)) {
 		if (const auto from = item->fromOriginal()) {
 			result->addAction(
-				QString::fromUtf8("Сообщения пользователя"),
+				QString::fromUtf8("Сообщения автора"),
 				[=] {
 					list->controller()->searchInChat(item->history(), from);
 				},
@@ -1821,7 +1821,7 @@ void AddPixelGramActions(
 	// 3. Repeat
 	if (shouldShow(cfg.menuRepeat)) {
 		result->addAction(
-			QString::fromUtf8("Повторить (Repeat)"),
+			QString::fromUtf8("Повторить сообщение"),
 			[=] {
 				const auto text = item->originalText().text;
 				if (!text.isEmpty()) {

@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "data/data_chat_filters.h"
+#include "settings/pixelgram_settings.h"
 
 #include "api/api_text_entities.h"
 #include "history/history.h"
@@ -898,6 +899,15 @@ bool ChatFilters::archiveNeeded() const {
 }
 
 const std::vector<ChatFilter> &ChatFilters::list() const {
+	if (PixelGram::CurrentConfig().hideAllChatsTab && _list.size() > 1) {
+		_filteredList.clear();
+		for (const auto &f : _list) {
+			if (f.id()) {
+				_filteredList.push_back(f);
+			}
+		}
+		return _filteredList;
+	}
 	return _list;
 }
 

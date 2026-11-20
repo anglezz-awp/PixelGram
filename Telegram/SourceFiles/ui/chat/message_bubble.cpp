@@ -15,6 +15,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/chat/torn_edge.h"
 #include "styles/style_chat.h"
 #include "styles/style_chat_style.h"
+#include "settings/pixelgram_settings.h"
 
 namespace Ui {
 namespace {
@@ -78,8 +79,8 @@ void PaintBubblePiece(
 		switch (corner) {
 		case Corner::None: return 0.;
 		case Corner::Small: return small;
-		case Corner::Large:
-		case Corner::Tail: return large;
+		case Corner::Large: return large;
+		case Corner::Tail: return PixelGram::CurrentConfig().removeMessageTail ? large : 2.;
 		}
 		return 0.;
 	};

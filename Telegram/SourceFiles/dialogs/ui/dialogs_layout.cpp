@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/ui/dialogs_layout.h"
+#include "settings/pixelgram_settings.h"
 
 #include "base/options.h"
 #include "base/unixtime.h"
@@ -1236,7 +1237,16 @@ void RowPainter::Paint(
 			if (forum || monoforum) {
 				rect.setHeight(context.st->topicsHeight + rect.height());
 			}
-			view->paint(p, rect, context);
+			if (PixelGram::CurrentConfig().streamerModeActive) {
+				PainterHighQualityEnabler q(p);
+				p.setPen(Qt::NoPen);
+				auto barColor = context.active ? st::dialogsTextPaletteActive.linkFg->c : st::dialogsTextPalette.linkFg->c;
+				barColor.setAlpha(60);
+				p.setBrush(barColor);
+				p.drawRoundedRect(rect.adjusted(0, 3, -40, -3), 4, 4);
+			} else {
+				view->paint(p, rect, context);
+			}
 		}
 	};
 	PaintRow(

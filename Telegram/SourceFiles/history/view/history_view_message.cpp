@@ -6671,7 +6671,7 @@ QRect Message::countGeometry() const {
 		}
 	}
 	auto contentWidth = availableWidth;
-	accumulate_min(contentWidth, maxWidth());
+	accumulate_min(contentWidth, (mult > 1.001) ? int(maxWidth() * mult) : maxWidth());
 	accumulate_min(contentWidth, int(_bubbleWidthLimit));
 	if (mediaWidth < contentWidth) {
 		const auto textualWidth = bubbleTextualWidth();
@@ -6718,12 +6718,14 @@ Ui::BubbleRounding Message::countMessageRounding() const {
 	const auto smallTop = isBubbleAttachedToPrevious();
 	const auto smallBottom = isBubbleAttachedToNext();
 	const auto right = hasRightLayout();
+	const auto removeTail = PixelGram::CurrentConfig().removeMessageTail;
 	using Corner = Ui::BubbleCornerRounding;
+	const auto tailCorner = removeTail ? Corner::Large : Corner::Tail;
 	return Ui::BubbleRounding{
 		.topLeft = (smallTop && !right) ? Corner::Small : Corner::Large,
 		.topRight = (smallTop && right) ? Corner::Small : Corner::Large,
-		.bottomLeft = (smallBottom && !right) ? Corner::Small : Corner::Large,
-		.bottomRight = (smallBottom && right) ? Corner::Small : Corner::Large,
+		.bottomLeft = !right ? (smallBottom ? Corner::Small : tailCorner) : Corner::Large,
+		.bottomRight = right ? (smallBottom ? Corner::Small : tailCorner) : Corner::Large,
 	};
 }
 
@@ -6783,7 +6785,7 @@ int Message::resizeContentGetHeight(int newWidth) {
 			contentWidth -= size->width() + (st::msgPhotoSkip - st::historyFastShareSize);
 		}
 	}
-	accumulate_min(contentWidth, maxWidth());
+	accumulate_min(contentWidth, (mult > 1.001) ? int(maxWidth() * mult) : maxWidth());
 	_bubbleWidthLimit = (UnlimitedMessageWidth.value() && !mediaDisplayed)
 		? 0x3FFFFFF
 		: std::max({

@@ -1982,6 +1982,10 @@ void PeerData::setThemeToken(const QString &token) {
 }
 
 const QString &PeerData::themeToken() const {
+	if (PixelGram::CurrentConfig().disableCustomBackgrounds) {
+		static const QString empty;
+		return empty;
+	}
 	return _themeToken;
 }
 

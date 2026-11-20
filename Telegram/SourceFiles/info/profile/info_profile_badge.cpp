@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "info/profile/info_profile_badge.h"
+#include "settings/pixelgram_settings.h"
 
 #include "data/data_changes.h"
 #include "data/data_emoji_statuses.h"
@@ -63,6 +64,10 @@ Ui::RpWidget *Badge::widget() const {
 }
 
 void Badge::setContent(Content content) {
+	if (PixelGram::CurrentConfig().hidePremiumStatuses && content.badge == BadgeType::Premium) {
+		content.badge = BadgeType::None;
+		content.emojiStatusId = EmojiStatusId();
+	}
 	if (!(_allowed & content.badge)
 		|| (!_session->premiumBadgesShown()
 			&& content.badge == BadgeType::Premium)) {
@@ -280,6 +285,9 @@ rpl::producer<Badge::Content> BadgeContentForPeer(not_null<PeerData*> peer) {
 		BadgeValue(peer),
 		ShownEmojiStatusIdValue(peer)
 	) | rpl::map([=](BadgeType badge, EmojiStatusId emojiStatusId) {
+		if (PixelGram::CurrentConfig().hidePremiumStatuses) {
+			return Badge::Content{ BadgeType::None, EmojiStatusId() };
+		}
 		if (emojiStatusId.collectible && (badge == BadgeType::Verified)) {
 			return Badge::Content{ BadgeType::Premium, emojiStatusId };
 		}

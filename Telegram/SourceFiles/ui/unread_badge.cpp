@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/unread_badge.h"
+#include "settings/pixelgram_settings.h"
 
 #include "data/data_emoji_statuses.h"
 #include "data/data_peer.h"
@@ -260,7 +261,8 @@ int PeerBadge::drawGetWidth(Painter &p, Descriptor &&descriptor) {
 	}
 	const auto verifyCheck = descriptor.verified && peer->isVerified();
 	const auto premiumMark = descriptor.premium
-		&& peer->session().premiumBadgesShown();
+		&& peer->session().premiumBadgesShown()
+		&& !PixelGram::CurrentConfig().hidePremiumStatuses;
 	const auto emojiStatus = premiumMark
 		&& peer->emojiStatusId()
 		&& (peer->isPremium() || peer->isChannel())

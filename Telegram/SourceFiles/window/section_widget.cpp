@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/section_widget.h"
 
 #include "window/themes/window_theme.h"
+#include "settings/pixelgram_settings.h"
 #include "data/data_wall_paper.h"
 #include "styles/style_window.h"
 
@@ -52,6 +53,9 @@ constexpr auto kReactionRestrictionToastDuration = 5 * crl::time(1000);
 
 [[nodiscard]] rpl::producer<QString> PeerThemeTokenValue(
 		not_null<PeerData*> peer) {
+	if (PixelGram::CurrentConfig().disableCustomBackgrounds) {
+		return rpl::single(QString());
+	}
 	return peer->session().changes().peerFlagsValue(
 		peer,
 		Data::PeerUpdate::Flag::ChatThemeToken
@@ -67,6 +71,9 @@ struct ResolvedPaper {
 
 [[nodiscard]] rpl::producer<const Data::WallPaper*> PeerWallPaperMapped(
 		not_null<PeerData*> peer) {
+	if (PixelGram::CurrentConfig().disableCustomBackgrounds) {
+		return rpl::single<const Data::WallPaper*>(nullptr);
+	}
 	return peer->session().changes().peerFlagsValue(
 		peer,
 		Data::PeerUpdate::Flag::ChatWallPaper

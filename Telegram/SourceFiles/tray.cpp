@@ -112,11 +112,23 @@ void Tray::rebuildMenu() {
 	if (PixelGram::CurrentConfig().trayGhostMode) {
 		auto ghostText = _textUpdates.events() | rpl::map([=] {
 			return PixelGram::CurrentConfig().ghostMode
-				? QString::fromUtf8("Выключить Ghost Mode")
-				: QString::fromUtf8("Включить Ghost Mode");
+				? QString::fromUtf8("Режим невидимки (вкл)")
+				: QString::fromUtf8("Режим невидимки (выкл)");
 		});
 		_tray.addAction(std::move(ghostText), [=] {
 			PixelGram::CurrentConfig().setMasterGhostMode(!PixelGram::CurrentConfig().ghostMode);
+			PixelGram::SaveConfig();
+			updateMenuText();
+		});
+	}
+	if (PixelGram::CurrentConfig().trayStreamerMode) {
+		auto streamerText = _textUpdates.events() | rpl::map([=] {
+			return PixelGram::CurrentConfig().streamerModeActive
+				? QString::fromUtf8("Режим стримера (вкл)")
+				: QString::fromUtf8("Режим стримера (выкл)");
+		});
+		_tray.addAction(std::move(streamerText), [=] {
+			PixelGram::CurrentConfig().streamerModeActive = !PixelGram::CurrentConfig().streamerModeActive;
 			PixelGram::SaveConfig();
 			updateMenuText();
 		});

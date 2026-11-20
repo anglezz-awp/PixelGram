@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_reply.h"
+#include "settings/pixelgram_settings.h"
 
 #include "core/click_handler_types.h"
 #include "core/ui_integration.h"
@@ -839,12 +840,14 @@ void Reply::paint(
 	const auto backgroundEmojiId = _colorPeer
 		? _colorPeer->backgroundEmojiId()
 		: DocumentId();
-	const auto colorIndexPlusOne = _colorPeer
+	const auto disableColorful = PixelGram::CurrentConfig().disableColorfulReplies;
+	const auto colorIndexPlusOne = disableColorful ? 0 : (_colorPeer
 		? (_colorPeer->colorIndex() + 1)
-		: _hiddenSenderColorIndexPlusOne;
-	const auto &colorCollectible = _colorPeer
+		: _hiddenSenderColorIndexPlusOne);
+	const auto emptyCollectible = std::shared_ptr<Ui::ColorCollectible>();
+	const auto &colorCollectible = disableColorful ? emptyCollectible : (_colorPeer
 		? _colorPeer->colorCollectible()
-		: nullptr;
+		: emptyCollectible);
 	const auto useColorCollectible = colorCollectible && !context.outbg;
 	const auto useColorIndex = colorIndexPlusOne && !context.outbg;
 	const auto colorPattern = colorCollectible
