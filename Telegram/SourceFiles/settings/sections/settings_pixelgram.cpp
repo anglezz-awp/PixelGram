@@ -6,6 +6,10 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "settings/sections/settings_pixelgram.h"
+#include "core/pixelgram_link_guard.h"
+#include "ui/widgets/fields/input_field.h"
+#include "ui/layers/box_content.h"
+#include "ui/layers/generic_box.h"
 
 #include "settings/settings_common.h"
 #include "settings/settings_common_session.h"
@@ -262,6 +266,16 @@ private:
 			{ &st::menuIconManage });
 		otherButton->setClickedCallback([=] {
 			controller()->showSettings(PixelGramOtherId());
+		});
+
+		// 5. Link Guard
+		const auto linkGuardButton = AddButtonWithIcon(
+			content,
+			rpl::single(u"Link Guard (Защита ссылок)"_q),
+			st::settingsButton,
+			{ &st::menuIconManage });
+		linkGuardButton->setClickedCallback([=] {
+			controller()->showSettings(PixelGramLinkGuardId());
 		});
 
 		Ui::AddSkip(content, 16);
@@ -659,10 +673,191 @@ const auto kChatsMeta = BuildHelper({
 	.icon = &st::menuIconChatBubble,
 }, [](SectionBuilder &builder) {});
 
+
+// ============================================================================
+// 6. Section: Link Guard
+// ============================================================================
+class PixelGramLinkGuardSection final : public Section<PixelGramLinkGuardSection> {
+public:
+	PixelGramLinkGuardSection(QWidget *parent, not_null<Window::SessionController*> controller)
+	: Section(parent, controller) {
+		setupContent();
+	}
+
+	[[nodiscard]] rpl::producer<QString> title() override {
+		return rpl::single(u"Link Guard (Защита ссылок)"_q);
+	}
+
+private:
+	void setupContent() {
+		const auto content = Ui::CreateChild<Ui::VerticalLayout>(this);
+		auto &cfg = CurrentConfig();
+
+		// 1. Checks
+		Ui::AddSubsectionTitle(content, rpl::single(u"Проверка ссылок"_q));
+
+		AddToggle(content, rpl::single(u"Проверять перед открытием"_q), cfg.linkGuardCheckEnabled, [](bool val) {
+			CurrentConfig().linkGuardCheckEnabled = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Показывать разбор: Всегда (иначе только при подозрении)"_q), (cfg.linkGuardShowMode == 1), [](bool val) {
+			CurrentConfig().linkGuardShowMode = val ? 1 : 0;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Разворачивать короткие ссылки"_q), cfg.linkGuardExpandShort, [](bool val) {
+			CurrentConfig().linkGuardExpandShort = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Узнавать возраст домена (RDAP)"_q), cfg.linkGuardCheckAge, [](bool val) {
+			CurrentConfig().linkGuardCheckAge = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 12);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		// 2. Anti-tracker
+		Ui::AddSubsectionTitle(content, rpl::single(u"Антитрекер"_q));
+
+		AddToggle(content, rpl::single(u"Чистить метки при переходе"_q), cfg.linkGuardCleanOnOpen, [](bool val) {
+			CurrentConfig().linkGuardCleanOnOpen = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Чистить метки в моих сообщениях"_q), cfg.linkGuardCleanOutgoing, [](bool val) {
+			CurrentConfig().linkGuardCleanOutgoing = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Агрессивная чистка (ref, si, spm, from)"_q), cfg.linkGuardAggressive, [](bool val) {
+			CurrentConfig().linkGuardAggressive = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 12);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		// 3. Database
+		Ui::AddSubsectionTitle(content, rpl::single(u"База мошеннических сайтов"_q));
+
+		AddToggle(content, rpl::single(u"Проверять по базе мошеннических сайтов"_q), cfg.linkGuardUseDatabase, [](bool val) {
+			CurrentConfig().linkGuardUseDatabase = val;
+			SaveConfig();
+		});
+
+		const auto dbStatusBtn = AddButtonWithLabel(
+			content,
+			rpl::single(u"Обновить базу"_q),
+			rpl::single(PixelGram::LinkGuard::DatabaseStatus(false)),
+			st::settingsButton,
+			{ &st::menuIconManage });
+		dbStatusBtn->setClickedCallback([=] {
+			controller()->showToast(u"Проверяю обновления базы…"_q);
+			PixelGram::LinkGuard::RefreshDatabase(true, [=](bool success, int count) {
+				if (success) {
+					controller()->showToast(u"База обновлена (%1 записей)"_q.arg(count));
+				} else {
+					controller()->showToast(u"Не удалось обновить базу"_q);
+				}
+			});
+		});
+
+		Ui::AddSkip(content, 12);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		// 4. Whitelist
+		Ui::AddSubsectionTitle(content, rpl::single(u"Исключения (Доверенные домены)"_q));
+
+		const auto addDomainBtn = AddButtonWithIcon(
+			content,
+			rpl::single(u"+ Добавить домен в исключения"_q),
+			st::settingsButton,
+			{ &st::menuIconManage });
+		addDomainBtn->setClickedCallback([=] {
+			controller()->show(Box([=](not_null<Ui::GenericBox*> box) {
+				box->setTitle(rpl::single(u"Новый домен"_q));
+				const auto input = box->addRow(object_ptr<Ui::InputField>(
+					box,
+					st::defaultInputField,
+					rpl::single(u"example.com"_q)));
+				box->addButton(rpl::single(u"Добавить"_q), [=] {
+					const auto dom = input->getLastText().trimmed();
+					if (!dom.isEmpty()) {
+						PixelGram::LinkGuard::AddWhitelistDomain(dom);
+						controller()->showToast(u"%1 добавлен в исключения"_q.arg(dom));
+					}
+					box->closeBox();
+				});
+				box->addButton(rpl::single(u"Отмена"_q), [=] { box->closeBox(); });
+			}));
+		});
+
+		for (const auto &domain : cfg.linkGuardWhitelist) {
+			const auto btn = AddButtonWithLabel(
+				content,
+				rpl::single(domain),
+				rpl::single(u"Удалить"_q),
+				st::settingsButton,
+				{ &st::menuIconDelete });
+			btn->setClickedCallback([=] {
+				PixelGram::LinkGuard::RemoveWhitelistDomain(domain);
+				controller()->showToast(u"%1 удалён из исключений"_q.arg(domain));
+			});
+		}
+
+		Ui::AddSkip(content, 12);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		// 5. Statistics
+		Ui::AddSubsectionTitle(content, rpl::single(u"Статистика"_q));
+
+		AddButtonWithLabel(
+			content,
+			rpl::single(u"Вырезано меток слежения"_q),
+			rpl::single(QString::number(cfg.linkGuardStatsCleaned)),
+			st::settingsButton,
+			{});
+
+		AddButtonWithLabel(
+			content,
+			rpl::single(u"Предупреждений показано"_q),
+			rpl::single(QString::number(cfg.linkGuardStatsWarned)),
+			st::settingsButton,
+			{});
+
+		const auto resetStatsBtn = AddButtonWithIcon(
+			content,
+			rpl::single(u"Сбросить счётчики"_q),
+			st::settingsButton,
+			{ &st::menuIconDelete });
+		resetStatsBtn->setClickedCallback([=] {
+			PixelGram::LinkGuard::ResetStats();
+			controller()->showToast(u"Счётчики сброшены"_q);
+		});
+
+		Ui::AddSkip(content, 16);
+		Ui::ResizeFitChild(this, content);
+	}
+};
+
 const auto kOtherMeta = BuildHelper({
 	.id = PixelGramOtherSection::Id(),
 	.parentId = PixelGramSection::Id(),
 	.title = &tr::lng_settings_advanced,
+	.icon = &st::menuIconManage,
+}, [](SectionBuilder &builder) {});
+
+const auto kLinkGuardMeta = BuildHelper({
+	.id = PixelGramLinkGuardSection::Id(),
+	.parentId = PixelGramSection::Id(),
+	.title = &tr::lng_settings_section_privacy,
 	.icon = &st::menuIconManage,
 }, [](SectionBuilder &builder) {});
 
@@ -686,6 +881,10 @@ Type PixelGramChatsId() {
 
 Type PixelGramOtherId() {
 	return PixelGramOtherSection::Id();
+}
+
+Type PixelGramLinkGuardId() {
+	return PixelGramLinkGuardSection::Id();
 }
 
 } // namespace Settings

@@ -108,6 +108,22 @@ struct Config {
 	bool openAttachOnHover = false;
 	bool openEmojiOnHover = false;
 
+	// Link Guard
+	bool linkGuardCheckEnabled = true;
+	int linkGuardShowMode = 0; // 0 = Suspicious, 1 = Always
+	bool linkGuardExpandShort = true;
+	bool linkGuardCheckAge = false;
+	bool linkGuardCleanOnOpen = true;
+	bool linkGuardCleanOutgoing = false;
+	bool linkGuardAggressive = false;
+	bool linkGuardUseDatabase = true;
+	std::vector<QString> linkGuardWhitelist;
+	int64 linkGuardStatsCleaned = 0;
+	int64 linkGuardStatsWarned = 0;
+	QString linkGuardDbBuilt;
+	int linkGuardDbEntries = 0;
+	uint64 linkGuardDbCheckedAt = 0;
+
 	// Material 3 Seed
 	uint32 m3SeedColor = 0xFF917BBD;
 	int m3SchemeVariant = 0;
@@ -133,6 +149,7 @@ struct Config {
 };
 
 [[nodiscard]] Config &CurrentConfig();
+inline Config &ModifyConfig() { return CurrentConfig(); }
 void SaveConfig();
 void LoadConfig();
 

@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_context_menu.h"
+#include "core/pixelgram_link_guard.h"
 #include "settings/pixelgram_settings.h"
 #include "ui/boxes/confirm_box.h"
 #include <QtGui/QGuiApplication>
@@ -1783,6 +1784,22 @@ void AddPixelGramActions(
 		}
 		return true;
 	};
+
+	const auto linkGuardUrls = PixelGram::LinkGuard::ExtractUrls(item);
+	if (!linkGuardUrls.empty()) {
+		result->addAction(
+			u"Проверить ссылки"_q,
+			[=] {
+				PixelGram::LinkGuard::ShowReportBox(list->controller(), linkGuardUrls);
+			},
+			&st::menuIconManage);
+		result->addAction(
+			u"Копировать без трекеров"_q,
+			[=] {
+				PixelGram::LinkGuard::CopyCleanUrls(list->controller(), linkGuardUrls);
+			},
+			&st::menuIconCopy);
+	}
 
 	// 1. Details
 	if (shouldShow(cfg.menuDetails)) {

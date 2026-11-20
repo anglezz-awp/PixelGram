@@ -159,10 +159,10 @@ mediaPlayerPlayIcon: MediaPlayerPlayIcon {
 mediaPlayerPlayButton: MediaPlayerPlayButton {
 	size: size(28px, 24px);
 	icon: mediaPlayerPlayIcon;
-	iconPosition: point(0px, 5px);
+	iconPosition: point(-1px, -1px);
 	color: mediaPlayerActiveFg;
 
-	rippleAreaPosition: point(0px, 5px);
+	rippleAreaPosition: point(0px, 0px);
 	rippleAreaSize: 24px;
 	ripple: RippleAnimation(defaultRippleAnimation) {
 		color: lightButtonBgOver;
@@ -269,8 +269,8 @@ mediaPlayerNextButton: IconButton(mediaPlayerRepeatButton) {
 	icon: icon {
 		{ "player/player_forward", mediaPlayerActiveFg },
 	};
-	iconPosition: point(0px, 5px);
-	rippleAreaPosition: point(0px, 5px);
+	iconPosition: point(-1px, -1px);
+	rippleAreaPosition: point(0px, 0px);
 	rippleAreaSize: 24px;
 }
 mediaPlayerNextDisabledIcon: icon {

@@ -20,5 +20,6 @@ namespace Settings {
 [[nodiscard]] Type PixelGramAppearanceId();
 [[nodiscard]] Type PixelGramChatsId();
 [[nodiscard]] Type PixelGramOtherId();
+[[nodiscard]] Type PixelGramLinkGuardId();
 
 } // namespace Settings

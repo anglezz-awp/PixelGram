@@ -579,6 +579,8 @@ PRIVATE
     core/application.h
     core/proxy_rotation_manager.cpp
     core/proxy_rotation_manager.h
+    core/pixelgram_link_guard.cpp
+    core/pixelgram_link_guard.h
     core/cached_webview_availability.h
     core/bank_card_click_handler.cpp
     core/bank_card_click_handler.h

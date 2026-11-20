@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "core/application.h"
+#include "core/pixelgram_link_guard.h"
 
 #include "data/data_abstract_structure.h"
 #include "data/data_channel.h"
@@ -978,6 +979,7 @@ void Application::badMtprotoConfigurationError(const MTP::ProxyData &proxy) {
 void Application::startLocalStorage() {
 	Ui::GL::DetectLastCheckCrash();
 	Local::start();
+	PixelGram::LinkGuard::InitDatabase();
 	_saveSettingsTimer.emplace([=] { saveSettings(); });
 	settings().saveDelayedRequests() | rpl::on_next([=] {
 		saveSettingsDelayed();

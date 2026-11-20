@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "core/ui_integration.h"
+#include "core/pixelgram_link_guard.h"
 
 #include "api/api_text_entities.h"
 #include "core/local_url_handlers.h"
@@ -487,6 +488,10 @@ bool UiIntegration::handleUrlClick(
 			Core::App().iv().openWithIvPreferred(controller, url, context);
 			return true;
 		}
+	}
+
+	if (PixelGram::LinkGuard::HandleUrlClick(url, context)) {
+		return true;
 	}
 
 	auto parsed = UrlForAutoLogin(url);

@@ -36,6 +36,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <QtCore/QFile>
 #include <QtCore/QJsonDocument>
+#include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
 #include <QtGui/QPainterPath>
 #include <QtGui/QLinearGradient>
@@ -361,6 +362,26 @@ void SaveConfig() {
 	root["openAttachOnHover"] = cfg.openAttachOnHover;
 	root["openEmojiOnHover"] = cfg.openEmojiOnHover;
 
+	// Link Guard
+	root["linkGuardCheckEnabled"] = cfg.linkGuardCheckEnabled;
+	root["linkGuardShowMode"] = cfg.linkGuardShowMode;
+	root["linkGuardExpandShort"] = cfg.linkGuardExpandShort;
+	root["linkGuardCheckAge"] = cfg.linkGuardCheckAge;
+	root["linkGuardCleanOnOpen"] = cfg.linkGuardCleanOnOpen;
+	root["linkGuardCleanOutgoing"] = cfg.linkGuardCleanOutgoing;
+	root["linkGuardAggressive"] = cfg.linkGuardAggressive;
+	root["linkGuardUseDatabase"] = cfg.linkGuardUseDatabase;
+	{
+		QJsonArray wl;
+		for (const auto &d : cfg.linkGuardWhitelist) wl.append(d);
+		root["linkGuardWhitelist"] = wl;
+	}
+	root["linkGuardStatsCleaned"] = static_cast<double>(cfg.linkGuardStatsCleaned);
+	root["linkGuardStatsWarned"] = static_cast<double>(cfg.linkGuardStatsWarned);
+	root["linkGuardDbBuilt"] = cfg.linkGuardDbBuilt;
+	root["linkGuardDbEntries"] = cfg.linkGuardDbEntries;
+	root["linkGuardDbCheckedAt"] = static_cast<double>(cfg.linkGuardDbCheckedAt);
+
 	root["m3SeedColor"] = static_cast<double>(cfg.m3SeedColor);
 	root["m3SchemeVariant"] = cfg.m3SchemeVariant;
 	root["m3ContrastLevel"] = cfg.m3ContrastLevel;
@@ -451,6 +472,27 @@ void LoadConfig() {
 	if (root.contains("showGiftButton")) cfg.showGiftButton = root["showGiftButton"].toBool();
 	if (root.contains("openAttachOnHover")) cfg.openAttachOnHover = root["openAttachOnHover"].toBool();
 	if (root.contains("openEmojiOnHover")) cfg.openEmojiOnHover = root["openEmojiOnHover"].toBool();
+
+	// Link Guard
+	if (root.contains("linkGuardCheckEnabled")) cfg.linkGuardCheckEnabled = root["linkGuardCheckEnabled"].toBool();
+	if (root.contains("linkGuardShowMode")) cfg.linkGuardShowMode = root["linkGuardShowMode"].toInt();
+	if (root.contains("linkGuardExpandShort")) cfg.linkGuardExpandShort = root["linkGuardExpandShort"].toBool();
+	if (root.contains("linkGuardCheckAge")) cfg.linkGuardCheckAge = root["linkGuardCheckAge"].toBool();
+	if (root.contains("linkGuardCleanOnOpen")) cfg.linkGuardCleanOnOpen = root["linkGuardCleanOnOpen"].toBool();
+	if (root.contains("linkGuardCleanOutgoing")) cfg.linkGuardCleanOutgoing = root["linkGuardCleanOutgoing"].toBool();
+	if (root.contains("linkGuardAggressive")) cfg.linkGuardAggressive = root["linkGuardAggressive"].toBool();
+	if (root.contains("linkGuardUseDatabase")) cfg.linkGuardUseDatabase = root["linkGuardUseDatabase"].toBool();
+	if (root.contains("linkGuardWhitelist")) {
+		cfg.linkGuardWhitelist.clear();
+		for (const auto &val : root["linkGuardWhitelist"].toArray()) {
+			cfg.linkGuardWhitelist.push_back(val.toString());
+		}
+	}
+	if (root.contains("linkGuardStatsCleaned")) cfg.linkGuardStatsCleaned = static_cast<int64>(root["linkGuardStatsCleaned"].toDouble());
+	if (root.contains("linkGuardStatsWarned")) cfg.linkGuardStatsWarned = static_cast<int64>(root["linkGuardStatsWarned"].toDouble());
+	if (root.contains("linkGuardDbBuilt")) cfg.linkGuardDbBuilt = root["linkGuardDbBuilt"].toString();
+	if (root.contains("linkGuardDbEntries")) cfg.linkGuardDbEntries = root["linkGuardDbEntries"].toInt();
+	if (root.contains("linkGuardDbCheckedAt")) cfg.linkGuardDbCheckedAt = static_cast<uint64>(root["linkGuardDbCheckedAt"].toDouble());
 
 	if (root.contains("m3SeedColor")) cfg.m3SeedColor = static_cast<uint32>(root["m3SeedColor"].toDouble());
 	if (root.contains("m3SchemeVariant")) cfg.m3SchemeVariant = root["m3SchemeVariant"].toInt();

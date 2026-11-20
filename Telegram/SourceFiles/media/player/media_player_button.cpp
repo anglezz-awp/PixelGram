@@ -269,7 +269,13 @@ void PlayButton::paintEvent(QPaintEvent *e) {
 	p.drawRoundedRect(rect(), 9.0, 9.0);
 
 	paintRipple(p, _st.rippleAreaPosition);
-	p.translate(_st.iconPosition);
+	const auto iconX = (_st.iconPosition.x() < 0)
+		? (width() - _st.icon.size.width()) / 2
+		: _st.iconPosition.x();
+	const auto iconY = (_st.iconPosition.y() < 0)
+		? (height() - _st.icon.size.height()) / 2
+		: _st.iconPosition.y();
+	p.translate(iconX, iconY);
 	_layout.paint(p, iconFg);
 }
 
