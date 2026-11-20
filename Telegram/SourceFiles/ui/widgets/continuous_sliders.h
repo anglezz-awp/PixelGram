@@ -59,6 +59,8 @@ public:
 	void setMoveByWheel(bool move);
 
 	void setIsPlaying(bool playing);
+	void setWavy(bool wavy = true) { _isWavy = wavy; }
+	[[nodiscard]] bool isWavy() const { return _isWavy; }
 	[[nodiscard]] bool isPlaying() const {
 		return _isPlaying;
 	}
@@ -119,6 +121,7 @@ private:
 
 	std::unique_ptr<base::Timer> _byWheelFinished;
 	std::unique_ptr<base::Timer> _waveTimer;
+	bool _isWavy = false;
 	bool _isPlaying = false;
 
 	Fn<float64(float64)> _adjustCallback;

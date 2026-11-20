@@ -11,6 +11,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "settings/settings_common_session.h"
 #include "settings/settings_builder.h"
 #include "settings/sections/settings_main.h"
+#include "data/data_session.h"
+#include "main/main_session.h"
+#include "data/data_chat_filters.h"
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "settings/pixelgram_settings.h"
 #include "ui/pixelgram_avatar_shapes.h"
 #include "ui/pixelgram_m3_scheme.h"
@@ -144,15 +149,19 @@ protected:
 		{
 			const QRect inRect(24, 10, 210, 36);
 			QPainterPath inPath;
-			inPath.moveTo(inRect.left() + radius, inRect.top());
-			inPath.lineTo(inRect.right() - radius, inRect.top());
-			inPath.quadTo(inRect.right(), inRect.top(), inRect.right(), inRect.top() + radius);
-			inPath.lineTo(inRect.right(), inRect.bottom() - radius);
-			inPath.quadTo(inRect.right(), inRect.bottom(), inRect.right() - radius, inRect.bottom());
-			inPath.lineTo(inRect.left() + tailRadius, inRect.bottom());
-			inPath.quadTo(inRect.left(), inRect.bottom(), inRect.left(), inRect.bottom() - tailRadius);
-			inPath.lineTo(inRect.left(), inRect.top() + radius);
-			inPath.quadTo(inRect.left(), inRect.top(), inRect.left() + radius, inRect.top());
+			if (cfg.removeMessageTail) {
+				inPath.addRoundedRect(inRect, radius, radius);
+			} else {
+				inPath.moveTo(inRect.left() + radius, inRect.top());
+				inPath.lineTo(inRect.right() - radius, inRect.top());
+				inPath.quadTo(inRect.right(), inRect.top(), inRect.right(), inRect.top() + radius);
+				inPath.lineTo(inRect.right(), inRect.bottom() - radius);
+				inPath.quadTo(inRect.right(), inRect.bottom(), inRect.right() - radius, inRect.bottom());
+				inPath.lineTo(inRect.left() + tailRadius, inRect.bottom());
+				inPath.quadTo(inRect.left(), inRect.bottom(), inRect.left(), inRect.bottom() - tailRadius);
+				inPath.lineTo(inRect.left(), inRect.top() + radius);
+				inPath.quadTo(inRect.left(), inRect.top(), inRect.left() + radius, inRect.top());
+			}
 
 			p.fillPath(inPath, inBg);
 			p.setPen(inFg);
@@ -164,15 +173,19 @@ protected:
 		{
 			const QRect outRect(width() - 234, 56, 210, 36);
 			QPainterPath outPath;
-			outPath.moveTo(outRect.left() + radius, outRect.top());
-			outPath.lineTo(outRect.right() - radius, outRect.top());
-			outPath.quadTo(outRect.right(), outRect.top(), outRect.right(), outRect.top() + radius);
-			outPath.lineTo(outRect.right(), outRect.bottom() - tailRadius);
-			outPath.quadTo(outRect.right(), outRect.bottom(), outRect.right() - tailRadius, outRect.bottom());
-			outPath.lineTo(outRect.left() + radius, outRect.bottom());
-			outPath.quadTo(outRect.left(), outRect.bottom(), outRect.left() - radius, outRect.bottom());
-			outPath.lineTo(outRect.left(), outRect.top() + radius);
-			outPath.quadTo(outRect.left(), outRect.top(), outRect.left() + radius, outRect.top());
+			if (cfg.removeMessageTail) {
+				outPath.addRoundedRect(outRect, radius, radius);
+			} else {
+				outPath.moveTo(outRect.left() + radius, outRect.top());
+				outPath.lineTo(outRect.right() - radius, outRect.top());
+				outPath.quadTo(outRect.right(), outRect.top(), outRect.right(), outRect.top() + radius);
+				outPath.lineTo(outRect.right(), outRect.bottom() - tailRadius);
+				outPath.quadTo(outRect.right(), outRect.bottom(), outRect.right() - tailRadius, outRect.bottom());
+				outPath.lineTo(outRect.left() + radius, outRect.bottom());
+				outPath.quadTo(outRect.left(), outRect.bottom(), outRect.left(), outRect.bottom() - radius);
+				outPath.lineTo(outRect.left(), outRect.top() + radius);
+				outPath.quadTo(outRect.left(), outRect.top(), outRect.left() + radius, outRect.top());
+			}
 
 			p.fillPath(outPath, outBg);
 			p.setPen(outFg);
@@ -431,19 +444,23 @@ private:
 		Ui::AddSkip(content, 8);
 
 		Ui::AddSubsectionTitle(content, rpl::single(u"Папки и системный трей"_q));
-		AddToggle(content, rpl::single(u"Скрывать счётчики в папках"_q), cfg.hideFolderCounters, [](bool val) {
+		AddToggle(content, rpl::single(u"Скрывать счётчики в папках"_q), cfg.hideFolderCounters, [=](bool val) {
 			CurrentConfig().hideFolderCounters = val;
 			SaveConfig();
+			controller()->session().data().chatsFilters().notifyChanged();
 		});
 
-		AddToggle(content, rpl::single(u"Скрыть вкладку «Все чаты»"_q), cfg.hideAllChatsTab, [](bool val) {
+		AddToggle(content, rpl::single(u"Скрыть вкладку «Все чаты»"_q), cfg.hideAllChatsTab, [=](bool val) {
 			CurrentConfig().hideAllChatsTab = val;
 			SaveConfig();
+			controller()->session().data().chatsFilters().notifyChanged();
 		});
 
 		AddToggle(content, rpl::single(u"Монохромная иконка в трее"_q), cfg.trayGhostMode, [](bool val) {
 			CurrentConfig().trayGhostMode = val;
 			SaveConfig();
+			Core::App().settings().setTrayIconMonochrome(val);
+			Core::App().saveSettingsDelayed();
 		});
 
 		Ui::AddSkip(content, 16);

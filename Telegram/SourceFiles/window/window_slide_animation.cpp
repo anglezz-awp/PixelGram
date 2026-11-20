@@ -76,6 +76,31 @@ void SlideAnimation::paintContents(QPainter &p) const {
 			q.drawPixmap(0, 0, _mask);
 
 			p.drawImage(0, 0, frame);
+		} else if (_topSkip > 0) {
+			if (leftWidth > 0) {
+				p.setOpacity(leftAlpha);
+				p.drawPixmap(
+					0,
+					0,
+					_cacheUnder,
+					_cacheUnder.width()
+						- leftWidth * style::DevicePixelRatio(),
+					0,
+					leftWidth * style::DevicePixelRatio(),
+					_topSkip * retina);
+			}
+
+			if (rightWidth > 0) {
+				p.setOpacity(rightAlpha);
+				p.drawPixmap(
+					rightCoord,
+					0,
+					_cacheOver,
+					0,
+					0,
+					rightWidth * style::DevicePixelRatio(),
+					_topSkip * retina);
+			}
 		}
 
 		if (leftWidth > 0) {

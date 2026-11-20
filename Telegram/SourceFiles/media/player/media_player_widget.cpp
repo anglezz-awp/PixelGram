@@ -105,6 +105,7 @@ Widget::Widget(
 	_nameLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 	_timeLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 
+	_playbackSlider->setWavy(true);
 	_playbackProgress->setInLoadingStateChangedCallback([=](bool loading) {
 		_playbackSlider->setDisabled(loading);
 	});
@@ -708,7 +709,9 @@ void Widget::handleSongUpdate(const TrackState &state) {
 		: showPause
 		? PlayButton::State::Pause
 		: PlayButton::State::Play);
-	_playbackSlider->setIsPlaying(showPause);
+	if (_playbackSlider) {
+		_playbackSlider->setIsPlaying(showPause);
+	}
 	_playPause->setAccessibleName(showPause
 		? tr::lng_shortcuts_media_pause(tr::now)
 		: tr::lng_shortcuts_media_play(tr::now));
@@ -793,12 +796,14 @@ void Widget::handlePlaylistUpdate() {
 		destroyPrevNextButtons();
 	} else {
 		createPrevNextButtons();
-		_previousTrack->setIconOverride(previousEnabled ? nullptr : &st::mediaPlayerPreviousDisabledIcon);
-		_previousTrack->setRippleColorOverride(previousEnabled ? nullptr : &st::mediaPlayerBg);
-		_previousTrack->setPointerCursor(previousEnabled);
-		_nextTrack->setIconOverride(nextEnabled ? nullptr : &st::mediaPlayerNextDisabledIcon);
-		_nextTrack->setRippleColorOverride(nextEnabled ? nullptr : &st::mediaPlayerBg);
-		_nextTrack->setPointerCursor(nextEnabled);
+		if (_previousTrack && _nextTrack) {
+			_previousTrack->setIconOverride(previousEnabled ? nullptr : &st::mediaPlayerPreviousDisabledIcon);
+			_previousTrack->setRippleColorOverride(previousEnabled ? nullptr : &st::mediaPlayerBg);
+			_previousTrack->setPointerCursor(previousEnabled);
+			_nextTrack->setIconOverride(nextEnabled ? nullptr : &st::mediaPlayerNextDisabledIcon);
+			_nextTrack->setRippleColorOverride(nextEnabled ? nullptr : &st::mediaPlayerBg);
+			_nextTrack->setPointerCursor(nextEnabled);
+		}
 	}
 }
 
@@ -809,14 +814,13 @@ public:
 	}
 protected:
 	void paintEvent(QPaintEvent *e) override {
-		auto p = QPainter(this);
-		PainterHighQualityEnabler hq(p);
-		const auto &roles = PixelGram::CurrentM3Roles();
-		p.setPen(Qt::NoPen);
-		p.setBrush(roles.secondaryContainer.isValid() ? roles.secondaryContainer : QColor(0xE8, 0xDE, 0xF8));
-		p.drawRoundedRect(rect(), 14.0, 14.0);
-		if (roles.onSecondaryContainer.isValid()) {
-			setIconColorOverride(roles.onSecondaryContainer);
+		{
+			auto p = QPainter(this);
+			PainterHighQualityEnabler hq(p);
+			const auto &roles = PixelGram::CurrentM3Roles();
+			p.setPen(Qt::NoPen);
+			p.setBrush(roles.secondaryContainer.isValid() ? roles.secondaryContainer : QColor(0xE8, 0xDE, 0xF8));
+			p.drawRoundedRect(rect(), 14.0, 14.0);
 		}
 		Ui::IconButton::paintEvent(e);
 	}
@@ -827,13 +831,20 @@ protected:
 
 void Widget::createPrevNextButtons() {
 	if (!_previousTrack) {
+		const auto &roles = PixelGram::CurrentM3Roles();
 		_previousTrack = object_ptr<PlayerSideButton>(this, st::mediaPlayerPreviousButton);
+		if (roles.onSecondaryContainer.isValid()) {
+			_previousTrack->setIconColorOverride(roles.onSecondaryContainer);
+		}
 		_previousTrack->show();
 		_previousTrack->setClickedCallback([=]() {
 			instance()->previous(_type);
 		});
 		_previousTrack->setAccessibleName(tr::lng_shortcuts_media_previous(tr::now));
 		_nextTrack = object_ptr<PlayerSideButton>(this, st::mediaPlayerNextButton);
+		if (roles.onSecondaryContainer.isValid()) {
+			_nextTrack->setIconColorOverride(roles.onSecondaryContainer);
+		}
 		_nextTrack->show();
 		_nextTrack->setClickedCallback([=]() {
 			instance()->next(_type);

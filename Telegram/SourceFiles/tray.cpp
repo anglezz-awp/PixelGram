@@ -31,6 +31,7 @@ Tray::Tray() {
 }
 
 void Tray::create() {
+	Core::App().settings().setTrayIconMonochrome(PixelGram::CurrentConfig().trayGhostMode);
 	rebuildMenu();
 	using WorkMode = Settings::WorkMode;
 	if (Core::App().settings().workMode() != WorkMode::WindowOnly) {

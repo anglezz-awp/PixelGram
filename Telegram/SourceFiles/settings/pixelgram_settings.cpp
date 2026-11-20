@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "settings/pixelgram_settings.h"
 #include "apiwrap.h"
 #include "core/application.h"
+#include "core/core_settings.h"
 #include "data/data_session.h"
 #include "data/data_chat_filters.h"
 #include "main/main_account.h"
@@ -317,6 +318,7 @@ void SaveConfig() {
 	root["hideFolderCounters"] = cfg.hideFolderCounters;
 	root["hideAllChatsTab"] = cfg.hideAllChatsTab;
 	root["trayGhostMode"] = cfg.trayGhostMode;
+	root["monochromeTrayIcon"] = cfg.trayGhostMode;
 	root["trayStreamerMode"] = cfg.trayStreamerMode;
 	root["streamerModeActive"] = cfg.streamerModeActive;
 	root["drawerMyProfile"] = cfg.drawerMyProfile;
@@ -408,6 +410,8 @@ void LoadConfig() {
 	if (root.contains("hideFolderCounters")) cfg.hideFolderCounters = root["hideFolderCounters"].toBool();
 	if (root.contains("hideAllChatsTab")) cfg.hideAllChatsTab = root["hideAllChatsTab"].toBool();
 	if (root.contains("trayGhostMode")) cfg.trayGhostMode = root["trayGhostMode"].toBool();
+	if (root.contains("monochromeTrayIcon")) cfg.trayGhostMode = root["monochromeTrayIcon"].toBool();
+	Core::App().settings().setTrayIconMonochrome(cfg.trayGhostMode);
 	if (root.contains("trayStreamerMode")) cfg.trayStreamerMode = root["trayStreamerMode"].toBool();
 	if (root.contains("streamerModeActive")) cfg.streamerModeActive = root["streamerModeActive"].toBool();
 	if (root.contains("drawerMyProfile")) cfg.drawerMyProfile = root["drawerMyProfile"].toBool();
@@ -754,6 +758,7 @@ void ShowSettingsBox(Window::SessionController *controller) {
 					CurrentConfig().hideFolderCounters,
 					[](bool c) {
 						CurrentConfig().hideFolderCounters = c;
+						SaveConfig();
 						if (const auto session = Core::App().domain().active().maybeSession()) {
 							session->data().chatsFilters().notifyChanged();
 						}
@@ -766,6 +771,7 @@ void ShowSettingsBox(Window::SessionController *controller) {
 					CurrentConfig().hideAllChatsTab,
 					[](bool c) {
 						CurrentConfig().hideAllChatsTab = c;
+						SaveConfig();
 						if (const auto session = Core::App().domain().active().maybeSession()) {
 							session->data().chatsFilters().notifyChanged();
 						}
@@ -787,7 +793,12 @@ void ShowSettingsBox(Window::SessionController *controller) {
 					QString::fromUtf8("Переключатель Невидимки в трее"),
 					"",
 					CurrentConfig().trayGhostMode,
-					[](bool c) { CurrentConfig().trayGhostMode = c; });
+					[](bool c) {
+						CurrentConfig().trayGhostMode = c;
+						SaveConfig();
+						Core::App().settings().setTrayIconMonochrome(c);
+						Core::App().saveSettingsDelayed();
+					});
 
 				addToggle(
 					cardTray,

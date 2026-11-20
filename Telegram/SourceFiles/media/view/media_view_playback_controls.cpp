@@ -68,6 +68,7 @@ PlaybackControls::PlaybackControls(
 		[=](Media::VideoQuality quality) { saveQuality(quality); })
 	: nullptr)
 , _fadeAnimation(std::make_unique<Ui::FadeAnimation>(this)) {
+	_playbackSlider->setWavy(true);
 	_fadeAnimation->show();
 	_fadeAnimation->setFinishedCallback([=] {
 		fadeFinished();
