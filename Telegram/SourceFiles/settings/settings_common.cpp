@@ -695,6 +695,8 @@ SeparatedToggle AddSeparatedToggle(
 	checkWidget->resize(checkView->getSize());
 	checkWidget->paintRequest(
 	) | rpl::on_next([=] {
+		checkView->setOver(toggle->isOver());
+		checkView->setDown(toggle->isDown());
 		auto p = QPainter(checkWidget);
 		checkView->paint(p, 0, 0, checkWidget->width());
 	}, checkWidget->lifetime());

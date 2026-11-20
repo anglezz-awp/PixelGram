@@ -81,12 +81,12 @@ MediaSpeedButton {
 }
 
 mediaPlayerWideWidth: 460px;
-mediaPlayerHeight: 35px;
+mediaPlayerHeight: 38px;
 mediaPlayerPadding: 8px;
 mediaPlayerNameTop: 22px;
 mediaPlayerPlayLeft: 9px;
-mediaPlayerPlaySkip: 1px;
-mediaPlayerPlayTop: 0px;
+mediaPlayerPlaySkip: 3px;
+mediaPlayerPlayTop: 2px;
 mediaPlayerCloseRight: 0px;
 
 mediaPlayerName: FlatLabel(defaultFlatLabel) {
@@ -157,7 +157,7 @@ mediaPlayerPlayIcon: MediaPlayerPlayIcon {
 	duration: 200;
 }
 mediaPlayerPlayButton: MediaPlayerPlayButton {
-	size: size(24px, 30px);
+	size: size(28px, 24px);
 	icon: mediaPlayerPlayIcon;
 	iconPosition: point(0px, 5px);
 	color: mediaPlayerActiveFg;
@@ -264,7 +264,8 @@ mediaPlayerVolumeSize: size(27px, 100px);
 mediaPlayerControlsFade: icon {{ "fade_horizontal", mediaPlayerBg }};
 
 mediaPlayerNextButton: IconButton(mediaPlayerRepeatButton) {
-	width: 24px;
+	width: 28px;
+	height: 24px;
 	icon: icon {
 		{ "player/player_forward", mediaPlayerActiveFg },
 	};

@@ -90,7 +90,7 @@ inline int ExternalBottomInfoHeight() {
 	return style::ConvertScale(15);
 }
 inline int ExternalBottomInfoGap() {
-	return style::ConvertScale(2);
+	return style::ConvertScale(4);
 }
 inline int ExternalBottomInfoInset() {
 	return style::ConvertScale(5);
@@ -2281,12 +2281,7 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 					context.reactionInfo->effectOffset -= add;
 				}
 			}
-			if (_comments) {
-				const auto o = p.opacity();
-				p.setOpacity(0.3);
-				p.fillRect(g.left(), g.top() + g.height() - st::historyCommentsButtonHeight - st::lineWidth, g.width(), st::lineWidth, stm->msgDateFg);
-				p.setOpacity(o);
-			}
+			// Separator line removed for M3 pill style
 		}
 		ensureSummarizeButton();
 		if (const auto size = rightActionSize(); size || _summarize) {
@@ -2497,13 +2492,23 @@ void Message::paintCommentsButton(
 	auto left = g.left();
 	auto width = g.width();
 
+	const auto pillRect = QRect(left + 6, top + 6, width - 12, st::historyCommentsButtonHeight - 8);
+	{
+		PainterHighQualityEnabler hq(p);
+		p.setPen(Qt::NoPen);
+		const auto &roles = PixelGram::CurrentM3Roles();
+		const auto pillBg = roles.surfaceContainerHigh.isValid() ? roles.surfaceContainerHigh : QColor(0x3B, 0x38, 0x3E);
+		p.setBrush(pillBg);
+		p.drawRoundedRect(pillRect, 14.0, 14.0);
+	}
+
 	if (_comments->ripple) {
 		p.setOpacity(st::historyPollRippleOpacity);
 		const auto colorOverride = &stm->msgWaveformInactive->c;
 		_comments->ripple->paint(
 			p,
 			left - _comments->rippleShift,
-			top,
+			top + 4,
 			width,
 			colorOverride);
 		if (_comments->ripple->empty()) {
@@ -3817,12 +3822,14 @@ BottomRippleMask Message::bottomRippleMask(int buttonHeight) const {
 }
 
 void Message::createCommentsButtonRipple() {
-	auto mask = bottomRippleMask(st::historyCommentsButtonHeight);
+	auto mask = Ui::RippleAnimation::RoundRectMask(
+		QSize(std::max(width() - 12, 1), st::historyCommentsButtonHeight - 8),
+		14.0);
 	_comments->ripple = std::make_unique<Ui::RippleAnimation>(
 		st::defaultRippleAnimation,
-		std::move(mask.image),
+		std::move(mask),
 		[=] { repaint(); });
-	_comments->rippleShift = mask.shift;
+	_comments->rippleShift = 6;
 }
 
 void Message::toggleTopicButtonRipple(bool pressed) {

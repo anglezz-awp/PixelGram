@@ -2871,8 +2871,15 @@ int SessionController::countDialogsWidthFromRatio(int bodyWidth) const {
 		return 0;
 	}
 	const auto nochat = !mainSectionShown();
-	const auto width = bodyWidth * columns().dialogsWidthRatio(nochat);
+	const auto ratio = columns().dialogsWidthRatio(nochat);
+	if (!nochat && ratio <= 0.) {
+		return 0;
+	}
+	const auto width = bodyWidth * ratio;
 	auto result = int(base::SafeRound(width));
+	if (!nochat && result < 60) {
+		return 0;
+	}
 	accumulate_max(result, st::columnMinimalWidthLeft);
 //	accumulate_min(result, st::columnMaximalWidthLeft);
 	return result;

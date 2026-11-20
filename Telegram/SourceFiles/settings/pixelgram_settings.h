@@ -63,7 +63,6 @@ struct Config {
 	bool disableCustomBackgrounds = false;
 	bool hidePremiumStatuses = false;
 	QString monospaceFont;
-	bool hideFolderCounters = false;
 	bool hideAllChatsTab = false;
 	bool trayGhostMode = true;
 	bool trayStreamerMode = false;

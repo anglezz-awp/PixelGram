@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/ui/dialogs_layout.h"
 #include "settings/pixelgram_settings.h"
+#include "ui/pixelgram_m3_scheme.h"
 
 #include "base/options.h"
 #include "base/unixtime.h"
@@ -485,7 +486,20 @@ void PaintRow(
 	if (swipeTranslation) {
 		p.translate(swipeMirrored ? swipeTranslation : -swipeTranslation, 0);
 	}
-	p.fillRect(geometry, bg);
+	p.fillRect(geometry, context.currentBg);
+	if (context.active || context.selected) {
+		PainterHighQualityEnabler hq(p);
+		p.setPen(Qt::NoPen);
+		const auto &roles = PixelGram::CurrentM3Roles();
+		const auto activeColor = roles.secondaryContainer.isValid()
+			? roles.secondaryContainer
+			: st::dialogsBgActive->c;
+		const auto hoverColor = roles.surfaceContainerHighest.isValid()
+			? roles.surfaceContainerHighest
+			: st::dialogsBgOver->c;
+		p.setBrush(context.active ? activeColor : hoverColor);
+		p.drawRoundedRect(geometry.adjusted(6, 2, -6, -2), 16.0, 16.0);
+	}
 	if (!(flags & Flag::TopicJumpRipple)) {
 		auto ripple = context.active
 			? st::dialogsRippleBgActive

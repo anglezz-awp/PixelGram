@@ -266,7 +266,7 @@ void PlayButton::paintEvent(QPaintEvent *e) {
 
 	p.setPen(Qt::NoPen);
 	p.setBrush(bg);
-	p.drawRoundedRect(rect(), 14.0, 14.0);
+	p.drawRoundedRect(rect(), 9.0, 9.0);
 
 	paintRipple(p, _st.rippleAreaPosition);
 	p.translate(_st.iconPosition);
@@ -283,7 +283,7 @@ QPoint PlayButton::prepareRippleStartPosition() const {
 }
 
 QImage PlayButton::prepareRippleMask() const {
-	return Ui::RippleAnimation::RoundRectMask(size(), 14.0);
+	return Ui::RippleAnimation::RoundRectMask(size(), 9.0);
 }
 
 SpeedButtonLayout::SpeedButtonLayout(

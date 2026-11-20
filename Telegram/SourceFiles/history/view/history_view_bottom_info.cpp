@@ -418,10 +418,13 @@ void BottomInfo::paint(
 			? st->historyPinInvertedIcon()
 			: stm->historyPinIcon;
 		right -= st::historyPinWidth;
+		const auto iconY = external
+			? (position.y() + (st::msgDateFont->height - icon.height()) / 2)
+			: (firstLineBottom + st::historyPinTop);
 		icon.paint(
 			p,
 			right,
-			firstLineBottom + st::historyPinTop,
+			iconY,
 			outer(right, icon));
 	}
 	if (!_views.isEmpty()) {
@@ -436,18 +439,21 @@ void BottomInfo::paint(
 			? st->historyViewsInvertedIcon()
 			: stm->historyViewsIcon;
 		right -= st::historyViewsWidth;
+		const auto iconY = external
+			? (position.y() + (st::msgDateFont->height - icon.height()) / 2)
+			: (firstLineBottom + st::historyViewsTop);
 		if (external) {
 			icon.paint(
 				p,
 				right,
-				firstLineBottom + st::historyViewsTop,
+				iconY,
 				outer(right, icon),
 				roles.onSurfaceVariant);
 		} else {
 			icon.paint(
 				p,
 				right,
-				firstLineBottom + st::historyViewsTop,
+				iconY,
 				outer(right, icon));
 		}
 	}
@@ -463,18 +469,21 @@ void BottomInfo::paint(
 			? st->historyRepliesInvertedIcon()
 			: stm->historyRepliesIcon;
 		right -= st::historyViewsWidth;
+		const auto iconY = external
+			? (position.y() + (st::msgDateFont->height - icon.height()) / 2)
+			: (firstLineBottom + st::historyViewsTop);
 		if (external) {
 			icon.paint(
 				p,
 				right,
-				firstLineBottom + st::historyViewsTop,
+				iconY,
 				outer(right, icon),
 				roles.onSurfaceVariant);
 		} else {
 			icon.paint(
 				p,
 				right,
-				firstLineBottom + st::historyViewsTop,
+				iconY,
 				outer(right, icon));
 		}
 	}

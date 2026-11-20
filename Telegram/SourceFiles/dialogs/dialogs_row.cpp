@@ -339,12 +339,13 @@ void BasicRow::addRipple(
 		QSize size,
 		Fn<void()> updateCallback) {
 	if (!_ripple) {
+		const auto maskSize = QSize(std::max(size.width() - 12, 1), std::max(size.height() - 4, 1));
 		addRippleWithMask(
-			origin,
-			Ui::RippleAnimation::RectMask(size),
+			origin - QPoint(6, 2),
+			Ui::RippleAnimation::RoundRectMask(maskSize, 16.0),
 			std::move(updateCallback));
 	} else {
-		_ripple->add(origin);
+		_ripple->add(origin - QPoint(6, 2));
 	}
 }
 
@@ -376,7 +377,7 @@ void BasicRow::paintRipple(
 		int outerWidth,
 		const QColor *colorOverride) const {
 	if (_ripple) {
-		_ripple->paint(p, x, y, outerWidth, colorOverride);
+		_ripple->paint(p, x + 6, y + 2, outerWidth, colorOverride);
 		if (_ripple->empty()) {
 			_ripple.reset();
 		}

@@ -820,12 +820,12 @@ protected:
 			const auto &roles = PixelGram::CurrentM3Roles();
 			p.setPen(Qt::NoPen);
 			p.setBrush(roles.secondaryContainer.isValid() ? roles.secondaryContainer : QColor(0xE8, 0xDE, 0xF8));
-			p.drawRoundedRect(rect(), 14.0, 14.0);
+			p.drawRoundedRect(rect(), 9.0, 9.0);
 		}
 		Ui::IconButton::paintEvent(e);
 	}
 	QImage prepareRippleMask() const override {
-		return Ui::RippleAnimation::RoundRectMask(size(), 14.0);
+		return Ui::RippleAnimation::RoundRectMask(size(), 9.0);
 	}
 };
 

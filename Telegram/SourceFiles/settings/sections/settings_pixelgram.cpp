@@ -49,6 +49,10 @@ not_null<Ui::SettingsButton*> AddToggle(
 		bool checked,
 		Fn<void(bool)> callback) {
 	const auto button = AddButtonWithIcon(container, std::move(text), st::settingsButton);
+	button->setAllowTextLines(2);
+	auto padding = button->st().padding;
+	padding.setRight(70 + 16);
+	button->setPaddingOverride(padding);
 	const auto [toggle, checkView] = AddSeparatedToggle(button, st::settingsButton, checked);
 	toggle->clicks() | rpl::on_next([=] {
 		const auto val = !checkView->checked();
@@ -444,12 +448,6 @@ private:
 		Ui::AddSkip(content, 8);
 
 		Ui::AddSubsectionTitle(content, rpl::single(u"Папки и системный трей"_q));
-		AddToggle(content, rpl::single(u"Скрывать счётчики в папках"_q), cfg.hideFolderCounters, [=](bool val) {
-			CurrentConfig().hideFolderCounters = val;
-			SaveConfig();
-			controller()->session().data().chatsFilters().notifyChanged();
-		});
-
 		AddToggle(content, rpl::single(u"Скрыть вкладку «Все чаты»"_q), cfg.hideAllChatsTab, [=](bool val) {
 			CurrentConfig().hideAllChatsTab = val;
 			SaveConfig();

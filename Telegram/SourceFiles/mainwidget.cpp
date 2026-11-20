@@ -2785,13 +2785,10 @@ void MainWidget::updateControlsGeometry() {
 				dialogsWidth,
 				width() - st::columnMinimalWidthMain);
 			_dialogs->setGeometryToLeft(0, 0, dialogsWidth, height());
+			_dialogs->setVisible(dialogsWidth > 0);
 		}
 		if (_sideShadow) {
-			_sideShadow->setGeometryToLeft(
-				dialogsWidth,
-				shadowTop,
-				st::lineWidth,
-				shadowHeight);
+			_sideShadow->hide();
 		}
 		if (_thirdShadow) {
 			_thirdShadow->setGeometryToLeft(
@@ -2863,10 +2860,11 @@ void MainWidget::destroyThirdSection() {
 void MainWidget::refreshResizeAreas() {
 	if (!isOneColumn() && _dialogs) {
 		ensureFirstColumnResizeAreaCreated();
+		const auto resizeX = std::max(_history->x(), 0);
 		_firstColumnResizeArea->setGeometryToLeft(
-			_history->x(),
+			resizeX,
 			0,
-			st::historyResizeWidth,
+			st::historyResizeWidth + (resizeX == 0 ? 4 : 0),
 			height());
 	} else if (_firstColumnResizeArea) {
 		_firstColumnResizeArea.destroy();
@@ -2906,10 +2904,12 @@ void MainWidget::ensureFirstColumnResizeAreaCreated() {
 	}
 	auto moveLeftCallback = [=](int globalLeft) {
 		const auto newWidth = globalLeft - mapToGlobal(QPoint(0, 0)).x();
-		const auto newRatio = (newWidth < st::columnMinimalWidthLeft / 2)
+		const auto nochat = !_controller->mainSectionShown();
+		const auto newRatio = (!nochat && newWidth < 60)
+			? 0.
+			: (nochat && newWidth < st::columnMinimalWidthLeft / 2)
 			? 0.
 			: float64(newWidth) / width();
-		const auto nochat = !_controller->mainSectionShown();
 		_controller->columns().updateDialogsWidthRatio(newRatio, nochat);
 	};
 	auto moveFinishedCallback = [=] {
@@ -3138,7 +3138,7 @@ bool MainWidget::eventFilter(QObject *o, QEvent *e) {
 void MainWidget::handleAdaptiveLayoutUpdate() {
 	showAll();
 	if (_sideShadow) {
-		_sideShadow->setVisible(!isOneColumn());
+		_sideShadow->hide();
 	}
 	if (_player) {
 		_player->updateAdaptiveLayout();
@@ -3229,7 +3229,8 @@ void MainWidget::updateWindowAdaptiveLayout() {
 
 	auto useSmallColumnWidth = !isOneColumn()
 		&& !dialogsWidthRatio
-		&& !_controller->chatsForceDisplayWide();
+		&& !_controller->chatsForceDisplayWide()
+		&& !_controller->mainSectionShown();
 	_dialogsWidth = !_dialogs
 		? 0
 		: useSmallColumnWidth

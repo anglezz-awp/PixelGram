@@ -315,7 +315,6 @@ void SaveConfig() {
 	root["disableCustomBackgrounds"] = cfg.disableCustomBackgrounds;
 	root["hidePremiumStatuses"] = cfg.hidePremiumStatuses;
 	root["monospaceFont"] = cfg.monospaceFont;
-	root["hideFolderCounters"] = cfg.hideFolderCounters;
 	root["hideAllChatsTab"] = cfg.hideAllChatsTab;
 	root["trayGhostMode"] = cfg.trayGhostMode;
 	root["monochromeTrayIcon"] = cfg.trayGhostMode;
@@ -407,7 +406,6 @@ void LoadConfig() {
 	if (root.contains("disableCustomBackgrounds")) cfg.disableCustomBackgrounds = root["disableCustomBackgrounds"].toBool();
 	if (root.contains("hidePremiumStatuses")) cfg.hidePremiumStatuses = root["hidePremiumStatuses"].toBool();
 	if (root.contains("monospaceFont")) cfg.monospaceFont = root["monospaceFont"].toString();
-	if (root.contains("hideFolderCounters")) cfg.hideFolderCounters = root["hideFolderCounters"].toBool();
 	if (root.contains("hideAllChatsTab")) cfg.hideAllChatsTab = root["hideAllChatsTab"].toBool();
 	if (root.contains("trayGhostMode")) cfg.trayGhostMode = root["trayGhostMode"].toBool();
 	if (root.contains("monochromeTrayIcon")) cfg.trayGhostMode = root["monochromeTrayIcon"].toBool();
@@ -751,18 +749,7 @@ void ShowSettingsBox(Window::SessionController *controller) {
 						style::SetCustomMonospaceFont(CurrentConfig().monospaceFont);
 					});
 
-				addToggle(
-					cardUi,
-					QString::fromUtf8("Скрыть счётчики на папках"),
-					QString::fromUtf8("Не показывать количество непрочитанных на вкладках папок."),
-					CurrentConfig().hideFolderCounters,
-					[](bool c) {
-						CurrentConfig().hideFolderCounters = c;
-						SaveConfig();
-						if (const auto session = Core::App().domain().active().maybeSession()) {
-							session->data().chatsFilters().notifyChanged();
-						}
-					});
+
 
 				addToggle(
 					cardUi,

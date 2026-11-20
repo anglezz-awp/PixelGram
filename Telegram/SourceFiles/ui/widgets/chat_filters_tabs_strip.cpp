@@ -244,9 +244,7 @@ not_null<Ui::RpWidget*> AddChatFiltersTabsStrip(
 				const auto chats = state.chats;
 				const auto chatsMuted = state.chatsMuted;
 				const auto muted = (chatsMuted + state.marksMuted);
-				const auto count = PixelGram::CurrentConfig().hideFolderCounters
-					? 0
-					: ((chats + state.marks) - (includeMuted ? 0 : muted));
+				const auto count = ((chats + state.marks) - (includeMuted ? 0 : muted));
 				const auto isMuted = includeMuted && (count == muted);
 				slider->setUnreadCount(i, count, isMuted);
 				slider->fitWidthToSections();
