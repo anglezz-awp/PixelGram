@@ -648,6 +648,16 @@ private:
 			SaveConfig();
 		});
 
+		AddToggle(content, rpl::single(u"Звуки интерфейса (UI Sound Effects)"_q), cfg.uiSounds, [](bool val) {
+			CurrentConfig().uiSounds = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Анимация морфинга кнопки записи (Material 3)"_q), cfg.dynamicVoiceMorph, [](bool val) {
+			CurrentConfig().dynamicVoiceMorph = val;
+			SaveConfig();
+		});
+
 		Ui::AddSkip(content, 16);
 		Ui::ResizeFitChild(this, content);
 	}

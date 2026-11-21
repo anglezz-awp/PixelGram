@@ -1,4 +1,5 @@
 ﻿#include "settings/pixelgram_settings.h"
+#include "ui/pixelgram_ui_feedback.h"
 #include "history/view/history_view_element.h"
 /*
 This file is part of Telegram Desktop,
@@ -3359,6 +3360,9 @@ void SessionController::showPeerHistory(
 				return;
 			}
 		}
+	}
+	if (peerId) {
+		PixelGram::PlayUiSound(PixelGram::UiSound::ChatOpen);
 	}
 	content()->showHistory(peerId, params, msgId);
 }

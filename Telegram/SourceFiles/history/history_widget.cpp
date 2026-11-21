@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history_widget.h"
 
 #include "settings/pixelgram_settings.h"
+#include "ui/pixelgram_ui_feedback.h"
 #include "api/api_compose_with_ai.h"
 #include "api/api_editing.h"
 #include "api/api_bot.h"
@@ -5966,6 +5967,7 @@ void HistoryWidget::send(Api::SendOptions options) {
 		return;
 	}
 
+	PixelGram::PlayUiSound(PixelGram::UiSound::MessageSent);
 	sendTextWithTags(
 		_field->getTextWithAppliedMarkdown(),
 		true,

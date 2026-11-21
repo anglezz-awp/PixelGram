@@ -58,6 +58,7 @@ public:
 	}
 	void setState(State state);
 	void finishAnimating();
+	void setRecording(bool recording);
 
 protected:
 	void paintEvent(QPaintEvent *e) override;
@@ -119,6 +120,9 @@ private:
 	std::array<std::unique_ptr<Lottie::Icon>, 2> _voiceRoundIcons;
 	bool _voiceRoundAnimating = false;
 	bool _grabbingIconOnly = false;
+	bool _isRecording = false;
+	Ui::Animations::Simple _morphAnim;
+	Ui::Animations::Basic _spinAnim;
 	RippleShape _lastRippleShape = RippleShape::SendEllipse;
 
 };

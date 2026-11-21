@@ -13,6 +13,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text/text_utilities.h"
 #include "ui/painter.h"
 #include "ui/pixelgram_m3_scheme.h"
+#include "settings/pixelgram_settings.h"
 #include "ui/style/style_core.h"
 #include "ui/ui_utility.h"
 #include "styles/style_chat_helpers.h"
@@ -194,24 +195,74 @@ QColor SendButton::iconColor(bool over) const {
 	return color;
 }
 
-void SendButton::paintCircleBg(QPainter &p, bool over) {
-	const auto circle = circleRect();
-	const auto &roles = PixelGram::CurrentM3Roles();
-	const auto bg = _state.fillBgOverride.isValid()
-		? _state.fillBgOverride
-		: roles.primaryContainer;
-	{
-		auto hq = PainterHighQualityEnabler(p);
-		p.setPen(Qt::NoPen);
-		p.setBrush(bg);
-		p.drawEllipse(circle);
-		if (over && !isDisabled()) {
-			auto stateLayer = roles.onPrimaryContainer;
-			stateLayer.setAlpha(20);
-			p.setBrush(stateLayer);
-			p.drawEllipse(circle);
-		}
+void SendButton::setRecording(bool recording) {
+	if (_isRecording == recording) {
+		return;
 	}
+	_isRecording = recording;
+	if (_isRecording) {
+		_morphAnim.start([=] { update(); }, 0., 1., 220, anim::easeOutBack);
+		_spinAnim.init([=](crl::time now) {
+			update();
+			return _isRecording;
+		});
+		_spinAnim.start();
+	} else {
+		_morphAnim.start([=] { update(); }, _morphAnim.value(0.), 0., 180, anim::easeInCubic);
+	}
+}
+
+void SendButton::paintCircleBg(QPainter &p, bool over) {
+	auto circle = circleRect();
+	const auto &roles = PixelGram::CurrentM3Roles();
+	const auto &config = PixelGram::CurrentConfig();
+
+	if (over && !isDisabled()) {
+		circle = circle.adjusted(-2, -2, 2, 2);
+	}
+
+	const auto morph = config.dynamicVoiceMorph ? _morphAnim.value(0.) : 0.;
+	const auto bg = (_isRecording || morph > 0.)
+		? roles.primary
+		: (_state.fillBgOverride.isValid()
+			? _state.fillBgOverride
+			: roles.primaryContainer);
+
+	PainterHighQualityEnabler hq(p);
+	p.setPen(Qt::NoPen);
+	p.setBrush(bg);
+
+	if (morph > 0.01) {
+		const auto center = circle.center();
+		const auto rBase = circle.width() / 2.0;
+		const auto now = crl::now();
+		const auto angleOffset = (now % 3600) * (2.0 * 3.14159265358979323846 / 2400.0);
+		const int steps = 64;
+		QPainterPath path;
+		for (int i = 0; i <= steps; ++i) {
+			const auto angle = (i * 2.0 * 3.14159265358979323846 / steps) + angleOffset;
+			const auto r = rBase * (1.0 + morph * 0.18 * std::cos(8.0 * angle));
+			const auto x = center.x() + r * std::cos(angle);
+			const auto y = center.y() + r * std::sin(angle);
+			if (i == 0) {
+				path.moveTo(x, y);
+			} else {
+				path.lineTo(x, y);
+			}
+		}
+		path.closeSubpath();
+		p.fillPath(path, bg);
+	} else {
+		p.drawEllipse(circle);
+	}
+
+	if (over && !isDisabled()) {
+		auto stateLayer = roles.onPrimaryContainer;
+		stateLayer.setAlpha(24);
+		p.setBrush(stateLayer);
+		p.drawEllipse(circle);
+	}
+
 	if (!isDisabled() && !_state.forbidden) {
 		auto rippleColor = roles.onPrimaryContainer;
 		rippleColor.setAlpha(32);

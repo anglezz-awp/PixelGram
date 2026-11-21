@@ -130,6 +130,8 @@ struct Config {
 	bool showEmojiButton = true;
 	bool showVoiceButton = true;
 	bool showGiftButton = true;
+	bool uiSounds = true;
+	bool dynamicVoiceMorph = true;
 	bool openAttachOnHover = false;
 	bool openEmojiOnHover = false;
 

@@ -2790,7 +2790,16 @@ void MainWidget::updateControlsGeometry() {
 			_dialogs->setVisible(dialogsWidth > 0);
 		}
 		if (_sideShadow) {
-			_sideShadow->hide();
+			if (!isOneColumn() && dialogsWidth > 0) {
+				_sideShadow->setGeometryToLeft(
+					dialogsWidth,
+					0,
+					st::lineWidth,
+					height());
+				_sideShadow->show();
+			} else {
+				_sideShadow->hide();
+			}
 		}
 		if (_thirdShadow) {
 			_thirdShadow->setGeometryToLeft(
@@ -3140,7 +3149,7 @@ bool MainWidget::eventFilter(QObject *o, QEvent *e) {
 void MainWidget::handleAdaptiveLayoutUpdate() {
 	showAll();
 	if (_sideShadow) {
-		_sideShadow->hide();
+		_sideShadow->setVisible(!isOneColumn() && _dialogsWidth > 0);
 	}
 	if (_player) {
 		_player->updateAdaptiveLayout();

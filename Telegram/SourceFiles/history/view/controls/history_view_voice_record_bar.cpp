@@ -8,6 +8,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/controls/history_view_voice_record_bar.h"
 
 #include "settings/pixelgram_settings.h"
+#include "ui/pixelgram_ui_feedback.h"
+#include "ui/controls/send_button.h"
 #include "api/api_send_progress.h"
 #include "base/event_filter.h"
 #include "base/random.h"
@@ -2617,6 +2619,10 @@ void VoiceRecordBar::startRecording() {
 		startRedCircleAnimation();
 
 		_recording = true;
+		if (_send) {
+			_send->setRecording(true);
+		}
+		PixelGram::PlayUiSound(PixelGram::UiSound::RecordStart);
 		if (_paused.current()) {
 			_paused = false;
 			if (_videoRecorder) {
@@ -2928,6 +2934,10 @@ Ui::RoundVideoResult VoiceRecordBar::mergeWithResumePrefix(
 }
 
 void VoiceRecordBar::stopRecording(StopType type, bool ttlBeforeHide) {
+	if (_send) {
+		_send->setRecording(false);
+	}
+	PixelGram::PlayUiSound(PixelGram::UiSound::RecordStop);
 	using namespace ::Media::Capture;
 	if (type == StopType::Cancel) {
 		clearResumeState();

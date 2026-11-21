@@ -370,6 +370,8 @@ void SaveConfig() {
 	root["showEmojiButton"] = cfg.showEmojiButton;
 	root["showVoiceButton"] = cfg.showVoiceButton;
 	root["showGiftButton"] = cfg.showGiftButton;
+	root["uiSounds"] = cfg.uiSounds;
+	root["dynamicVoiceMorph"] = cfg.dynamicVoiceMorph;
 	root["openAttachOnHover"] = cfg.openAttachOnHover;
 	root["openEmojiOnHover"] = cfg.openEmojiOnHover;
 
@@ -566,6 +568,8 @@ void LoadConfig() {
 	if (root.contains("showEmojiButton")) cfg.showEmojiButton = root["showEmojiButton"].toBool();
 	if (root.contains("showVoiceButton")) cfg.showVoiceButton = root["showVoiceButton"].toBool();
 	if (root.contains("showGiftButton")) cfg.showGiftButton = root["showGiftButton"].toBool();
+	if (root.contains("uiSounds")) cfg.uiSounds = root["uiSounds"].toBool();
+	if (root.contains("dynamicVoiceMorph")) cfg.dynamicVoiceMorph = root["dynamicVoiceMorph"].toBool();
 	if (root.contains("openAttachOnHover")) cfg.openAttachOnHover = root["openAttachOnHover"].toBool();
 	if (root.contains("openEmojiOnHover")) cfg.openEmojiOnHover = root["openEmojiOnHover"].toBool();
 
