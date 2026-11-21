@@ -3,6 +3,7 @@
 #define MyAppPublisher "anglezz"
 #define MyAppURL "https://github.com/anglezz-awp/PixelGram"
 #define MyAppExeName "PixelGram.exe"
+#define MyPixelGramVersion "1.1"
 #define MyAppVersion "7.4.4"
 #define MyAppId "7B96E8A1-9F3A-42FB-96E2-B3A6556D6872"
 #define ReleaseExe "G:\TBuild\tdesktop\out\Release\Telegram.exe"
@@ -11,8 +12,8 @@
 [Setup]
 AppId={{{#MyAppId}}
 AppName={#MyAppName}
-AppVersion={#MyAppVersion}
-AppVerName={#MyAppName} v{#MyAppVersion} (x64)
+AppVersion={#MyPixelGramVersion}
+AppVerName={#MyAppName} v{#MyPixelGramVersion} (Telegram v{#MyAppVersion})
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
@@ -21,7 +22,7 @@ DefaultDirName={userappdata}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=C:\Users\anglezz\Desktop
-OutputBaseFilename=PixelGram-v7.4.4-x64-setup
+OutputBaseFilename=PixelGram1.1-v7.4.4-x64-setup
 SetupIconFile={#IconFile}
 UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
