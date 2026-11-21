@@ -76,6 +76,16 @@ cmake --build out --target Telegram --config Release -- /p:PreferredToolArchitec
 
 ---
 
+## 💖 Support the Project
+
+If you love PixelGram and want to support its ongoing development, improvements, and new features, donations are warmly appreciated:
+
+| Currency | Network | Address |
+| :--- | :--- | :--- |
+| **USDT** | **TRC-20 (Tron)** | `TRj1my5R7ge4rcHU7JneYR6nTS3om6hZSg` |
+
+---
+
 ## ❤️ Credits & Acknowledgements
 
 PixelGram is made possible thanks to the following open-source projects:
