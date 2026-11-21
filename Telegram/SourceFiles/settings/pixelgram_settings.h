@@ -42,6 +42,18 @@ enum class AntiDeleteMark : int {
 	Hidden = 2,
 };
 
+enum class M3Variant : int {
+	TonalSpot = 0,
+	Expressive = 1,
+	FruitSalad = 2,
+	Vibrant = 3,
+	Neutral = 4,
+	Monochrome = 5,
+	Rainbow = 6,
+	Fidelity = 7,
+	Content = 8,
+};
+
 struct Config {
 	// Base
 	bool antiDelete = true;
@@ -154,6 +166,7 @@ struct Config {
 
 	// Material 3 Seed
 	uint32 m3SeedColor = 0xFF917BBD;
+	int m3ColorSchemeVariant = 0;
 	int m3SchemeVariant = 0;
 	double m3ContrastLevel = 0.0;
 
@@ -187,6 +200,9 @@ inline Config &ModifyConfig() { return CurrentConfig(); }
 void SaveConfig();
 void LoadConfig();
 [[nodiscard]] QString GenerateRandomSecret();
+[[nodiscard]] QString M3VariantToString(int variant);
+[[nodiscard]] int M3VariantFromString(const QString &str);
+[[nodiscard]] QString M3VariantTitle(int variant, bool isRu);
 
 void CheckGoOffline(not_null<Main::Session*> session);
 bool MaybeShowStoryGhostAlert(

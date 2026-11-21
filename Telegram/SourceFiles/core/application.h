@@ -251,6 +251,9 @@ public:
 		return *_domain;
 	}
 	[[nodiscard]] Main::Account &activeAccount() const;
+	[[nodiscard]] static bool exists() {
+		return Instance != nullptr;
+	}
 	[[nodiscard]] bool someSessionExists() const;
 	[[nodiscard]] Export::Manager &exportManager() const {
 		return *_exportManager;

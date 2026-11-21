@@ -2955,10 +2955,22 @@ target_sources(Telegram PRIVATE
     ${mcu_loc}/scheme/scheme_vibrant.h
     ${mcu_loc}/scheme/scheme_expressive.cc
     ${mcu_loc}/scheme/scheme_expressive.h
+    ${mcu_loc}/scheme/scheme_fruit_salad.cc
+    ${mcu_loc}/scheme/scheme_fruit_salad.h
     ${mcu_loc}/scheme/scheme_neutral.cc
     ${mcu_loc}/scheme/scheme_neutral.h
     ${mcu_loc}/scheme/scheme_monochrome.cc
     ${mcu_loc}/scheme/scheme_monochrome.h
+    ${mcu_loc}/scheme/scheme_rainbow.cc
+    ${mcu_loc}/scheme/scheme_rainbow.h
+    ${mcu_loc}/scheme/scheme_fidelity.cc
+    ${mcu_loc}/scheme/scheme_fidelity.h
+    ${mcu_loc}/scheme/scheme_content.cc
+    ${mcu_loc}/scheme/scheme_content.h
+    ${mcu_loc}/temperature/temperature_cache.cc
+    ${mcu_loc}/temperature/temperature_cache.h
+    ${mcu_loc}/quantize/lab.cc
+    ${mcu_loc}/quantize/lab.h
     ${mcu_loc}/utils/utils.cc
     ${mcu_loc}/utils/utils.h
     ${mcu_loc}/contrast/contrast.cc

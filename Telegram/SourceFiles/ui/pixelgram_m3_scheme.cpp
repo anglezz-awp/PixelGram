@@ -6,11 +6,19 @@
 
 #include "cpp/cam/hct.h"
 #include "cpp/scheme/scheme_tonal_spot.h"
-#include "cpp/scheme/scheme_vibrant.h"
 #include "cpp/scheme/scheme_expressive.h"
+#include "cpp/scheme/scheme_fruit_salad.h"
+#include "cpp/scheme/scheme_vibrant.h"
 #include "cpp/scheme/scheme_neutral.h"
 #include "cpp/scheme/scheme_monochrome.h"
+#include "cpp/scheme/scheme_rainbow.h"
+#include "cpp/scheme/scheme_fidelity.h"
+#include "cpp/scheme/scheme_content.h"
 #include "cpp/dynamiccolor/material_dynamic_colors.h"
+
+#include "core/application.h"
+#include "core/core_settings.h"
+#include "window/themes/window_theme.h"
 
 #include <QtCore/QFile>
 #include <QtGui/QPixmapCache>
@@ -47,17 +55,30 @@ M3SchemeRoles GenerateM3SchemeFromSeed(
 	std::unique_ptr<DynamicScheme> scheme;
 	switch (variant) {
 	case 1:
-		scheme = std::make_unique<SchemeVibrant>(sourceHct, isDark, contrast);
-		break;
-	case 2:
 		scheme = std::make_unique<SchemeExpressive>(sourceHct, isDark, contrast);
 		break;
+	case 2:
+		scheme = std::make_unique<SchemeFruitSalad>(sourceHct, isDark, contrast);
+		break;
 	case 3:
-		scheme = std::make_unique<SchemeNeutral>(sourceHct, isDark, contrast);
+		scheme = std::make_unique<SchemeVibrant>(sourceHct, isDark, contrast);
 		break;
 	case 4:
+		scheme = std::make_unique<SchemeNeutral>(sourceHct, isDark, contrast);
+		break;
+	case 5:
 		scheme = std::make_unique<SchemeMonochrome>(sourceHct, isDark, contrast);
 		break;
+	case 6:
+		scheme = std::make_unique<SchemeRainbow>(sourceHct, isDark, contrast);
+		break;
+	case 7:
+		scheme = std::make_unique<SchemeFidelity>(sourceHct, isDark, contrast);
+		break;
+	case 8:
+		scheme = std::make_unique<SchemeContent>(sourceHct, isDark, contrast);
+		break;
+	case 0:
 	default:
 		scheme = std::make_unique<SchemeTonalSpot>(sourceHct, isDark, contrast);
 		break;
@@ -70,8 +91,8 @@ M3SchemeRoles GenerateM3SchemeFromSeed(
 	roles.onPrimaryContainer = ArgbToQColor(MaterialDynamicColors::OnPrimaryContainer().GetArgb(*scheme));
 	roles.secondary = ArgbToQColor(MaterialDynamicColors::Secondary().GetArgb(*scheme));
 	roles.onSecondary = ArgbToQColor(MaterialDynamicColors::OnSecondary().GetArgb(*scheme));
-	roles.secondaryContainer = isDark ? ArgbToQColor(scheme->secondary_palette.get(42.0)) : ArgbToQColor(MaterialDynamicColors::SecondaryContainer().GetArgb(*scheme));
-	roles.onSecondaryContainer = isDark ? ArgbToQColor(scheme->secondary_palette.get(92.0)) : ArgbToQColor(MaterialDynamicColors::OnSecondaryContainer().GetArgb(*scheme));
+	roles.secondaryContainer = ArgbToQColor(MaterialDynamicColors::SecondaryContainer().GetArgb(*scheme));
+	roles.onSecondaryContainer = ArgbToQColor(MaterialDynamicColors::OnSecondaryContainer().GetArgb(*scheme));
 	roles.tertiary = ArgbToQColor(MaterialDynamicColors::Tertiary().GetArgb(*scheme));
 	roles.onTertiary = ArgbToQColor(MaterialDynamicColors::OnTertiary().GetArgb(*scheme));
 	roles.tertiaryContainer = ArgbToQColor(MaterialDynamicColors::TertiaryContainer().GetArgb(*scheme));
@@ -104,6 +125,14 @@ M3SchemeRoles GenerateM3SchemeFromSeed(
 }
 
 QColor GetM3SeedColor() {
+	if (Core::Application::exists()) {
+		const auto &settings = Core::App().settings();
+		if (settings.systemAccentColorEnabled()) {
+			if (const auto sys = Window::Theme::SystemAccentColor()) {
+				return *sys;
+			}
+		}
+	}
 	const auto &config = CurrentConfig();
 	return QColor::fromRgba(config.m3SeedColor);
 }
@@ -727,7 +756,7 @@ void ApplyM3Scheme(const QColor &seed, bool isDark) {
 	CurrentRoles = GenerateM3SchemeFromSeed(
 		seed,
 		isDark,
-		config.m3SchemeVariant,
+		config.m3ColorSchemeVariant,
 		config.m3ContrastLevel);
 	const auto &roles = CurrentRoles;
 

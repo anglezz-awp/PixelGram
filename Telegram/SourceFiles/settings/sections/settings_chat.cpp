@@ -1,4 +1,6 @@
 #include "ui/pixelgram_m3_scheme.h"
+#include "settings/pixelgram_settings.h"
+#include "lang/lang_instance.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -404,6 +406,208 @@ void ColorsPalette::updateInnerGeometry() {
 		x += size + skip;
 	}
 	inner->resize(inner->width(), y + size + st::defaultVerticalListSkip);
+}
+
+class M3VariantsWidget final : public Ui::RpWidget {
+public:
+	explicit M3VariantsWidget(QWidget *parent);
+
+protected:
+	void paintEvent(QPaintEvent *e) override;
+	void mouseMoveEvent(QMouseEvent *e) override;
+	void leaveEventHook(QEvent *e) override;
+	void mousePressEvent(QMouseEvent *e) override;
+
+	int resizeGetHeight(int newWidth) override;
+
+private:
+	[[nodiscard]] int indexAt(QPoint pos) const;
+
+	int _hoveredIndex = -1;
+};
+
+M3VariantsWidget::M3VariantsWidget(QWidget *parent)
+: Ui::RpWidget(parent) {
+	setMouseTracking(true);
+}
+
+int M3VariantsWidget::resizeGetHeight(int newWidth) {
+	const auto itemHeight = 58;
+	const auto rowGap = 8;
+	const auto topMargin = 4;
+	const auto bottomMargin = 8;
+	return topMargin + 3 * itemHeight + 2 * rowGap + bottomMargin;
+}
+
+int M3VariantsWidget::indexAt(QPoint pos) const {
+	const auto padding = st::settingsButtonNoIcon.padding;
+	const auto x0 = padding.left();
+	const auto y0 = 4;
+	const auto w = width() - padding.left() - padding.right();
+	const auto colGap = 8;
+	const auto rowGap = 8;
+	const auto colWidth = (w - 2 * colGap) / 3;
+	const auto itemHeight = 58;
+
+	if (pos.x() < x0 || pos.x() >= x0 + 3 * colWidth + 2 * colGap) {
+		return -1;
+	}
+	if (pos.y() < y0 || pos.y() >= y0 + 3 * itemHeight + 2 * rowGap) {
+		return -1;
+	}
+
+	for (int row = 0; row < 3; ++row) {
+		const auto itemY = y0 + row * (itemHeight + rowGap);
+		if (pos.y() >= itemY && pos.y() < itemY + itemHeight) {
+			for (int col = 0; col < 3; ++col) {
+				const auto itemX = x0 + col * (colWidth + colGap);
+				if (pos.x() >= itemX && pos.x() < itemX + colWidth) {
+					return row * 3 + col;
+				}
+			}
+		}
+	}
+	return -1;
+}
+
+void M3VariantsWidget::mouseMoveEvent(QMouseEvent *e) {
+	const auto newIndex = indexAt(e->pos());
+	if (_hoveredIndex != newIndex) {
+		_hoveredIndex = newIndex;
+		update();
+	}
+	setCursor((_hoveredIndex >= 0 && _hoveredIndex < 9)
+		? Qt::PointingHandCursor
+		: Qt::ArrowCursor);
+}
+
+void M3VariantsWidget::leaveEventHook(QEvent *e) {
+	if (_hoveredIndex != -1) {
+		_hoveredIndex = -1;
+		update();
+	}
+	Ui::RpWidget::leaveEventHook(e);
+}
+
+void M3VariantsWidget::mousePressEvent(QMouseEvent *e) {
+	if (e->button() != Qt::LeftButton) {
+		return;
+	}
+	const auto index = indexAt(e->pos());
+	if (index < 0 || index >= 9) {
+		return;
+	}
+	auto &cfg = PixelGram::CurrentConfig();
+	if (cfg.m3ColorSchemeVariant != index) {
+		cfg.m3ColorSchemeVariant = index;
+		cfg.m3SchemeVariant = index;
+		PixelGram::SaveConfig();
+
+		const auto seed = PixelGram::GetM3SeedColor();
+		PixelGram::ApplyM3Scheme(seed, Window::Theme::IsNightMode());
+		update();
+	}
+}
+
+void M3VariantsWidget::paintEvent(QPaintEvent *e) {
+	Painter p(this);
+	PainterHighQualityEnabler hq(p);
+
+	const auto padding = st::settingsButtonNoIcon.padding;
+	const auto x0 = padding.left();
+	const auto y0 = 4;
+	const auto w = width() - padding.left() - padding.right();
+	const auto colGap = 8;
+	const auto rowGap = 8;
+	const auto colWidth = (w - 2 * colGap) / 3;
+	const auto itemHeight = 58;
+
+	const auto currentVariant = PixelGram::CurrentConfig().m3ColorSchemeVariant;
+	const auto seed = PixelGram::GetM3SeedColor();
+	const auto isDark = Window::Theme::IsNightMode();
+	const auto isRu = Core::App().langpack().id().startsWith(u"ru"_q);
+	const auto &roles = PixelGram::CurrentM3Roles();
+
+	for (int i = 0; i < 9; ++i) {
+		const auto col = i % 3;
+		const auto row = i / 3;
+		const auto x = x0 + col * (colWidth + colGap);
+		const auto y = y0 + row * (itemHeight + rowGap);
+		const QRect r(x, y, colWidth, itemHeight);
+
+		const bool isSelected = (i == currentVariant);
+		const bool isHovered = (i == _hoveredIndex);
+
+		const auto radius = 12.0;
+		QPainterPath path;
+		path.addRoundedRect(r, radius, radius);
+
+		QColor bg;
+		QColor border;
+		int borderWidth = 1;
+
+		if (isSelected) {
+			bg = roles.secondaryContainer;
+			border = roles.primary;
+			borderWidth = 2;
+		} else if (isHovered) {
+			bg = roles.surfaceContainerHigh;
+			border = roles.outline;
+			borderWidth = 1;
+		} else {
+			bg = roles.surfaceContainer;
+			border = roles.outlineVariant;
+			borderWidth = 1;
+		}
+
+		p.fillPath(path, bg);
+
+		QPen borderPen(border, borderWidth);
+		p.setPen(borderPen);
+		p.setBrush(Qt::NoBrush);
+		p.drawPath(path);
+
+		const auto vRoles = PixelGram::GenerateM3SchemeFromSeed(
+			seed,
+			isDark,
+			i,
+			PixelGram::CurrentConfig().m3ContrastLevel);
+
+		const QColor dots[4] = {
+			vRoles.primary,
+			vRoles.secondary,
+			vRoles.tertiary,
+			vRoles.primaryContainer,
+		};
+
+		const auto dotSize = 11;
+		const auto dotGap = 4;
+		const auto totalDotsW = 4 * dotSize + 3 * dotGap;
+		const auto dotsStartX = r.left() + (r.width() - totalDotsW) / 2;
+		const auto dotsY = r.top() + 10;
+
+		p.setPen(Qt::NoPen);
+		for (int d = 0; d < 4; ++d) {
+			const auto dotX = dotsStartX + d * (dotSize + dotGap);
+			p.setBrush(dots[d]);
+			p.drawEllipse(dotX, dotsY, dotSize, dotSize);
+			p.setPen(QColor(isDark ? 255 : 0, isDark ? 255 : 0, isDark ? 255 : 0, 30));
+			p.setBrush(Qt::NoBrush);
+			p.drawEllipse(dotX, dotsY, dotSize, dotSize);
+			p.setPen(Qt::NoPen);
+		}
+
+		const auto title = PixelGram::M3VariantTitle(i, isRu);
+		QFont font = p.font();
+		font.setPointSize(9);
+		font.setWeight(isSelected ? QFont::DemiBold : QFont::Normal);
+		p.setFont(font);
+
+		p.setPen(isSelected ? roles.onSecondaryContainer : roles.onSurfaceVariant);
+		const auto textRect = QRect(r.left() + 4, r.top() + 28, r.width() - 8, r.height() - 32);
+		const auto elided = p.fontMetrics().elidedText(title, Qt::ElideRight, textRect.width());
+		p.drawText(textRect, Qt::AlignCenter, elided);
+	}
 }
 
 class BackgroundRow : public Ui::RpWidget {
@@ -2106,6 +2310,16 @@ void SetupDefaultThemes(
 		st::settingsCheckboxPadding);
 	systemAccentWrap->setDuration(0);
 
+	const auto isRu = Core::App().langpack().id().startsWith(u"ru"_q);
+	Ui::AddSubsectionTitle(
+		container,
+		rpl::single(isRu
+			? u"Стиль палитры Material You"_q
+			: u"Color Scheme Style"_q),
+		QMargins(st::settingsButtonNoIcon.padding.left(), 12, st::settingsButtonNoIcon.padding.right(), 4));
+	const auto m3Variants = container->add(
+		object_ptr<M3VariantsWidget>(container));
+
 	const auto chosen = [] {
 		const auto &object = Background()->themeObject();
 		if (object.cloud.id) {
@@ -2179,6 +2393,7 @@ void SetupDefaultThemes(
 		if (type == chosen()) {
 			palette->show(type);
 		}
+		m3Variants->update();
 
 		const auto &settings = Core::App().settings();
 		const auto i = checks.find(type);
@@ -2232,6 +2447,10 @@ void SetupDefaultThemes(
 		if (scheme != end(kSchemesList)) {
 			apply(*scheme);
 		}
+		const auto seed = PixelGram::GetM3SeedColor();
+		PixelGram::ApplyM3Scheme(seed, Window::Theme::IsNightMode());
+		palette->show(type);
+		m3Variants->update();
 	}, container->lifetime());
 
 	if (highlights) {
@@ -2260,6 +2479,7 @@ void SetupDefaultThemes(
 		refreshColorizer(type);
 		refreshSystemAccentVisibility(type);
 		group->setValue(type);
+		m3Variants->update();
 	}, container->lifetime());
 
 	for (const auto button : buttons) {
@@ -2323,6 +2543,7 @@ void SetupDefaultThemes(
 		apply(*scheme);
 		PixelGram::ApplyM3Scheme(color, Window::Theme::IsNightMode());
 		palette->show(type);
+		m3Variants->update();
 	}, container->lifetime());
 
 	Ui::AddSkip(container);

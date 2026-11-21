@@ -410,7 +410,8 @@ void SaveConfig() {
 	root["linkGuardDbCheckedAt"] = static_cast<double>(cfg.linkGuardDbCheckedAt);
 
 	root["m3SeedColor"] = static_cast<double>(cfg.m3SeedColor);
-	root["m3SchemeVariant"] = cfg.m3SchemeVariant;
+	root["m3ColorSchemeVariant"] = M3VariantToString(cfg.m3ColorSchemeVariant);
+	root["m3SchemeVariant"] = cfg.m3ColorSchemeVariant;
 	root["m3ContrastLevel"] = cfg.m3ContrastLevel;
 
 	root["wsProxyEnabled"] = cfg.wsProxyEnabled;
@@ -428,6 +429,49 @@ QString GenerateRandomSecret() {
 	auto bytes = std::array<uint8_t, 16>();
 	base::RandomFill(bytes.data(), bytes.size());
 	return QString::fromLatin1(QByteArray(reinterpret_cast<const char*>(bytes.data()), int(bytes.size())).toHex().toLower());
+}
+
+QString M3VariantToString(int variant) {
+	switch (variant) {
+	case 1: return QString::fromLatin1("expressive");
+	case 2: return QString::fromLatin1("fruit_salad");
+	case 3: return QString::fromLatin1("vibrant");
+	case 4: return QString::fromLatin1("neutral");
+	case 5: return QString::fromLatin1("monochrome");
+	case 6: return QString::fromLatin1("rainbow");
+	case 7: return QString::fromLatin1("fidelity");
+	case 8: return QString::fromLatin1("content");
+	case 0:
+	default: return QString::fromLatin1("tonal_spot");
+	}
+}
+
+int M3VariantFromString(const QString &str) {
+	const auto s = str.trimmed().toLower();
+	if (s == "expressive") return 1;
+	if (s == "fruit_salad" || s == "fruitsalad") return 2;
+	if (s == "vibrant") return 3;
+	if (s == "neutral" || s == "spritz") return 4;
+	if (s == "monochrome") return 5;
+	if (s == "rainbow") return 6;
+	if (s == "fidelity") return 7;
+	if (s == "content") return 8;
+	return 0; // tonal_spot
+}
+
+QString M3VariantTitle(int variant, bool isRu) {
+	switch (variant) {
+	case 0: return u"Tonal Spot"_q;
+	case 1: return u"Expressive"_q;
+	case 2: return u"Fruit Salad"_q;
+	case 3: return u"Vibrant"_q;
+	case 4: return u"Neutral (Spritz)"_q;
+	case 5: return u"Monochrome"_q;
+	case 6: return u"Rainbow"_q;
+	case 7: return u"Fidelity"_q;
+	case 8: return u"Content"_q;
+	default: return u"Tonal Spot"_q;
+	}
 }
 
 void LoadConfig() {
@@ -560,7 +604,17 @@ void LoadConfig() {
 	if (root.contains("linkGuardDbCheckedAt")) cfg.linkGuardDbCheckedAt = static_cast<uint64>(root["linkGuardDbCheckedAt"].toDouble());
 
 	if (root.contains("m3SeedColor")) cfg.m3SeedColor = static_cast<uint32>(root["m3SeedColor"].toDouble());
-	if (root.contains("m3SchemeVariant")) cfg.m3SchemeVariant = root["m3SchemeVariant"].toInt();
+	if (root.contains("m3ColorSchemeVariant")) {
+		const auto val = root["m3ColorSchemeVariant"];
+		if (val.isString()) {
+			cfg.m3ColorSchemeVariant = M3VariantFromString(val.toString());
+		} else {
+			cfg.m3ColorSchemeVariant = val.toInt();
+		}
+	} else if (root.contains("m3SchemeVariant")) {
+		cfg.m3ColorSchemeVariant = root["m3SchemeVariant"].toInt();
+	}
+	cfg.m3SchemeVariant = cfg.m3ColorSchemeVariant;
 	if (root.contains("m3ContrastLevel")) cfg.m3ContrastLevel = root["m3ContrastLevel"].toDouble();
 
 	if (root.contains("wsProxyEnabled")) cfg.wsProxyEnabled = root["wsProxyEnabled"].toBool();
