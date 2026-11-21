@@ -5,6 +5,9 @@ the official desktop application for the Telegram messaging service.
 For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
+#include "core/version.h"
+#include "window/main_window.h"
+#include "styles/style_layers.h"
 #include "settings/sections/settings_pixelgram.h"
 #include "core/pixelgram_link_guard.h"
 #include "core/pixelgram_ws_proxy.h"
@@ -75,7 +78,7 @@ not_null<Ui::SettingsButton*> AddToggle(
 class PixelGramHeaderWidget : public Ui::RpWidget {
 public:
 	PixelGramHeaderWidget(QWidget *parent) : RpWidget(parent) {
-		resize(parent->width(), style::ConvertScale(120));
+		resize(parent->width(), style::ConvertScale(185));
 	}
 protected:
 	void paintEvent(QPaintEvent *e) override {
@@ -83,28 +86,31 @@ protected:
 		PainterHighQualityEnabler hq(p);
 
 		const auto &roles = CurrentM3Roles();
-		const auto iconSize = style::ConvertScale(48);
-		const auto iconTop = style::ConvertScale(12);
-		const auto iconRadius = style::ConvertScale(16);
+		const auto iconSize = style::ConvertScale(84);
+		const auto iconTop = style::ConvertScale(14);
 		const auto iconRect = QRect((width() - iconSize) / 2, iconTop, iconSize, iconSize);
 
-		// Icon background (squircle)
-		p.setPen(Qt::NoPen);
-		p.setBrush(roles.primaryContainer.isValid() ? roles.primaryContainer : QColor(0xE8, 0xDE, 0xF8));
-		p.drawRoundedRect(iconRect, iconRadius, iconRadius);
+		// Draw PixelGram Logo
+		const auto &logo = Window::Logo();
+		if (!logo.isNull()) {
+			p.drawImage(iconRect, logo);
+		}
 
-		// Star / logo inside
-		st::menuIconManage.paintInCenter(p, iconRect, roles.onPrimaryContainer.isValid() ? roles.onPrimaryContainer : QColor(0x21, 0x00, 0x5D));
-
-		// Title
-		p.setFont(st::semiboldFont->f);
+		// Title: PixelGram Desktop v{AppVersionStr}
+		const auto titleTop = iconTop + iconSize + style::ConvertScale(14);
+		p.setFont(st::boxTitleFont);
 		p.setPen(roles.onSurface.isValid() ? roles.onSurface : st::windowFg->c);
-		p.drawText(QRect(0, style::ConvertScale(66), width(), style::ConvertScale(24)), Qt::AlignCenter, u"PixelGram Desktop"_q);
+		const auto versionStr = QString("PixelGram Desktop v") + QString::fromLatin1(AppVersionStr);
+		p.drawText(QRect(0, titleTop, width(), style::ConvertScale(26)), Qt::AlignCenter, versionStr);
 
 		// Subtitle
+		const auto subtitleTop = titleTop + style::ConvertScale(28);
 		p.setFont(st::normalFont->f);
 		p.setPen(roles.onSurfaceVariant.isValid() ? roles.onSurfaceVariant : st::windowSubTextFg->c);
-		p.drawText(QRect(0, style::ConvertScale(92), width(), style::ConvertScale(20)), Qt::AlignCenter, u"Material You 3 client with advanced mods"_q);
+		p.drawText(
+			QRect(style::ConvertScale(24), subtitleTop, width() - style::ConvertScale(48), style::ConvertScale(42)),
+			Qt::AlignCenter | Qt::TextWordWrap,
+			u"Telegram Desktop fork powered by Material 3 Expressive and privacy-focused features."_q);
 	}
 };
 
