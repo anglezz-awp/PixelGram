@@ -135,9 +135,10 @@ void FiltersMenu::setup() {
 	_outer.paintRequest(
 	) | rpl::on_next([=](QRect clip) {
 		auto p = QPainter(&_outer);
-		p.setPen(Qt::NoPen);
-		p.setBrush(st::windowFiltersButton.textBg);
-		p.drawRect(clip);
+		const auto width = _outer.width();
+		const auto height = _outer.height();
+		p.fillRect(QRect(0, 0, width - 1, height), st::windowFiltersButton.textBg);
+		p.fillRect(QRect(width - 1, 0, 1, height), st::windowShadowFgFallback->c);
 	}, _outer.lifetime());
 
 	_divider = base::make_unique_q<Ui::RpWidget>(&_outer);
@@ -152,11 +153,11 @@ void FiltersMenu::setup() {
 	) | rpl::on_next([=](int height) {
 		const auto width = st::windowFiltersWidth;
 		_outer.setGeometry({ 0, 0, width, height });
-		_menu.resizeToWidth(width);
+		_menu.resizeToWidth(width - 1);
 		_menu.move(0, 0);
 		_scroll.setGeometry(
-			{ 0, _menu.height(), width, height - _menu.height() });
-		_container->resizeToWidth(width);
+			{ 0, _menu.height(), width - 1, height - _menu.height() });
+		_container->resizeToWidth(width - 1);
 		_container->move(0, 0);
 		if (_divider) {
 			_divider->setGeometry(width - 1, 0, 1, height);

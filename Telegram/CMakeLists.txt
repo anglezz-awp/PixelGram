@@ -2014,6 +2014,8 @@ PRIVATE
     ui/pixelgram_wavy_progress.h
     ui/pixelgram_ui_feedback.cpp
     ui/pixelgram_ui_feedback.h
+    ui/pixelgram_fx.cpp
+    ui/pixelgram_fx.h
     settings/sections/settings_main.cpp
     settings/sections/settings_main.h
     settings/settings_recent_searches.cpp
@@ -2987,6 +2989,8 @@ target_sources(Telegram PRIVATE
     ${src_loc}/ui/pixelgram_wavy_progress.h
     ${src_loc}/ui/pixelgram_ui_feedback.cpp
     ${src_loc}/ui/pixelgram_ui_feedback.h
+    ${src_loc}/ui/pixelgram_fx.cpp
+    ${src_loc}/ui/pixelgram_fx.h
 )
 
 target_compile_definitions(Telegram

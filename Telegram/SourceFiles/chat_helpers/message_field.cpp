@@ -749,11 +749,19 @@ public:
 			if (curLen > _lastLen) {
 				_burstType = BurstType::Typing;
 				_burstPos = curRect.center();
-				_burstAnim.start([=] { update(); }, 0., 1., 180, anim::easeOutCubic);
+				_burstAnim.start([=] { update(); }, 0., 1., 220, anim::easeOutCirc);
 			} else if (curLen < _lastLen) {
-				_burstType = BurstType::Erase;
-				_burstPos = curRect.center();
-				_burstAnim.start([=] { update(); }, 0., 1., 150, anim::easeOutCubic);
+				const auto diff = _lastLen - curLen;
+				if (diff > 1) {
+					_burstType = BurstType::SelectionErase;
+					_eraseSpanWidth = std::min(float64(diff * 10), float64(width() * 0.8));
+					_burstPos = curRect.center();
+					_burstAnim.start([=] { update(); }, 0., 1., 280, anim::easeOutCirc);
+				} else {
+					_burstType = BurstType::Erase;
+					_burstPos = curRect.center();
+					_burstAnim.start([=] { update(); }, 0., 1., 180, anim::easeOutCirc);
+				}
 			}
 			_lastLen = curLen;
 		}, lifetime());
@@ -767,7 +775,7 @@ public:
 			if (_targetCaretRect != target) {
 				_prevCaretRect = _targetCaretRect.isValid() ? _targetCaretRect : target;
 				_targetCaretRect = target;
-				_caretAnim.start([=] { update(); }, 0., 1., 90, anim::easeOutCubic);
+				_caretAnim.start([=] { update(); }, 0., 1., 180, anim::easeOutCirc);
 			}
 		});
 	}
@@ -793,6 +801,13 @@ protected:
 				p.setBrush(color);
 				const auto r = 4. + 16. * progress;
 				p.drawEllipse(QPointF(_burstPos), r, r);
+			} else if (_burstType == BurstType::SelectionErase) {
+				auto color = roles.error;
+				color.setAlphaF(std::clamp((1. - progress) * 0.35, 0., 1.));
+				p.setBrush(color);
+				const auto pillW = std::max(20.0, _eraseSpanWidth * (1.0 + 0.25 * progress));
+				const auto pillH = 22. * (1.0 - 0.2 * progress);
+				p.drawRoundedRect(QRectF(_burstPos.x() - pillW / 2., _burstPos.y() - pillH / 2., pillW, pillH), pillH / 2., pillH / 2.);
 			} else {
 				auto color = roles.error;
 				color.setAlphaF(std::clamp((1. - progress) * 0.35, 0., 1.));
@@ -823,12 +838,14 @@ private:
 	enum class BurstType {
 		Typing,
 		Erase,
+		SelectionErase,
 	};
 
 	const not_null<Ui::InputField*> _field;
 	int _lastLen = 0;
 	BurstType _burstType = BurstType::Typing;
 	QPoint _burstPos;
+	float64 _eraseSpanWidth = 0.;
 	QRect _prevCaretRect;
 	QRect _targetCaretRect;
 	Ui::Animations::Simple _burstAnim;

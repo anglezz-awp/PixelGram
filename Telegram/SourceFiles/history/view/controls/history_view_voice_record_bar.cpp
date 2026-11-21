@@ -2274,16 +2274,12 @@ void VoiceRecordBar::init() {
 		if (_showAnimation.animating()) {
 			p.setOpacity(showAnimationRatio());
 		}
-		if (_backgroundRect) {
-			_backgroundRect->paint(p, rect());
-		} else {
-			PainterHighQualityEnabler hq(p);
-			p.setPen(Qt::NoPen);
-			p.setBrush(_st.bg);
-			const auto pillWidth = width() - _send->width() - 8;
-			const auto r = height() / 2.;
-			p.drawRoundedRect(0, 0, std::max(pillWidth, 60), height(), r, r);
-		}
+		PainterHighQualityEnabler hq(p);
+		p.setPen(Qt::NoPen);
+		p.setBrush(_st.bg);
+		const auto pillWidth = width() - _send->width() - 8;
+		const auto r = height() / 2.;
+		p.drawRoundedRect(0, 0, std::max(pillWidth, 60), height(), r, r);
 
 		p.setOpacity(std::min(p.opacity(), 1. - showListenAnimationRatio()));
 		const auto opacity = p.opacity();
@@ -2624,6 +2620,9 @@ void VoiceRecordBar::startRecording() {
 		startRedCircleAnimation();
 
 		_recording = true;
+		if (_level) {
+			_level->raise();
+		}
 		if (_send) {
 			_send->setRecording(true);
 		}

@@ -7,6 +7,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "mainwindow.h"
 
+#include "ui/pixelgram_fx.h"
+#include "settings/pixelgram_settings.h"
+
 #include "data/data_document.h"
 #include "data/data_session.h"
 #include "data/data_document_media.h"
@@ -111,6 +114,7 @@ MainWindow::MainWindow(not_null<Window::Controller*> controller)
 void MainWindow::initHook() {
 	Platform::MainWindow::initHook();
 	QCoreApplication::instance()->installEventFilter(this);
+	PixelGram::InitFxOverlays(bodyWidget());
 }
 
 void MainWindow::applyInitialWorkMode() {
@@ -680,6 +684,13 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e) {
 			}
 		}
 		_lastMousePosition = position;
+	} break;
+
+	case QEvent::MouseButtonPress: {
+		if (PixelGram::CurrentConfig().animTouRipples) {
+			const auto mouseEvent = static_cast<QMouseEvent*>(e);
+			PixelGram::TriggerAnimTouRipple(mouseEvent->globalPos());
+		}
 	} break;
 
 	case QEvent::MouseButtonRelease: {

@@ -178,7 +178,7 @@ void SendButton::finishAnimating() {
 }
 
 QRect SendButton::circleRect() const {
-	const auto side = std::min(width(), height()) - 10;
+	const auto side = std::min(width(), height()) - 12;
 	return QRect(
 		(width() - side) / 2,
 		(height() - side) / 2,
@@ -200,19 +200,14 @@ void SendButton::setRecording(bool recording) {
 		return;
 	}
 	_isRecording = recording;
-	if (_isRecording) {
-		_morphAnim.start([=] { update(); }, 0., 1., 220, anim::easeOutBack);
-		_spinAnim.init([=](crl::time now) {
-			update();
-			return _isRecording;
-		});
-		_spinAnim.start();
-	} else {
-		_morphAnim.start([=] { update(); }, _morphAnim.value(0.), 0., 180, anim::easeInCubic);
-	}
+	RippleButton::finishAnimating();
+	update();
 }
 
 void SendButton::paintCircleBg(QPainter &p, bool over) {
+	if (_isRecording) {
+		return;
+	}
 	auto circle = circleRect();
 	const auto &roles = PixelGram::CurrentM3Roles();
 	const auto &config = PixelGram::CurrentConfig();
@@ -222,11 +217,9 @@ void SendButton::paintCircleBg(QPainter &p, bool over) {
 	}
 
 	const auto morph = config.dynamicVoiceMorph ? _morphAnim.value(0.) : 0.;
-	const auto bg = (_isRecording || morph > 0.)
-		? roles.primary
-		: (_state.fillBgOverride.isValid()
-			? _state.fillBgOverride
-			: roles.primaryContainer);
+	const auto bg = (_state.fillBgOverride.isValid()
+		? _state.fillBgOverride
+		: roles.primaryContainer);
 
 	PainterHighQualityEnabler hq(p);
 	p.setPen(Qt::NoPen);
@@ -241,7 +234,7 @@ void SendButton::paintCircleBg(QPainter &p, bool over) {
 		QPainterPath path;
 		for (int i = 0; i <= steps; ++i) {
 			const auto angle = (i * 2.0 * 3.14159265358979323846 / steps) + angleOffset;
-			const auto r = rBase * (1.0 + morph * 0.18 * std::cos(8.0 * angle));
+			const auto r = rBase * (1.0 + morph * 0.15 * std::cos(8.0 * angle));
 			const auto x = center.x() + r * std::cos(angle);
 			const auto y = center.y() + r * std::sin(angle);
 			if (i == 0) {
@@ -256,14 +249,14 @@ void SendButton::paintCircleBg(QPainter &p, bool over) {
 		p.drawEllipse(circle);
 	}
 
-	if (over && !isDisabled()) {
+	if (over && !isDisabled() && morph <= 0.01) {
 		auto stateLayer = roles.onPrimaryContainer;
 		stateLayer.setAlpha(24);
 		p.setBrush(stateLayer);
 		p.drawEllipse(circle);
 	}
 
-	if (!isDisabled() && !_state.forbidden) {
+	if (!isDisabled() && !_state.forbidden && !_isRecording) {
 		auto rippleColor = roles.onPrimaryContainer;
 		rippleColor.setAlpha(32);
 		paintRipple(p, circle.topLeft(), &rippleColor);
@@ -271,6 +264,9 @@ void SendButton::paintCircleBg(QPainter &p, bool over) {
 }
 
 void SendButton::paintEvent(QPaintEvent *e) {
+	if (_isRecording) {
+		return;
+	}
 	auto p = QPainter(this);
 
 	auto over = (isDown() || isOver());
@@ -340,6 +336,14 @@ void SendButton::paintEvent(QPaintEvent *e) {
 		}
 		return;
 	}
+	const auto shouldScale = over && !isDisabled();
+	if (shouldScale) {
+		p.save();
+		const auto c = circleRect().center();
+		p.translate(c);
+		p.scale(1.08, 1.08);
+		p.translate(-c);
+	}
 	switch (_state.type) {
 	case Type::Record: paintRecord(p, over); break;
 	case Type::Round: paintRound(p, over); break;
@@ -356,6 +360,9 @@ void SendButton::paintEvent(QPaintEvent *e) {
 	case Type::Schedule: paintSchedule(p, over); break;
 	case Type::Slowmode: paintSlowmode(p); break;
 	case Type::EditPrice: break;
+	}
+	if (shouldScale) {
+		p.restore();
 	}
 }
 

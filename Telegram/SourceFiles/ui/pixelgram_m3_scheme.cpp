@@ -57,16 +57,16 @@ M3SchemeRoles GenerateM3SchemeFromSeed(
 		const bool isAchromatic = (sourceHct.get_chroma() < 8.0);
 
 		if (isDark) {
-			roles.surface = QColor(0, 0, 0);
+			roles.surface = QColor(0x0e, 0x0c, 0x12);
 			roles.surfaceDim = QColor(0, 0, 0);
 			roles.surfaceBright = QColor(0x18, 0x18, 0x18);
 			roles.surfaceContainerLowest = QColor(0, 0, 0);
 			roles.surfaceContainerLow = QColor(0x08, 0x08, 0x08);
-			roles.surfaceContainer = QColor(0x10, 0x10, 0x10);
-			roles.surfaceContainerHigh = QColor(0x18, 0x18, 0x18);
-			roles.surfaceContainerHighest = QColor(0x22, 0x22, 0x22);
-			roles.outline = QColor(0x38, 0x38, 0x38);
-			roles.outlineVariant = QColor(0x22, 0x22, 0x22);
+			roles.surfaceContainer = QColor(0x14, 0x12, 0x18);
+			roles.surfaceContainerHigh = QColor(0x1c, 0x1a, 0x22);
+			roles.surfaceContainerHighest = QColor(0x26, 0x24, 0x2e);
+			roles.outline = QColor(0x48, 0x44, 0x54);
+			roles.outlineVariant = QColor(0x32, 0x2e, 0x3c);
 			roles.shadow = QColor(0, 0, 0);
 			roles.scrim = QColor(0, 0, 0);
 			roles.inverseSurface = QColor(255, 255, 255);
@@ -285,7 +285,7 @@ static const MappingEntry kMappingTable[] = {
 	{ "windowActiveTextFg", &M3SchemeRoles::primary, 255 },
 	{ "windowShadowFg", &M3SchemeRoles::shadow, 100 },
 	{ "windowShadowFgFallback", &M3SchemeRoles::outlineVariant, 255 },
-	{ "shadowFg", &M3SchemeRoles::outlineVariant, 76 },
+	{ "shadowFg", &M3SchemeRoles::outlineVariant, 220 },
 	{ "slideFadeOutBg", &M3SchemeRoles::scrim, 60 },
 	{ "slideFadeOutShadowFg", &M3SchemeRoles::shadow, 100 },
 	{ "imageBg", &M3SchemeRoles::surfaceContainerLowest, 255 },
@@ -409,7 +409,7 @@ static const MappingEntry kMappingTable[] = {
 	{ "introCoverPlaneTop", &M3SchemeRoles::onPrimary, 255 },
 	{ "dialogsMenuIconFg", &M3SchemeRoles::onSurfaceVariant, 255 },
 	{ "dialogsMenuIconFgOver", &M3SchemeRoles::onSurface, 255 },
-	{ "dialogsBg", &M3SchemeRoles::surfaceContainerLow, 255 },
+	{ "dialogsBg", &M3SchemeRoles::surfaceContainerLowest, 255 },
 	{ "dialogsNameFg", &M3SchemeRoles::onSurface, 255 },
 	{ "dialogsChatIconFg", &M3SchemeRoles::onSurfaceVariant, 255 },
 	{ "dialogsDateFg", &M3SchemeRoles::onSurfaceVariant, 255 },
