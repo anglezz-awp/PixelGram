@@ -8498,8 +8498,6 @@ void HistoryWidget::updateControlsGeometry() {
 		: 0;
 	const auto innerWidth = width - tabsLeftSkip;
 
-	_voiceRecordBar->resizeToWidth(width);
-
 	moveFieldControls();
 
 	_topBars->move(tabsLeftSkip, _topBar->bottomNoMargins()

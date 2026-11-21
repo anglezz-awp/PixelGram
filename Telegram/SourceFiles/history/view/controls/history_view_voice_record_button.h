@@ -64,6 +64,8 @@ private:
 	float64 _colorProgress = 0.;
 	rpl::variable<Type> _state = Type::Record;
 
+	float _rotationAngle = 0.0f;
+
 	// This can animate for a very long time (like in music playing),
 	// so it should be a Basic, not a Simple animation.
 	Ui::Animations::Basic _animation;

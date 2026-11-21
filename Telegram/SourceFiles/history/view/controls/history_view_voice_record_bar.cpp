@@ -886,7 +886,9 @@ void ListenWrap::init() {
 			if (!_isShowAnimation) {
 				p.setOpacity(progress);
 			} else {
-				p.fillRect(bgRect, _st.bg);
+				p.setPen(Qt::NoPen);
+				p.setBrush(_st.bg);
+				p.drawRoundedRect(bgRect, radius, radius);
 			}
 			p.setPen(Qt::NoPen);
 			p.setBrush(anim::with_alpha(
@@ -2507,6 +2509,9 @@ void VoiceRecordBar::activeAnimate(bool active) {
 }
 
 void VoiceRecordBar::visibilityAnimate(bool show, Fn<void()> &&callback) {
+	if (show && _send) {
+		_send->setRecording(true);
+	}
 	if (_send->type() == Ui::SendButton::Type::Round) {
 		_level->setType(VoiceRecordButton::Type::Round);
 	} else {
@@ -2525,6 +2530,9 @@ void VoiceRecordBar::visibilityAnimate(bool show, Fn<void()> &&callback) {
 			updateTTLGeometry(TTLAnimationType::RightLeft, value);
 		}
 		if ((show && value == 1.) || (!show && value == 0.)) {
+			if (!show && _send) {
+				_send->setRecording(false);
+			}
 			if (callback) {
 				callback();
 			}
@@ -2858,12 +2866,18 @@ void VoiceRecordBar::finish() {
 	_sendActionUpdates.fire({ type, -1 });
 
 	_data = {};
+	if (_send) {
+		_send->setRecording(false);
+	}
 }
 
 void VoiceRecordBar::hideFast() {
 	hide();
 	_lock->hide();
 	_level->hide();
+	if (_send) {
+		_send->setRecording(false);
+	}
 	[[maybe_unused]] const auto s = takeTTLState();
 	_keyFilterInRecordingState = nullptr;
 }
@@ -2938,7 +2952,7 @@ Ui::RoundVideoResult VoiceRecordBar::mergeWithResumePrefix(
 }
 
 void VoiceRecordBar::stopRecording(StopType type, bool ttlBeforeHide) {
-	if (_send) {
+	if (_send && type != StopType::Listen) {
 		_send->setRecording(false);
 	}
 	PixelGram::PlayUiSound(PixelGram::UiSound::RecordStop);

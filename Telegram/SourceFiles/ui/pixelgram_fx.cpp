@@ -47,6 +47,16 @@ public:
 		update();
 	}
 
+	void addScrollBlur(int dy) {
+		const auto sign = (dy >= 0) ? 1.0f : -1.0f;
+		const auto mag = std::min(std::abs(dy) / 25.0f, 4.0f);
+		_motionBlurVelocity = std::clamp(_motionBlurVelocity + sign * mag, -6.0f, 6.0f);
+		_motionBlurDecay.start([=] {
+			update();
+		}, 1., 0., 320, anim::easeOutCirc);
+		update();
+	}
+
 protected:
 	void paintEvent(QPaintEvent *e) override {
 		_ripples.erase(
@@ -55,13 +65,59 @@ protected:
 			}),
 			_ripples.end());
 
-		if (_ripples.empty()) {
-			return;
-		}
-
 		auto p = QPainter(this);
 		PainterHighQualityEnabler hq(p);
 		const auto &roles = CurrentM3Roles();
+
+		// Motion Blur directional velocity wash
+		if (_motionBlurDecay.animating() && std::abs(_motionBlurVelocity) > 0.05f) {
+			const auto factor = float64(_motionBlurDecay.value(0.)) * (std::min(std::abs(_motionBlurVelocity), 5.0f) / 5.0f);
+			if (factor > 0.01) {
+				const auto isUp = (_motionBlurVelocity > 0);
+				const auto h = height();
+				const auto w = width();
+				const auto blurHeight = int(std::clamp(h * 0.20 * factor, 24.0, 180.0));
+
+				QLinearGradient grad(
+					0,
+					isUp ? (h - blurHeight) : 0,
+					0,
+					isUp ? h : blurHeight);
+
+				auto colLead = roles.primary;
+				colLead.setAlphaF(std::clamp(factor * 0.32, 0., 1.));
+				auto colMid = roles.secondary;
+				colMid.setAlphaF(std::clamp(factor * 0.16, 0., 1.));
+				auto colTail = colLead;
+				colTail.setAlphaF(0.0);
+
+				if (isUp) {
+					grad.setColorAt(0.0, colTail);
+					grad.setColorAt(0.5, colMid);
+					grad.setColorAt(1.0, colLead);
+					p.fillRect(0, h - blurHeight, w, blurHeight, grad);
+				} else {
+					grad.setColorAt(0.0, colLead);
+					grad.setColorAt(0.5, colMid);
+					grad.setColorAt(1.0, colTail);
+					p.fillRect(0, 0, w, blurHeight, grad);
+				}
+
+				const auto streakAlpha = std::clamp(factor * 0.14, 0., 1.);
+				QPen streakPen(roles.onSurfaceVariant);
+				streakPen.setWidthF(1.5);
+				p.setPen(streakPen);
+				p.setOpacity(streakAlpha);
+				for (int x = 60; x < w - 40; x += 160) {
+					p.drawLine(x, 0, x, h);
+				}
+				p.setOpacity(1.0);
+			}
+		}
+
+		if (_ripples.empty()) {
+			return;
+		}
 
 		for (const auto &ripple : _ripples) {
 			const auto progress = ripple->anim.value(1.);
@@ -117,6 +173,8 @@ private:
 	};
 
 	std::vector<std::shared_ptr<RippleData>> _ripples;
+	float _motionBlurVelocity = 0.0f;
+	Ui::Animations::Simple _motionBlurDecay;
 };
 
 AnimTouOverlay *GlobalAnimTou = nullptr;
@@ -137,6 +195,10 @@ void TriggerAnimTouRipple(const QPoint &globalPos) {
 }
 
 void TriggerScrollMotionBlur(int dy) {
+	if (GlobalAnimTou && CurrentConfig().motionBlurFx) {
+		GlobalAnimTou->addScrollBlur(dy);
+		GlobalAnimTou->raise();
+	}
 }
 
 } // namespace PixelGram

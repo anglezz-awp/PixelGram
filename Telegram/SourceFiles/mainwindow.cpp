@@ -697,6 +697,13 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e) {
 		hideMediaPreview();
 	} break;
 
+	case QEvent::Wheel: {
+		if (PixelGram::CurrentConfig().motionBlurFx) {
+			const auto wheel = static_cast<QWheelEvent*>(e);
+			PixelGram::TriggerScrollMotionBlur(wheel->angleDelta().y());
+		}
+	} break;
+
 	case QEvent::ApplicationActivate: {
 		if (object == QCoreApplication::instance()) {
 			InvokeQueued(this, [=] {

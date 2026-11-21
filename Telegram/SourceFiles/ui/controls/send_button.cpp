@@ -212,10 +212,6 @@ void SendButton::paintCircleBg(QPainter &p, bool over) {
 	const auto &roles = PixelGram::CurrentM3Roles();
 	const auto &config = PixelGram::CurrentConfig();
 
-	if (over && !isDisabled()) {
-		circle = circle.adjusted(-2, -2, 2, 2);
-	}
-
 	const auto morph = config.dynamicVoiceMorph ? _morphAnim.value(0.) : 0.;
 	const auto bg = (_state.fillBgOverride.isValid()
 		? _state.fillBgOverride
@@ -271,6 +267,15 @@ void SendButton::paintEvent(QPaintEvent *e) {
 
 	auto over = (isDown() || isOver());
 
+	const auto shouldScale = over && !isDisabled();
+	if (shouldScale) {
+		p.save();
+		const auto c = circleRect().center();
+		p.translate(c);
+		p.scale(1.06, 1.06);
+		p.translate(-c);
+	}
+
 	const auto drawsCircle = !_grabbingIconOnly
 		&& (_state.type != Type::Slowmode)
 		&& (_state.type != Type::EditPrice)
@@ -281,6 +286,9 @@ void SendButton::paintEvent(QPaintEvent *e) {
 
 	if (_voiceRoundAnimating) {
 		paintVoiceRoundIcon(p, over);
+		if (shouldScale) {
+			p.restore();
+		}
 		return;
 	}
 
@@ -334,15 +342,10 @@ void SendButton::paintEvent(QPaintEvent *e) {
 			p.drawPixmap(toRect, _contentTo);
 			p.restore();
 		}
+		if (shouldScale) {
+			p.restore();
+		}
 		return;
-	}
-	const auto shouldScale = over && !isDisabled();
-	if (shouldScale) {
-		p.save();
-		const auto c = circleRect().center();
-		p.translate(c);
-		p.scale(1.08, 1.08);
-		p.translate(-c);
 	}
 	switch (_state.type) {
 	case Type::Record: paintRecord(p, over); break;

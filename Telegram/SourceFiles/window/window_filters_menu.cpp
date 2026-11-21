@@ -433,7 +433,10 @@ void FiltersMenu::refresh() {
 	}
 	_reorder->start();
 
-	_container->resizeToWidth(_outer.width());
+	_container->resizeToWidth(_outer.width() - 1);
+	if (_divider) {
+		_divider->raise();
+	}
 
 	// After the filters are refreshed, the scroll is reset,
 	// so we have to restore it.

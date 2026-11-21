@@ -124,31 +124,27 @@ void VoiceRecordButton::init() {
 		p.setBrush(brush);
 
 		const auto &config = PixelGram::CurrentConfig();
-		const auto state = *currentState;
-		if (config.dynamicVoiceMorph) {
-			if (state != Type::Send && radius > 0.1) {
-				const auto now = crl::now();
-				const auto angleOffset = (now % 3600) * (2.0 * 3.14159265358979323846 / 2400.0);
-				const int steps = 64;
-				QPainterPath path;
-				for (int i = 0; i <= steps; ++i) {
-					const auto angle = (i * 2.0 * 3.14159265358979323846 / steps) + angleOffset;
-					const auto r = radius * (1.0 + 0.18 * std::cos(8.0 * angle));
-					const auto x = r * std::cos(angle);
-					const auto y = r * std::sin(angle);
-					if (i == 0) {
-						path.moveTo(x, y);
-					} else {
-						path.lineTo(x, y);
-					}
+		if (config.dynamicVoiceMorph && radius > 0.1) {
+			const auto angleOffset = _rotationAngle;
+			const int steps = 64;
+			QPainterPath path;
+			for (int i = 0; i <= steps; ++i) {
+				const auto angle = (i * 2.0 * 3.14159265358979323846 / steps) + angleOffset;
+				const auto r = radius * (1.0 + 0.18 * std::cos(8.0 * angle));
+				const auto x = r * std::cos(angle);
+				const auto y = r * std::sin(angle);
+				if (i == 0) {
+					path.moveTo(x, y);
+				} else {
+					path.lineTo(x, y);
 				}
-				path.closeSubpath();
-				p.fillPath(path, brush);
-			} else {
-				p.drawEllipse(QPointF(), radius, radius);
 			}
+			path.closeSubpath();
+			p.fillPath(path, brush);
 		} else {
-			_blobs->paint(p, brush, showProgress * hideProgress);
+			if (!config.dynamicVoiceMorph) {
+				_blobs->paint(p, brush, showProgress * hideProgress);
+			}
 			p.drawEllipse(QPointF(), radius, radius);
 		}
 
@@ -190,13 +186,24 @@ void VoiceRecordButton::init() {
 	}, lifetime());
 
 	_animation.init([=](crl::time now) {
+		const auto dt = (_lastUpdateTime > 0)
+			? std::min(now - _lastUpdateTime, crl::time(100))
+			: 16;
+		_lastUpdateTime = now;
+		_rotationAngle += dt * (2.0f * 3.14159265358979323846f / 2400.0f);
+		if (_rotationAngle > 2.0f * 3.14159265358979323846f) {
+			_rotationAngle -= 2.0f * 3.14159265358979323846f;
+		}
+
 		if (const auto &last = _blobsHideLastTime; (last > 0)
 			&& (now - last >= kBlobsScaleEnterDuration)) {
-			_animation.stop();
-			return false;
+			const auto &cfg = PixelGram::CurrentConfig();
+			if (!cfg.dynamicVoiceMorph) {
+				_animation.stop();
+				return false;
+			}
 		}
-		_blobs->updateLevel(now - _lastUpdateTime);
-		_lastUpdateTime = now;
+		_blobs->updateLevel(dt);
 		update();
 		return true;
 	});
@@ -293,6 +300,9 @@ bool VoiceRecordButton::inCircle(const QPoint &localPos) const {
 
 void VoiceRecordButton::requestPaintProgress(float64 progress) {
 	_showProgress = progress;
+	if (progress > 0. && !_animation.animating()) {
+		_animation.start();
+	}
 	update();
 }
 
@@ -306,6 +316,9 @@ void VoiceRecordButton::requestPaintColor(float64 progress) {
 
 void VoiceRecordButton::setType(Type state) {
 	_state = state;
+	if (!_animation.animating()) {
+		_animation.start();
+	}
 
 	setAccessibleName([&] {
 		switch (state) {

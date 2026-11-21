@@ -4810,7 +4810,7 @@ void Widget::paintEvent(QPaintEvent *e) {
 		_childListShown.current());
 	auto above = QRect(0, 0, width(), _scroll->y());
 	if (above.intersects(r)) {
-		p.fillRect(above.intersected(r), st::topBarBg);
+		p.fillRect(above.intersected(r), bg);
 	}
 
 	auto belowTop = _scroll->y() + _scroll->height();

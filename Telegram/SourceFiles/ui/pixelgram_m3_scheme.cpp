@@ -57,16 +57,16 @@ M3SchemeRoles GenerateM3SchemeFromSeed(
 		const bool isAchromatic = (sourceHct.get_chroma() < 8.0);
 
 		if (isDark) {
-			roles.surface = QColor(0x0e, 0x0c, 0x12);
+			roles.surface = QColor(0, 0, 0);
 			roles.surfaceDim = QColor(0, 0, 0);
 			roles.surfaceBright = QColor(0x18, 0x18, 0x18);
 			roles.surfaceContainerLowest = QColor(0, 0, 0);
 			roles.surfaceContainerLow = QColor(0x08, 0x08, 0x08);
-			roles.surfaceContainer = QColor(0x14, 0x12, 0x18);
-			roles.surfaceContainerHigh = QColor(0x1c, 0x1a, 0x22);
-			roles.surfaceContainerHighest = QColor(0x26, 0x24, 0x2e);
-			roles.outline = QColor(0x48, 0x44, 0x54);
-			roles.outlineVariant = QColor(0x32, 0x2e, 0x3c);
+			roles.surfaceContainer = QColor(0x10, 0x10, 0x10);
+			roles.surfaceContainerHigh = QColor(0x18, 0x18, 0x18);
+			roles.surfaceContainerHighest = QColor(0x22, 0x22, 0x22);
+			roles.outline = QColor(0x38, 0x38, 0x38);
+			roles.outlineVariant = QColor(0x22, 0x22, 0x22);
 			roles.shadow = QColor(0, 0, 0);
 			roles.scrim = QColor(0, 0, 0);
 			roles.inverseSurface = QColor(255, 255, 255);
@@ -409,7 +409,7 @@ static const MappingEntry kMappingTable[] = {
 	{ "introCoverPlaneTop", &M3SchemeRoles::onPrimary, 255 },
 	{ "dialogsMenuIconFg", &M3SchemeRoles::onSurfaceVariant, 255 },
 	{ "dialogsMenuIconFgOver", &M3SchemeRoles::onSurface, 255 },
-	{ "dialogsBg", &M3SchemeRoles::surfaceContainerLowest, 255 },
+	{ "dialogsBg", &M3SchemeRoles::surface, 255 },
 	{ "dialogsNameFg", &M3SchemeRoles::onSurface, 255 },
 	{ "dialogsChatIconFg", &M3SchemeRoles::onSurfaceVariant, 255 },
 	{ "dialogsDateFg", &M3SchemeRoles::onSurfaceVariant, 255 },
@@ -466,7 +466,7 @@ static const MappingEntry kMappingTable[] = {
 	{ "searchedTextMatchFg", &M3SchemeRoles::onTertiaryContainer, 255 },
 	{ "searchedTextCurrentMatchBg", &M3SchemeRoles::primary, 255 },
 	{ "searchedTextCurrentMatchFg", &M3SchemeRoles::onPrimary, 255 },
-	{ "topBarBg", &M3SchemeRoles::surfaceContainer, 255 },
+	{ "topBarBg", &M3SchemeRoles::surface, 255 },
 	{ "emojiPanBg", &M3SchemeRoles::surfaceContainer, 255 },
 	{ "emojiPanCategories", &M3SchemeRoles::surfaceContainer, 255 },
 	{ "emojiPanHeaderFg", &M3SchemeRoles::onSurfaceVariant, 255 },
@@ -812,7 +812,7 @@ static const MappingEntry kMappingTable[] = {
 	{ "walletTopLabelFg", &M3SchemeRoles::onSurfaceVariant, 255 },
 	{ "walletTopIconFg", &M3SchemeRoles::primary, 255 },
 	{ "walletTopIconRipple", &M3SchemeRoles::onSurface, 18 },
-	{ "sideBarBg", &M3SchemeRoles::surfaceContainer, 255 },
+	{ "sideBarBg", &M3SchemeRoles::surface, 255 },
 	{ "sideBarBgActive", &M3SchemeRoles::secondaryContainer, 255 },
 	{ "sideBarBgRipple", &M3SchemeRoles::onSurface, 30 },
 	{ "sideBarTextFg", &M3SchemeRoles::onSurfaceVariant, 255 },
