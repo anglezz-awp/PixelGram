@@ -52,6 +52,7 @@ enum class M3Variant : int {
 	Rainbow = 6,
 	Fidelity = 7,
 	Content = 8,
+	OLED = 9,
 };
 
 struct Config {

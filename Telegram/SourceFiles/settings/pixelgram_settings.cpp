@@ -441,6 +441,7 @@ QString M3VariantToString(int variant) {
 	case 6: return QString::fromLatin1("rainbow");
 	case 7: return QString::fromLatin1("fidelity");
 	case 8: return QString::fromLatin1("content");
+	case 9: return QString::fromLatin1("oled");
 	case 0:
 	default: return QString::fromLatin1("tonal_spot");
 	}
@@ -456,6 +457,7 @@ int M3VariantFromString(const QString &str) {
 	if (s == "rainbow") return 6;
 	if (s == "fidelity") return 7;
 	if (s == "content") return 8;
+	if (s == "oled" || s == "amoled") return 9;
 	return 0; // tonal_spot
 }
 
@@ -470,6 +472,7 @@ QString M3VariantTitle(int variant, bool isRu) {
 	case 6: return u"Rainbow"_q;
 	case 7: return u"Fidelity"_q;
 	case 8: return u"Content"_q;
+	case 9: return u"OLED (AMOLED)"_q;
 	default: return u"Tonal Spot"_q;
 	}
 }

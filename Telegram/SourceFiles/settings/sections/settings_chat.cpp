@@ -432,11 +432,11 @@ M3VariantsWidget::M3VariantsWidget(QWidget *parent)
 }
 
 int M3VariantsWidget::resizeGetHeight(int newWidth) {
-	const auto itemHeight = 58;
+	const auto itemHeight = 50;
 	const auto rowGap = 8;
 	const auto topMargin = 4;
 	const auto bottomMargin = 8;
-	return topMargin + 3 * itemHeight + 2 * rowGap + bottomMargin;
+	return topMargin + 5 * itemHeight + 4 * rowGap + bottomMargin;
 }
 
 int M3VariantsWidget::indexAt(QPoint pos) const {
@@ -446,23 +446,23 @@ int M3VariantsWidget::indexAt(QPoint pos) const {
 	const auto w = width() - padding.left() - padding.right();
 	const auto colGap = 8;
 	const auto rowGap = 8;
-	const auto colWidth = (w - 2 * colGap) / 3;
-	const auto itemHeight = 58;
+	const auto colWidth = (w - colGap) / 2;
+	const auto itemHeight = 50;
 
-	if (pos.x() < x0 || pos.x() >= x0 + 3 * colWidth + 2 * colGap) {
+	if (pos.x() < x0 || pos.x() >= x0 + 2 * colWidth + colGap) {
 		return -1;
 	}
-	if (pos.y() < y0 || pos.y() >= y0 + 3 * itemHeight + 2 * rowGap) {
+	if (pos.y() < y0 || pos.y() >= y0 + 5 * itemHeight + 4 * rowGap) {
 		return -1;
 	}
 
-	for (int row = 0; row < 3; ++row) {
+	for (int row = 0; row < 5; ++row) {
 		const auto itemY = y0 + row * (itemHeight + rowGap);
 		if (pos.y() >= itemY && pos.y() < itemY + itemHeight) {
-			for (int col = 0; col < 3; ++col) {
+			for (int col = 0; col < 2; ++col) {
 				const auto itemX = x0 + col * (colWidth + colGap);
 				if (pos.x() >= itemX && pos.x() < itemX + colWidth) {
-					return row * 3 + col;
+					return row * 2 + col;
 				}
 			}
 		}
@@ -476,7 +476,7 @@ void M3VariantsWidget::mouseMoveEvent(QMouseEvent *e) {
 		_hoveredIndex = newIndex;
 		update();
 	}
-	setCursor((_hoveredIndex >= 0 && _hoveredIndex < 9)
+	setCursor((_hoveredIndex >= 0 && _hoveredIndex < 10)
 		? Qt::PointingHandCursor
 		: Qt::ArrowCursor);
 }
@@ -494,7 +494,7 @@ void M3VariantsWidget::mousePressEvent(QMouseEvent *e) {
 		return;
 	}
 	const auto index = indexAt(e->pos());
-	if (index < 0 || index >= 9) {
+	if (index < 0 || index >= 10) {
 		return;
 	}
 	auto &cfg = PixelGram::CurrentConfig();
@@ -519,8 +519,8 @@ void M3VariantsWidget::paintEvent(QPaintEvent *e) {
 	const auto w = width() - padding.left() - padding.right();
 	const auto colGap = 8;
 	const auto rowGap = 8;
-	const auto colWidth = (w - 2 * colGap) / 3;
-	const auto itemHeight = 58;
+	const auto colWidth = (w - colGap) / 2;
+	const auto itemHeight = 50;
 
 	const auto currentVariant = PixelGram::CurrentConfig().m3ColorSchemeVariant;
 	const auto seed = PixelGram::GetM3SeedColor();
@@ -528,9 +528,9 @@ void M3VariantsWidget::paintEvent(QPaintEvent *e) {
 	const auto isRu = Core::App().langpack().id().startsWith(u"ru"_q);
 	const auto &roles = PixelGram::CurrentM3Roles();
 
-	for (int i = 0; i < 9; ++i) {
-		const auto col = i % 3;
-		const auto row = i / 3;
+	for (int i = 0; i < 10; ++i) {
+		const auto col = i % 2;
+		const auto row = i / 2;
 		const auto x = x0 + col * (colWidth + colGap);
 		const auto y = y0 + row * (itemHeight + rowGap);
 		const QRect r(x, y, colWidth, itemHeight);
@@ -573,18 +573,24 @@ void M3VariantsWidget::paintEvent(QPaintEvent *e) {
 			i,
 			PixelGram::CurrentConfig().m3ContrastLevel);
 
-		const QColor dots[4] = {
-			vRoles.primary,
-			vRoles.secondary,
-			vRoles.tertiary,
-			vRoles.primaryContainer,
-		};
+		QColor dots[4];
+		if (i == 9) { // OLED preview: Black, White, Accent, Container
+			dots[0] = QColor(0, 0, 0);
+			dots[1] = QColor(255, 255, 255);
+			dots[2] = vRoles.primary;
+			dots[3] = vRoles.primaryContainer;
+		} else {
+			dots[0] = vRoles.primary;
+			dots[1] = vRoles.secondary;
+			dots[2] = vRoles.tertiary;
+			dots[3] = vRoles.primaryContainer;
+		}
 
 		const auto dotSize = 11;
 		const auto dotGap = 4;
 		const auto totalDotsW = 4 * dotSize + 3 * dotGap;
 		const auto dotsStartX = r.left() + (r.width() - totalDotsW) / 2;
-		const auto dotsY = r.top() + 10;
+		const auto dotsY = r.top() + 8;
 
 		p.setPen(Qt::NoPen);
 		for (int d = 0; d < 4; ++d) {
@@ -604,7 +610,7 @@ void M3VariantsWidget::paintEvent(QPaintEvent *e) {
 		p.setFont(font);
 
 		p.setPen(isSelected ? roles.onSecondaryContainer : roles.onSurfaceVariant);
-		const auto textRect = QRect(r.left() + 4, r.top() + 28, r.width() - 8, r.height() - 32);
+		const auto textRect = QRect(r.left() + 4, r.top() + 24, r.width() - 8, r.height() - 28);
 		const auto elided = p.fontMetrics().elidedText(title, Qt::ElideRight, textRect.width());
 		p.drawText(textRect, Qt::AlignCenter, elided);
 	}

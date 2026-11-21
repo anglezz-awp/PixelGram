@@ -52,6 +52,126 @@ M3SchemeRoles GenerateM3SchemeFromSeed(
 	const auto argb = QColorToArgb(seed);
 	Hct sourceHct(argb);
 
+	if (variant == 9) { // OLED (AMOLED)
+		M3SchemeRoles roles;
+		const bool isAchromatic = (sourceHct.get_chroma() < 8.0);
+
+		if (isDark) {
+			roles.surface = QColor(0, 0, 0);
+			roles.surfaceDim = QColor(0, 0, 0);
+			roles.surfaceBright = QColor(0x18, 0x18, 0x18);
+			roles.surfaceContainerLowest = QColor(0, 0, 0);
+			roles.surfaceContainerLow = QColor(0x08, 0x08, 0x08);
+			roles.surfaceContainer = QColor(0x10, 0x10, 0x10);
+			roles.surfaceContainerHigh = QColor(0x18, 0x18, 0x18);
+			roles.surfaceContainerHighest = QColor(0x22, 0x22, 0x22);
+			roles.outline = QColor(0x38, 0x38, 0x38);
+			roles.outlineVariant = QColor(0x22, 0x22, 0x22);
+			roles.shadow = QColor(0, 0, 0);
+			roles.scrim = QColor(0, 0, 0);
+			roles.inverseSurface = QColor(255, 255, 255);
+			roles.inverseOnSurface = QColor(0, 0, 0);
+
+			roles.onSurface = QColor(255, 255, 255);
+			roles.onSurfaceVariant = QColor(0xC4, 0xC4, 0xC4);
+			roles.fixedWhite = QColor(255, 255, 255);
+			roles.fixedBlack = QColor(0, 0, 0);
+
+			roles.error = QColor(0xFF, 0x54, 0x49);
+			roles.onError = QColor(0x69, 0x00, 0x05);
+			roles.errorContainer = QColor(0x93, 0x00, 0x0A);
+			roles.onErrorContainer = QColor(0xFF, 0xDA, 0xD6);
+
+			if (isAchromatic) {
+				roles.primary = QColor(255, 255, 255);
+				roles.onPrimary = QColor(0, 0, 0);
+				roles.primaryContainer = QColor(0x24, 0x24, 0x24);
+				roles.onPrimaryContainer = QColor(255, 255, 255);
+				roles.secondary = QColor(0xE0, 0xE0, 0xE0);
+				roles.onSecondary = QColor(0, 0, 0);
+				roles.secondaryContainer = QColor(0x1C, 0x1C, 0x1C);
+				roles.onSecondaryContainer = QColor(255, 255, 255);
+				roles.tertiary = QColor(0xC0, 0xC0, 0xC0);
+				roles.onTertiary = QColor(0, 0, 0);
+				roles.tertiaryContainer = QColor(0x16, 0x16, 0x16);
+				roles.onTertiaryContainer = QColor(255, 255, 255);
+				roles.inversePrimary = QColor(0, 0, 0);
+			} else {
+				SchemeVibrant baseScheme(sourceHct, true, contrast);
+				roles.primary = ArgbToQColor(MaterialDynamicColors::Primary().GetArgb(baseScheme));
+				roles.onPrimary = ArgbToQColor(MaterialDynamicColors::OnPrimary().GetArgb(baseScheme));
+				roles.primaryContainer = ArgbToQColor(MaterialDynamicColors::PrimaryContainer().GetArgb(baseScheme));
+				roles.onPrimaryContainer = ArgbToQColor(MaterialDynamicColors::OnPrimaryContainer().GetArgb(baseScheme));
+				roles.secondary = ArgbToQColor(MaterialDynamicColors::Secondary().GetArgb(baseScheme));
+				roles.onSecondary = ArgbToQColor(MaterialDynamicColors::OnSecondary().GetArgb(baseScheme));
+				roles.secondaryContainer = ArgbToQColor(MaterialDynamicColors::SecondaryContainer().GetArgb(baseScheme));
+				roles.onSecondaryContainer = ArgbToQColor(MaterialDynamicColors::OnSecondaryContainer().GetArgb(baseScheme));
+				roles.tertiary = ArgbToQColor(MaterialDynamicColors::Tertiary().GetArgb(baseScheme));
+				roles.onTertiary = ArgbToQColor(MaterialDynamicColors::OnTertiary().GetArgb(baseScheme));
+				roles.tertiaryContainer = ArgbToQColor(MaterialDynamicColors::TertiaryContainer().GetArgb(baseScheme));
+				roles.onTertiaryContainer = ArgbToQColor(MaterialDynamicColors::OnTertiaryContainer().GetArgb(baseScheme));
+				roles.inversePrimary = ArgbToQColor(MaterialDynamicColors::InversePrimary().GetArgb(baseScheme));
+			}
+		} else {
+			roles.surface = QColor(255, 255, 255);
+			roles.surfaceDim = QColor(0xF5, 0xF5, 0xF5);
+			roles.surfaceBright = QColor(255, 255, 255);
+			roles.surfaceContainerLowest = QColor(255, 255, 255);
+			roles.surfaceContainerLow = QColor(0xFA, 0xFA, 0xFA);
+			roles.surfaceContainer = QColor(0xF0, 0xF0, 0xF0);
+			roles.surfaceContainerHigh = QColor(0xE8, 0xE8, 0xE8);
+			roles.surfaceContainerHighest = QColor(0xDE, 0xDE, 0xDE);
+			roles.outline = QColor(0x60, 0x60, 0x60);
+			roles.outlineVariant = QColor(0xD0, 0xD0, 0xD0);
+			roles.shadow = QColor(0, 0, 0);
+			roles.scrim = QColor(0, 0, 0);
+			roles.inverseSurface = QColor(0, 0, 0);
+			roles.inverseOnSurface = QColor(255, 255, 255);
+
+			roles.onSurface = QColor(0, 0, 0);
+			roles.onSurfaceVariant = QColor(0x38, 0x38, 0x38);
+			roles.fixedWhite = QColor(255, 255, 255);
+			roles.fixedBlack = QColor(0, 0, 0);
+
+			roles.error = QColor(0xBA, 0x1A, 0x1A);
+			roles.onError = QColor(255, 255, 255);
+			roles.errorContainer = QColor(0xFF, 0xDA, 0xD6);
+			roles.onErrorContainer = QColor(0x41, 0x00, 0x02);
+
+			if (isAchromatic) {
+				roles.primary = QColor(0, 0, 0);
+				roles.onPrimary = QColor(255, 255, 255);
+				roles.primaryContainer = QColor(0xE0, 0xE0, 0xE0);
+				roles.onPrimaryContainer = QColor(0, 0, 0);
+				roles.secondary = QColor(0x2B, 0x2B, 0x2B);
+				roles.onSecondary = QColor(255, 255, 255);
+				roles.secondaryContainer = QColor(0xEB, 0xEB, 0xEB);
+				roles.onSecondaryContainer = QColor(0, 0, 0);
+				roles.tertiary = QColor(0x44, 0x44, 0x44);
+				roles.onTertiary = QColor(255, 255, 255);
+				roles.tertiaryContainer = QColor(0xF0, 0xF0, 0xF0);
+				roles.onTertiaryContainer = QColor(0, 0, 0);
+				roles.inversePrimary = QColor(255, 255, 255);
+			} else {
+				SchemeVibrant baseScheme(sourceHct, false, contrast);
+				roles.primary = ArgbToQColor(MaterialDynamicColors::Primary().GetArgb(baseScheme));
+				roles.onPrimary = ArgbToQColor(MaterialDynamicColors::OnPrimary().GetArgb(baseScheme));
+				roles.primaryContainer = ArgbToQColor(MaterialDynamicColors::PrimaryContainer().GetArgb(baseScheme));
+				roles.onPrimaryContainer = ArgbToQColor(MaterialDynamicColors::OnPrimaryContainer().GetArgb(baseScheme));
+				roles.secondary = ArgbToQColor(MaterialDynamicColors::Secondary().GetArgb(baseScheme));
+				roles.onSecondary = ArgbToQColor(MaterialDynamicColors::OnSecondary().GetArgb(baseScheme));
+				roles.secondaryContainer = ArgbToQColor(MaterialDynamicColors::SecondaryContainer().GetArgb(baseScheme));
+				roles.onSecondaryContainer = ArgbToQColor(MaterialDynamicColors::OnSecondaryContainer().GetArgb(baseScheme));
+				roles.tertiary = ArgbToQColor(MaterialDynamicColors::Tertiary().GetArgb(baseScheme));
+				roles.onTertiary = ArgbToQColor(MaterialDynamicColors::OnTertiary().GetArgb(baseScheme));
+				roles.tertiaryContainer = ArgbToQColor(MaterialDynamicColors::TertiaryContainer().GetArgb(baseScheme));
+				roles.onTertiaryContainer = ArgbToQColor(MaterialDynamicColors::OnTertiaryContainer().GetArgb(baseScheme));
+				roles.inversePrimary = ArgbToQColor(MaterialDynamicColors::InversePrimary().GetArgb(baseScheme));
+			}
+		}
+		return roles;
+	}
+
 	std::unique_ptr<DynamicScheme> scheme;
 	switch (variant) {
 	case 1:
