@@ -69,6 +69,13 @@ cmake --build out --target Telegram --config Release -- /p:PreferredToolArchitec
 
 ---
 
+## 👥 Authors & Contributors
+
+* **[anglezz](https://github.com/anglezz-awp)** — Creator & Lead Maintainer of PixelGram.
+* **[Antigravity](https://github.com/google-deepmind)** (Google DeepMind Team) — AI Architecture & Engineering Collaborator.
+
+---
+
 ## ❤️ Credits & Acknowledgements
 
 PixelGram is made possible thanks to the following open-source projects:
