@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/controls/history_view_voice_record_button.h"
 
 #include "lottie/lottie_icon.h"
+#include "settings/pixelgram_settings.h"
 #include "ui/paint/blobs.h"
 #include "ui/painter.h"
 #include "styles/style_chat_helpers.h"
@@ -123,7 +124,30 @@ void VoiceRecordButton::init() {
 
 		p.setPen(Qt::NoPen);
 		p.setBrush(brush);
-		p.drawEllipse(QPointF(), radius, radius);
+
+		const auto &config = PixelGram::CurrentConfig();
+		const auto state = *currentState;
+		if (config.dynamicVoiceMorph && state != Type::Send && radius > 0.1) {
+			const auto now = crl::now();
+			const auto angleOffset = (now % 3600) * (2.0 * 3.14159265358979323846 / 2400.0);
+			const int steps = 64;
+			QPainterPath path;
+			for (int i = 0; i <= steps; ++i) {
+				const auto angle = (i * 2.0 * 3.14159265358979323846 / steps) + angleOffset;
+				const auto r = radius * (1.0 + 0.16 * std::cos(8.0 * angle));
+				const auto x = r * std::cos(angle);
+				const auto y = r * std::sin(angle);
+				if (i == 0) {
+					path.moveTo(x, y);
+				} else {
+					path.lineTo(x, y);
+				}
+			}
+			path.closeSubpath();
+			p.fillPath(path, brush);
+		} else {
+			p.drawEllipse(QPointF(), radius, radius);
+		}
 
 		if (!complete) {
 			p.setOpacity(showProgress);

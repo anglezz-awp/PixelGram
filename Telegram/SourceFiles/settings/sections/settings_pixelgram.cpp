@@ -658,6 +658,21 @@ private:
 			SaveConfig();
 		});
 
+		AddToggle(content, rpl::single(u"Анимация набора и стирания текста (Fluid Typing & Erase)"_q), cfg.typingAnimation, [](bool val) {
+			CurrentConfig().typingAnimation = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Анимированные касания (AnimTou - Fluid Touch Ripples)"_q), cfg.animTouRipples, [](bool val) {
+			CurrentConfig().animTouRipples = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Размытие в движении (Motion Blur FX - Scroll Blur)"_q), cfg.motionBlurFx, [](bool val) {
+			CurrentConfig().motionBlurFx = val;
+			SaveConfig();
+		});
+
 		Ui::AddSkip(content, 16);
 		Ui::ResizeFitChild(this, content);
 	}

@@ -372,6 +372,9 @@ void SaveConfig() {
 	root["showGiftButton"] = cfg.showGiftButton;
 	root["uiSounds"] = cfg.uiSounds;
 	root["dynamicVoiceMorph"] = cfg.dynamicVoiceMorph;
+	root["typingAnimation"] = cfg.typingAnimation;
+	root["animTouRipples"] = cfg.animTouRipples;
+	root["motionBlurFx"] = cfg.motionBlurFx;
 	root["openAttachOnHover"] = cfg.openAttachOnHover;
 	root["openEmojiOnHover"] = cfg.openEmojiOnHover;
 
@@ -570,6 +573,9 @@ void LoadConfig() {
 	if (root.contains("showGiftButton")) cfg.showGiftButton = root["showGiftButton"].toBool();
 	if (root.contains("uiSounds")) cfg.uiSounds = root["uiSounds"].toBool();
 	if (root.contains("dynamicVoiceMorph")) cfg.dynamicVoiceMorph = root["dynamicVoiceMorph"].toBool();
+	if (root.contains("typingAnimation")) cfg.typingAnimation = root["typingAnimation"].toBool();
+	if (root.contains("animTouRipples")) cfg.animTouRipples = root["animTouRipples"].toBool();
+	if (root.contains("motionBlurFx")) cfg.motionBlurFx = root["motionBlurFx"].toBool();
 	if (root.contains("openAttachOnHover")) cfg.openAttachOnHover = root["openAttachOnHover"].toBool();
 	if (root.contains("openEmojiOnHover")) cfg.openEmojiOnHover = root["openEmojiOnHover"].toBool();
 

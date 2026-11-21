@@ -7,6 +7,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "chat_helpers/message_field.h"
 
+#include "settings/pixelgram_settings.h"
+#include "ui/pixelgram_m3_scheme.h"
+#include "ui/painter.h"
+#include <QtWidgets/QTextEdit>
+
 #include "history/history_widget.h"
 #include "history/history.h" // History::session
 #include "history/history_item.h" // HistoryItem::originalText
@@ -711,6 +716,131 @@ void InitMessageFieldGeometry(not_null<Ui::InputField*> field) {
 	field->setAdditionalMargin(style::ConvertScale(4) - 4);
 }
 
+namespace {
+
+class TypingFeedbackOverlay final : public Ui::RpWidget {
+public:
+	TypingFeedbackOverlay(not_null<QWidget*> parent, not_null<Ui::InputField*> field)
+	: RpWidget(parent)
+	, _field(field) {
+		setAttribute(Qt::WA_TransparentForMouseEvents);
+		setAttribute(Qt::WA_NoSystemBackground);
+		resize(parent->size());
+		show();
+
+		base::install_event_filter(this, parent, [=](not_null<QEvent*> e) {
+			if (e->type() == QEvent::Resize) {
+				resize(parent->size());
+			}
+			return base::EventFilterResult::Continue;
+		});
+
+		const auto textEdit = _field->rawTextEdit();
+		_lastLen = _field->getTextWithTags().text.length();
+
+		_field->changes(
+		) | rpl::on_next([=] {
+			const auto &cfg = PixelGram::CurrentConfig();
+			if (!cfg.typingAnimation) {
+				return;
+			}
+			const auto curLen = _field->getTextWithTags().text.length();
+			const auto curRect = textEdit->cursorRect();
+			if (curLen > _lastLen) {
+				_burstType = BurstType::Typing;
+				_burstPos = curRect.center();
+				_burstAnim.start([=] { update(); }, 0., 1., 180, anim::easeOutCubic);
+			} else if (curLen < _lastLen) {
+				_burstType = BurstType::Erase;
+				_burstPos = curRect.center();
+				_burstAnim.start([=] { update(); }, 0., 1., 150, anim::easeOutCubic);
+			}
+			_lastLen = curLen;
+		}, lifetime());
+
+		QObject::connect(textEdit, &QTextEdit::cursorPositionChanged, this, [=] {
+			const auto &cfg = PixelGram::CurrentConfig();
+			if (!cfg.typingAnimation) {
+				return;
+			}
+			const auto target = textEdit->cursorRect();
+			if (_targetCaretRect != target) {
+				_prevCaretRect = _targetCaretRect.isValid() ? _targetCaretRect : target;
+				_targetCaretRect = target;
+				_caretAnim.start([=] { update(); }, 0., 1., 90, anim::easeOutCubic);
+			}
+		});
+	}
+
+protected:
+	void paintEvent(QPaintEvent *e) override {
+		const auto &cfg = PixelGram::CurrentConfig();
+		if (!cfg.typingAnimation) {
+			return;
+		}
+
+		auto p = QPainter(this);
+		PainterHighQualityEnabler hq(p);
+		const auto &roles = PixelGram::CurrentM3Roles();
+
+		// Paint burst ripple
+		if (_burstAnim.animating()) {
+			const auto progress = _burstAnim.value(1.);
+			p.setPen(Qt::NoPen);
+			if (_burstType == BurstType::Typing) {
+				auto color = roles.primary;
+				color.setAlphaF(std::clamp((1. - progress) * 0.45, 0., 1.));
+				p.setBrush(color);
+				const auto r = 4. + 16. * progress;
+				p.drawEllipse(QPointF(_burstPos), r, r);
+			} else {
+				auto color = roles.error;
+				color.setAlphaF(std::clamp((1. - progress) * 0.35, 0., 1.));
+				p.setBrush(color);
+				const auto r = 14. * (1. - 0.4 * progress);
+				p.drawEllipse(QPointF(_burstPos), r, r);
+			}
+		}
+
+		// Paint smooth floating caret
+		if (_targetCaretRect.isValid() && _field->rawTextEdit()->hasFocus()) {
+			const auto t = _caretAnim.value(1.);
+			const auto x = anim::interpolate(_prevCaretRect.x(), _targetCaretRect.x(), t);
+			const auto y = anim::interpolate(_prevCaretRect.y(), _targetCaretRect.y(), t);
+			const auto h = anim::interpolate(_prevCaretRect.height(), _targetCaretRect.height(), t);
+			const auto w = std::max(2, _targetCaretRect.width());
+			const auto caret = QRectF(x, y, w, h);
+
+			auto caretColor = roles.primary;
+			caretColor.setAlpha(220);
+			p.setPen(Qt::NoPen);
+			p.setBrush(caretColor);
+			p.drawRoundedRect(caret, w / 2., w / 2.);
+		}
+	}
+
+private:
+	enum class BurstType {
+		Typing,
+		Erase,
+	};
+
+	const not_null<Ui::InputField*> _field;
+	int _lastLen = 0;
+	BurstType _burstType = BurstType::Typing;
+	QPoint _burstPos;
+	QRect _prevCaretRect;
+	QRect _targetCaretRect;
+	Ui::Animations::Simple _burstAnim;
+	Ui::Animations::Simple _caretAnim;
+};
+
+void InitMessageFieldTypingAnimation(not_null<Ui::InputField*> field) {
+	Ui::CreateChild<TypingFeedbackOverlay>(field->rawTextEdit()->viewport(), field);
+}
+
+} // namespace
+
 std::shared_ptr<Ui::ChatStyle> InitMessageField(
 		std::shared_ptr<ChatHelpers::Show> show,
 		not_null<Ui::InputField*> field,
@@ -725,6 +855,7 @@ std::shared_ptr<Ui::ChatStyle> InitMessageField(
 		.allowPremiumEmoji = std::move(allowPremiumEmoji),
 	});
 	InitMessageFieldGeometry(field);
+	InitMessageFieldTypingAnimation(field);
 	return style;
 }
 

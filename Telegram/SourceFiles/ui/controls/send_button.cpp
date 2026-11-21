@@ -178,7 +178,7 @@ void SendButton::finishAnimating() {
 }
 
 QRect SendButton::circleRect() const {
-	const auto side = std::min(width(), height());
+	const auto side = std::min(width(), height()) - 10;
 	return QRect(
 		(width() - side) / 2,
 		(height() - side) / 2,

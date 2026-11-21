@@ -138,10 +138,15 @@ void FiltersMenu::setup() {
 		p.setPen(Qt::NoPen);
 		p.setBrush(st::windowFiltersButton.textBg);
 		p.drawRect(clip);
-
-		p.setPen(st::windowShadowFgFallback->c);
-		p.drawLine(_outer.width() - 1, 0, _outer.width() - 1, _outer.height());
 	}, _outer.lifetime());
+
+	_divider = base::make_unique_q<Ui::RpWidget>(&_outer);
+	_divider->paintRequest(
+	) | rpl::on_next([=] {
+		auto p = QPainter(_divider.get());
+		p.fillRect(_divider->rect(), st::windowShadowFgFallback->c);
+	}, _divider->lifetime());
+	_divider->show();
 
 	_parent->heightValue(
 	) | rpl::on_next([=](int height) {
@@ -153,6 +158,10 @@ void FiltersMenu::setup() {
 			{ 0, _menu.height(), width, height - _menu.height() });
 		_container->resizeToWidth(width);
 		_container->move(0, 0);
+		if (_divider) {
+			_divider->setGeometry(width - 1, 0, 1, height);
+			_divider->raise();
+		}
 	}, _outer.lifetime());
 
 	auto premium = Data::AmPremiumValue(&_session->session());

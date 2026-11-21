@@ -2277,7 +2277,12 @@ void VoiceRecordBar::init() {
 		if (_backgroundRect) {
 			_backgroundRect->paint(p, rect());
 		} else {
-			p.fillRect(clip, _st.bg);
+			PainterHighQualityEnabler hq(p);
+			p.setPen(Qt::NoPen);
+			p.setBrush(_st.bg);
+			const auto pillWidth = width() - _send->width() - 8;
+			const auto r = height() / 2.;
+			p.drawRoundedRect(0, 0, std::max(pillWidth, 60), height(), r, r);
 		}
 
 		p.setOpacity(std::min(p.opacity(), 1. - showListenAnimationRatio()));

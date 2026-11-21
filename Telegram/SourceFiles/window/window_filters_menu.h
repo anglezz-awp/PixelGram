@@ -92,6 +92,7 @@ private:
 
 	Api::RemoveComplexChatFilter _removeApi;
 
+	base::unique_qptr<Ui::RpWidget> _divider;
 	base::unique_qptr<Ui::PopupMenu> _popupMenu;
 	struct {
 		base::Timer timer;

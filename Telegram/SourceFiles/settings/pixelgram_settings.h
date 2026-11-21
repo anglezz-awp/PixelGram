@@ -132,6 +132,9 @@ struct Config {
 	bool showGiftButton = true;
 	bool uiSounds = true;
 	bool dynamicVoiceMorph = true;
+	bool typingAnimation = true;
+	bool animTouRipples = true;
+	bool motionBlurFx = true;
 	bool openAttachOnHover = false;
 	bool openEmojiOnHover = false;
 
