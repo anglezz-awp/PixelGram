@@ -314,7 +314,7 @@ Tasks::Task::Task(
 
 	_field->heightValue(
 	) | rpl::on_next([=](int height) {
-		_content->resize(_content->width(), height);
+		_content->resize(_content->width(), height + 8);
 	}, _field->lifetime());
 
 	createShadow();
@@ -330,22 +330,7 @@ bool Tasks::Task::hasShadow() const {
 }
 
 void Tasks::Task::createShadow() {
-	Expects(_content != nullptr);
-
-	if (_shadow) {
-		return;
-	}
-	_shadow.reset(Ui::CreateChild<Ui::PlainShadow>(field().get()));
-	_shadow->show();
-	field()->sizeValue(
-	) | rpl::on_next([=](QSize size) {
-		const auto left = st::createPollFieldPadding.left();
-		_shadow->setGeometry(
-			left,
-			size.height() - st::lineWidth,
-			size.width() - left,
-			st::lineWidth);
-	}, _shadow->lifetime());
+	_shadow = nullptr;
 }
 
 void Tasks::Task::destroyShadow() {
@@ -455,8 +440,9 @@ void Tasks::Task::toggleRemoveAlways(bool toggled) {
 }
 
 void Tasks::Task::updateFieldGeometry() {
-	_field->resizeToWidth(_content->width());
-	_field->moveToLeft(0, 0);
+	const auto hMargin = st::createPollFieldPadding.left();
+	_field->resizeToWidth(_content->width() - 2 * hMargin);
+	_field->moveToLeft(hMargin, 4);
 }
 
 not_null<Ui::InputField*> Tasks::Task::field() const {
@@ -942,10 +928,7 @@ not_null<Ui::InputField*> EditTodoListBox::setupTitle(
 			st::createPollField,
 			Ui::InputField::Mode::MultiLine,
 			tr::lng_todo_create_title_placeholder()),
-		st::createPollFieldPadding
-			+ (isPremium
-				? QMargins(0, 0, st::defaultComposeFiles.emoji.inner.width, 0)
-				: QMargins()));
+		st::createPollFieldPadding);
 	InitField(getDelegate()->outerContainer(), title, session);
 	title->setMaxLength(_titleLimit + kErrorLimit);
 	title->setSubmitSettings(Ui::InputField::SubmitSettings::Both);

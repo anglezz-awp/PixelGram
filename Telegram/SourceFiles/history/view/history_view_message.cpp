@@ -6871,9 +6871,11 @@ int Message::resizeContentGetHeight(int newWidth) {
 
 	const auto reactionsInBubble = _reactions && embedReactionsInBubble();
 	const auto bottomInfoHeight = _bottomInfo.resizeGetHeight(
-		std::min(
-			_bottomInfo.maxWidth(),
-			bottomInfoWidth - 2 * st::msgDateDelta.x()));
+		hasExternalBottomInfo()
+			? _bottomInfo.maxWidth()
+			: std::min(
+				_bottomInfo.maxWidth(),
+				bottomInfoWidth - 2 * st::msgDateDelta.x()));
 
 	auto newHeight = minHeight();
 

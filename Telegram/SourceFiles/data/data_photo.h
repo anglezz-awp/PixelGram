@@ -162,6 +162,7 @@ public:
 	[[nodiscard]] MediaKey mediaKey() const;
 	[[nodiscard]] const Core::FileLocation &location(bool check) const;
 	void setLocation(const Core::FileLocation &loc);
+	[[nodiscard]] int32 getDC() const { return _dc; }
 
 	PhotoId id = 0;
 

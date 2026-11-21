@@ -224,9 +224,7 @@ public:
 	[[nodiscard]] Main::Session &session() const;
 	[[nodiscard]] Main::Account &account() const;
 
-	[[nodiscard]] uint8 colorIndex() const {
-		return _colorIndex;
-	}
+	[[nodiscard]] uint8 colorIndex() const;
 	[[nodiscard]] auto colorCollectible() const
 	-> const std::shared_ptr<Ui::ColorCollectible> & {
 		return _colorCollectible;
@@ -238,9 +236,7 @@ public:
 	[[nodiscard]] DocumentId backgroundEmojiId() const;
 	bool changeBackgroundEmojiId(DocumentId id);
 
-	[[nodiscard]] std::optional<uint8> colorProfileIndex() const {
-		return _colorProfileIndex;
-	}
+	[[nodiscard]] std::optional<uint8> colorProfileIndex() const;
 	[[nodiscard]] auto colorProfileCollectible() const
 	-> const std::shared_ptr<Ui::ColorCollectible> & {
 		return _colorProfileCollectible;
@@ -320,6 +316,7 @@ public:
 	}
 
 	[[nodiscard]] bool allowsForwarding() const;
+	[[nodiscard]] bool realAllowsForwarding() const;
 	[[nodiscard]] Data::RestrictionCheckResult amRestricted(
 		ChatRestriction right) const;
 	[[nodiscard]] bool amAnonymous() const;

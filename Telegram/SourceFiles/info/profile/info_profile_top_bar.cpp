@@ -78,6 +78,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/effects/upload_progress_overlay.h"
 #include "ui/effects/outline_segments.h"
 #include "ui/effects/round_checkbox.h"
+#include "ui/effects/ripple_animation.h"
 #include "ui/empty_userpic.h"
 #include "ui/layers/generic_box.h"
 #include "ui/painter.h"
@@ -175,6 +176,8 @@ public:
 protected:
 	void paintEvent(QPaintEvent *e) override;
 	void onStateChanged(State was, StateChangeSource source) override;
+	QImage prepareRippleMask() const override;
+	QPoint prepareRippleStartPosition() const override;
 
 private:
 	std::optional<QColor> _backdropColor;
@@ -196,20 +199,79 @@ void BackdropIconButton::setBackdropColor(std::optional<QColor> color) {
 }
 
 void BackdropIconButton::paintEvent(QPaintEvent *e) {
-	const auto shown = _backdropColor
-		? _overAnimation.value(isOver() ? 1. : 0.)
-		: 0.;
-	if (shown > 0.) {
-		auto p = QPainter(this);
-		auto hq = PainterHighQualityEnabler(p);
-		p.setOpacity(shown);
-		p.setPen(Qt::NoPen);
-		p.setBrush(_rippleColor.color());
-		p.drawEllipse(QRect(
-			st().rippleAreaPosition,
-			QSize(st().rippleAreaSize, st().rippleAreaSize)));
+	Painter p(this);
+	PainterHighQualityEnabler hq(p);
+
+	const auto circleSize = style::ConvertScale(38);
+	const auto circleRect = QRect(
+		(width() - circleSize) / 2,
+		(height() - circleSize) / 2,
+		circleSize,
+		circleSize);
+
+	const auto &roles = PixelGram::CurrentM3Roles();
+	const auto baseBg = _backdropColor
+		? anim::with_alpha(*_backdropColor, 0.25)
+		: (roles.surfaceContainerHigh.isValid() ? roles.surfaceContainerHigh : st::windowBgOver->c);
+	const auto hoverBg = _backdropColor
+		? anim::with_alpha(*_backdropColor, 0.40)
+		: (roles.surfaceContainerHighest.isValid() ? roles.surfaceContainerHighest : (roles.secondaryContainer.isValid() ? roles.secondaryContainer : st::windowBgOver->c));
+
+	const auto over = _overAnimation.value(isOver() ? 1. : 0.);
+	const auto bg = anim::color(baseBg, hoverBg, over);
+
+	p.setPen(Qt::NoPen);
+	p.setBrush(bg);
+	p.drawEllipse(circleRect);
+
+	paintRipple(p, circleRect.x(), circleRect.y());
+
+	const auto overIcon = [&] {
+		if (iconOverrideOver()) {
+			return iconOverrideOver();
+		} else if (!st().iconOver.empty()) {
+			return &st().iconOver;
+		} else if (iconOverride()) {
+			return iconOverride();
+		}
+		return &st().icon;
+	};
+	const auto justIcon = [&] {
+		if (iconOverride()) {
+			return iconOverride();
+		}
+		return &st().icon;
+	};
+	const auto icon = (over == 1.) ? overIcon() : justIcon();
+	const auto ix = circleRect.x() + (circleRect.width() - icon->width()) / 2;
+	const auto iy = circleRect.y() + (circleRect.height() - icon->height()) / 2;
+	icon->paint(p, ix, iy, width());
+
+	if (over > 0. && over < 1.) {
+		const auto iconO = overIcon();
+		if (iconO != icon) {
+			p.setOpacity(over);
+			iconO->paint(p, ix, iy, width());
+		}
 	}
-	Ui::IconButton::paintEvent(e);
+}
+
+QImage BackdropIconButton::prepareRippleMask() const {
+	const auto circleSize = style::ConvertScale(38);
+	return Ui::RippleAnimation::EllipseMask(QSize(circleSize, circleSize));
+}
+
+QPoint BackdropIconButton::prepareRippleStartPosition() const {
+	const auto circleSize = style::ConvertScale(38);
+	const auto circleRect = QRect(
+		(width() - circleSize) / 2,
+		(height() - circleSize) / 2,
+		circleSize,
+		circleSize);
+	const auto result = mapFromGlobal(QCursor::pos());
+	return circleRect.contains(result)
+		? (result - circleRect.topLeft())
+		: DisabledRippleStartPosition();
 }
 
 void BackdropIconButton::onStateChanged(
@@ -543,6 +605,11 @@ TopBar::TopBar(
 	_title->naturalWidthValue() | rpl::on_next([=](int w) {
 		_title->resizeToWidth(w);
 	}, _title->lifetime());
+	_status->naturalWidthValue() | rpl::on_next([=](int w) {
+		_status->resizeToWidth(w);
+		updateStatusPosition(_progress.current());
+		update();
+	}, _status->lifetime());
 	badgeUpdates = rpl::merge(
 		std::move(badgeUpdates),
 		nameValue() | rpl::to_empty,
@@ -616,13 +683,13 @@ TopBar::TopBar(
 		_peer->session().changes().peerFlagsValue(
 			_peer,
 			Data::PeerUpdate::Flag::EmojiStatus
-				| Data::PeerUpdate::Flag::ColorProfile) | rpl::to_empty
+				| Data::PeerUpdate::Flag::ColorProfile
+				| Data::PeerUpdate::Flag::BackgroundEmoji) | rpl::to_empty
 	) | rpl::on_next([=] {
+		updateCollectibleStatus();
 		if (_pinnedToTopGiftsFirstTimeShowed) {
 			_peer->session().recentSharedGifts().clearLastRequestTime(_peer);
 			setupPinnedToTopGifts(controller);
-		} else {
-			updateCollectibleStatus();
 		}
 	}, lifetime());
 
@@ -723,6 +790,11 @@ void TopBar::adjustColors(const std::optional<QColor> &edgeColor) {
 		_status->widthValue() | rpl::on_next([=] {
 			updateStatusPosition(_progress.current());
 		}, _status->lifetime());
+		_status->naturalWidthValue() | rpl::on_next([=](int w) {
+			_status->resizeToWidth(w);
+			updateStatusPosition(_progress.current());
+			update();
+		}, _status->lifetime());
 		_statusLabel = std::make_unique<StatusLabel>(_status.data(), _peer);
 		_statusLabel->setMembersLinkCallback(membersLinkCallback);
 		_statusLabel->setHiddenLinkCallback(hiddenLinkCallback);
@@ -811,7 +883,7 @@ void TopBar::updateCollectibleStatus() {
 	} else {
 		_patternEmoji = nullptr;
 	}
-	if (collectible || _localPatternEmojiId) {
+	if (collectible || _localPatternEmojiId || patternEmojiId) {
 		setupAnimatedPattern();
 	} else {
 		_animatedPoints.clear();
@@ -2122,6 +2194,11 @@ void TopBar::updateStatusPosition(float64 progressCurrent) {
 	_status->setOpacity(1. - swapProgress);
 	_status->setVisible(swapProgress < 1.);
 
+	const auto availableStatusWidth = width() - statusMostLeft() * 2;
+	if (availableStatusWidth > 0) {
+		_status->resizeToNaturalWidth(availableStatusWidth);
+	}
+
 	const auto swapShift = int(base::SafeRound(swapProgress
 		* statusStyle().style.font->height
 		* kSwapMoveAmplitude
@@ -2727,6 +2804,11 @@ void TopBar::applyTabSwapProgress(float64 progress) {
 	update();
 }
 
+void TopBar::showEvent(QShowEvent *e) {
+	RpWidget::showEvent(e);
+	updateLabelsPosition();
+}
+
 void TopBar::resizeEvent(QResizeEvent *e) {
 	_cachedClipPath = QPainterPath();
 	const auto collectible = effectiveCollectible();
@@ -2941,6 +3023,37 @@ void TopBar::paintEvent(QPaintEvent *e) {
 	}
 
 	paintTabSubtitle(p);
+
+	if (_status && !_status->isHidden()) {
+		if (_status->width() <= 0 && _status->naturalWidth() > 0) {
+			const auto available = width() - statusMostLeft() * 2;
+			if (available > 0) {
+				_status->resizeToNaturalWidth(available);
+			}
+		}
+		if (_status->width() > 0) {
+			const auto progress = _progress.current();
+			if (progress > 0.05) {
+				auto hq = PainterHighQualityEnabler(p);
+				const auto &roles = PixelGram::CurrentM3Roles();
+				auto pillBg = (_hasGradientBg && _edgeColor.current())
+					? anim::with_alpha(*_edgeColor.current(), 0.35)
+					: (roles.secondaryContainer.isValid()
+						? roles.secondaryContainer
+						: (roles.surfaceContainerHigh.isValid() ? roles.surfaceContainerHigh : st::windowBgOver->c));
+				pillBg.setAlphaF(pillBg.alphaF() * std::clamp(progress, 0., 1.));
+
+				const auto hPadding = style::ConvertScale(12);
+				const auto vPadding = style::ConvertScale(3);
+				const auto pillRect = _status->geometry().adjusted(-hPadding, -vPadding, hPadding, vPadding);
+				const auto radius = pillRect.height() / 2.;
+
+				p.setPen(Qt::NoPen);
+				p.setBrush(pillBg);
+				p.drawRoundedRect(QRectF(pillRect), radius, radius);
+			}
+		}
+	}
 }
 
 void TopBar::setupButtons(
@@ -3932,6 +4045,11 @@ void TopBar::bindStatus() {
 		}, _status->lifetime());
 		_status->widthValue() | rpl::on_next([=] {
 			updateStatusPosition(_progress.current());
+		}, _status->lifetime());
+		_status->naturalWidthValue() | rpl::on_next([=](int w) {
+			_status->resizeToWidth(w);
+			updateStatusPosition(_progress.current());
+			update();
 		}, _status->lifetime());
 		return;
 	}

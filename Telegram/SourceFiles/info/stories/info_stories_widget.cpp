@@ -20,6 +20,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/ui_utility.h"
 #include "styles/style_info.h"
 #include "styles/style_layers.h"
+#include "ui/pixelgram_m3_scheme.h"
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QScrollBar>
@@ -253,6 +254,14 @@ void Widget::setupBottomButton(int wasBottomHeight) {
 		bottom,
 		rpl::single(QString()),
 		st::collectionEditBox.button);
+	button->setFullRadius(true);
+	const auto &roles = PixelGram::CurrentM3Roles();
+	if (roles.secondaryContainer.isValid()) {
+		button->setBrushOverride(roles.secondaryContainer);
+	}
+	if (roles.onSecondaryContainer.isValid()) {
+		button->setTextFgOverride(roles.onSecondaryContainer);
+	}
 	button->setText(tr::lng_stories_album_add_button(
 	) | rpl::map([](const QString &text) {
 		return Ui::Text::IconEmoji(&st::collectionAddIcon).append(text);

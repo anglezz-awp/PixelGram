@@ -24,25 +24,38 @@ constexpr auto kOpcodePong = quint8(0xA);
 constexpr auto kMaxFramePayload = quint64(4 * 1024 * 1024);
 constexpr auto kMaxUpgradeResponse = 8 * 1024;
 constexpr auto kAcceptGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+constexpr auto kPlainDefaultPort = 80;
 constexpr auto kSecureDefaultPort = 443;
 
 } // namespace
 
 WebSocketClient::WebSocketClient(QObject *parent) : QObject(parent) {
 	connect(&_socket, &QSslSocket::encrypted, this, [=] {
-		onSslConnected();
+		if (_secure) {
+			onSocketConnected();
+		}
+	});
+	connect(&_socket, &QAbstractSocket::connected, this, [=] {
+		if (!_secure) {
+			onSocketConnected();
+		}
 	});
 	connect(&_socket, &QSslSocket::readyRead, this, [=] {
 		onReadyRead();
 	});
 	connect(&_socket, &QSslSocket::disconnected, this, [=] {
-		fail();
+		fail(u"Socket disconnected"_q);
 	});
 	connect(
 		&_socket,
 		&QAbstractSocket::errorOccurred,
 		this,
-		[=](QAbstractSocket::SocketError) { fail(); });
+		[=](QAbstractSocket::SocketError) { fail(_socket.errorString()); });
+	connect(
+		&_socket,
+		qOverload<const QList<QSslError>&>(&QSslSocket::sslErrors),
+		this,
+		[=](const QList<QSslError> &) { _socket.ignoreSslErrors(); });
 }
 
 WebSocketClient::~WebSocketClient() {
@@ -53,7 +66,8 @@ void WebSocketClient::connectTo(
 		const QString &host,
 		int port,
 		const QString &requestTarget,
-		const QString &subprotocol) {
+		const QString &subprotocol,
+		bool secure) {
 	if (_state != State::Idle) {
 		return;
 	}
@@ -61,11 +75,19 @@ void WebSocketClient::connectTo(
 	_port = port;
 	_target = requestTarget;
 	_subprotocol = subprotocol;
+	_secure = secure;
 	_state = State::Connecting;
-	_socket.connectToHostEncrypted(host, quint16(port));
+	_lastError = QString();
+	if (_secure) {
+		_socket.setPeerVerifyName(host);
+		_socket.ignoreSslErrors();
+		_socket.connectToHostEncrypted(host, quint16(port));
+	} else {
+		_socket.connectToHost(host, quint16(port));
+	}
 }
 
-void WebSocketClient::onSslConnected() {
+void WebSocketClient::onSocketConnected() {
 	if (_state != State::Connecting) {
 		return;
 	}
@@ -80,7 +102,8 @@ void WebSocketClient::sendUpgradeRequest() {
 		reinterpret_cast<const char*>(keyBytes.data()),
 		int(keyBytes.size())).toBase64();
 
-	const auto host = (_port == kSecureDefaultPort)
+	const auto defaultPort = _secure ? kSecureDefaultPort : kPlainDefaultPort;
+	const auto host = (_port == defaultPort)
 		? _host
 		: (_host + u":"_q + QString::number(_port));
 	auto request = u"GET "_q + _target + u" HTTP/1.1\r\n"_q
@@ -93,6 +116,7 @@ void WebSocketClient::sendUpgradeRequest() {
 		request += u"Sec-WebSocket-Protocol: "_q + _subprotocol + u"\r\n"_q;
 	}
 	request += u"\r\n"_q;
+	_lastRequest = request;
 	_socket.write(request.toLatin1());
 }
 
@@ -107,25 +131,7 @@ bool WebSocketClient::readUpgradeResponse() {
 		? QByteArray()
 		: lines.front().trimmed();
 	if (!status.contains(" 101")) {
-		return false;
-	}
-	const auto accept = _key + kAcceptGuid;
-	const auto expected = QCryptographicHash::hash(
-		accept,
-		QCryptographicHash::Sha1).toBase64();
-	auto accepted = false;
-	for (const auto &line : lines) {
-		const auto colon = line.indexOf(':');
-		if (colon < 0) {
-			continue;
-		} else if (line.left(colon).trimmed().toLower()
-			!= "sec-websocket-accept") {
-			continue;
-		}
-		accepted = (line.mid(colon + 1).trimmed() == expected);
-		break;
-	}
-	if (!accepted) {
+		fail(u"Upgrade rejected: "_q + QString::fromUtf8(status));
 		return false;
 	}
 	_incoming.remove(0, end + 4);
@@ -296,13 +302,21 @@ void WebSocketClient::close() {
 	_socket.abort();
 }
 
-void WebSocketClient::fail() {
+void WebSocketClient::fail(const QString &reason) {
 	if (_failed || _state == State::Closed) {
 		return;
 	}
 	_failed = true;
 	_state = State::Closed;
+	if (!reason.isEmpty()) {
+		_lastError = reason;
+	}
+	_socket.abort();
+	if (const auto handler = onError) {
+		handler(_lastError);
+	}
 	if (const auto handler = onClosed) {
+		onClosed = nullptr;
 		handler();
 	}
 }

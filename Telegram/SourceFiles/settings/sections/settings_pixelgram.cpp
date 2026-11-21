@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "settings/sections/settings_pixelgram.h"
 #include "core/pixelgram_link_guard.h"
+#include "core/pixelgram_ws_proxy.h"
+#include "ui/basic_click_handlers.h"
 #include "ui/widgets/fields/input_field.h"
 #include "ui/layers/box_content.h"
 #include "ui/layers/generic_box.h"
@@ -21,6 +23,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/application.h"
 #include "core/core_settings.h"
 #include "settings/pixelgram_settings.h"
+#include "ui/style/style_core_font.h"
 #include "ui/pixelgram_avatar_shapes.h"
 #include "ui/pixelgram_m3_scheme.h"
 #include "ui/wrap/vertical_layout.h"
@@ -39,6 +42,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <QtGui/QPainterPath>
 #include <QtGui/QLinearGradient>
+#include <QtGui/QGuiApplication>
+#include <QtGui/QClipboard>
 
 namespace Settings {
 namespace {
@@ -55,7 +60,7 @@ not_null<Ui::SettingsButton*> AddToggle(
 	const auto button = AddButtonWithIcon(container, std::move(text), st::settingsButton);
 	button->setAllowTextLines(2);
 	auto padding = button->st().padding;
-	padding.setRight(70 + 16);
+	padding.setRight(70 + 16 + 12);
 	button->setPaddingOverride(padding);
 	const auto [toggle, checkView] = AddSeparatedToggle(button, st::settingsButton, checked);
 	toggle->clicks() | rpl::on_next([=] {
@@ -70,7 +75,7 @@ not_null<Ui::SettingsButton*> AddToggle(
 class PixelGramHeaderWidget : public Ui::RpWidget {
 public:
 	PixelGramHeaderWidget(QWidget *parent) : RpWidget(parent) {
-		resize(parent->width(), 120);
+		resize(parent->width(), style::ConvertScale(120));
 	}
 protected:
 	void paintEvent(QPaintEvent *e) override {
@@ -78,13 +83,15 @@ protected:
 		PainterHighQualityEnabler hq(p);
 
 		const auto &roles = CurrentM3Roles();
-		const auto iconSize = 48;
-		const auto iconRect = QRect((width() - iconSize) / 2, 12, iconSize, iconSize);
+		const auto iconSize = style::ConvertScale(48);
+		const auto iconTop = style::ConvertScale(12);
+		const auto iconRadius = style::ConvertScale(16);
+		const auto iconRect = QRect((width() - iconSize) / 2, iconTop, iconSize, iconSize);
 
 		// Icon background (squircle)
 		p.setPen(Qt::NoPen);
 		p.setBrush(roles.primaryContainer.isValid() ? roles.primaryContainer : QColor(0xE8, 0xDE, 0xF8));
-		p.drawRoundedRect(iconRect, 16.0, 16.0);
+		p.drawRoundedRect(iconRect, iconRadius, iconRadius);
 
 		// Star / logo inside
 		st::menuIconManage.paintInCenter(p, iconRect, roles.onPrimaryContainer.isValid() ? roles.onPrimaryContainer : QColor(0x21, 0x00, 0x5D));
@@ -92,12 +99,12 @@ protected:
 		// Title
 		p.setFont(st::semiboldFont->f);
 		p.setPen(roles.onSurface.isValid() ? roles.onSurface : st::windowFg->c);
-		p.drawText(QRect(0, 66, width(), 24), Qt::AlignCenter, u"PixelGram Desktop"_q);
+		p.drawText(QRect(0, style::ConvertScale(66), width(), style::ConvertScale(24)), Qt::AlignCenter, u"PixelGram Desktop"_q);
 
 		// Subtitle
 		p.setFont(st::normalFont->f);
 		p.setPen(roles.onSurfaceVariant.isValid() ? roles.onSurfaceVariant : st::windowSubTextFg->c);
-		p.drawText(QRect(0, 92, width(), 20), Qt::AlignCenter, u"Material You 3 client with advanced mods"_q);
+		p.drawText(QRect(0, style::ConvertScale(92), width(), style::ConvertScale(20)), Qt::AlignCenter, u"Material You 3 client with advanced mods"_q);
 	}
 };
 
@@ -105,14 +112,14 @@ protected:
 class LiveAvatarPreview : public Ui::RpWidget {
 public:
 	LiveAvatarPreview(QWidget *parent) : RpWidget(parent) {
-		resize(parent->width(), 88);
+		resize(parent->width(), style::ConvertScale(88));
 	}
 protected:
 	void paintEvent(QPaintEvent *e) override {
 		Painter p(this);
 		PainterHighQualityEnabler hq(p);
 
-		const auto size = 64;
+		const auto size = style::ConvertScale(64);
 		const auto rect = QRect((width() - size) / 2, (height() - size) / 2, size, size);
 		const auto &cfg = CurrentConfig();
 		const auto path = AvatarShapePath(QRectF(rect), cfg.avatarShape, cfg.avatarCornerRadius);
@@ -325,6 +332,11 @@ private:
 			SaveConfig();
 		});
 
+		AddToggle(content, rpl::single(u"Отмечать прочитанным при отправке сообщения"_q), cfg.markReadAfterAction, [](bool val) {
+			CurrentConfig().markReadAfterAction = val;
+			SaveConfig();
+		});
+
 		AddToggle(content, rpl::single(u"Автоматически переходить в офлайн"_q), cfg.goOfflineAutomatically, [](bool val) {
 			CurrentConfig().goOfflineAutomatically = val;
 			SaveConfig();
@@ -454,6 +466,7 @@ private:
 
 		AddToggle(content, rpl::single(u"Моноширинный шрифт сообщений"_q), !cfg.monospaceFont.isEmpty(), [](bool val) {
 			CurrentConfig().monospaceFont = val ? u"Roboto Mono"_q : QString();
+			style::SetCustomMonospaceFont(CurrentConfig().monospaceFont);
 			SaveConfig();
 		});
 
@@ -538,6 +551,31 @@ private:
 			SaveConfig();
 		});
 
+		const auto markText = [](AntiDeleteMark m) {
+			switch (m) {
+			case AntiDeleteMark::Text: return u"Текст «deleted»"_q;
+			case AntiDeleteMark::Emoji: return u"Эмодзи «🗑️»"_q;
+			case AntiDeleteMark::Hidden: return u"Скрыть метку"_q;
+			}
+			return u"Текст «deleted»"_q;
+		};
+		const auto markVal = std::make_shared<rpl::variable<QString>>(markText(cfg.antiDeleteMark));
+		const auto markBtn = AddButtonWithLabel(
+			content,
+			rpl::single(u"Метка удалённых сообщений"_q),
+			markVal->value(),
+			st::settingsButton);
+		markBtn->setClickedCallback([=] {
+			auto &current = CurrentConfig().antiDeleteMark;
+			current = (current == AntiDeleteMark::Text)
+				? AntiDeleteMark::Emoji
+				: (current == AntiDeleteMark::Emoji)
+				? AntiDeleteMark::Hidden
+				: AntiDeleteMark::Text;
+			SaveConfig();
+			*markVal = markText(current);
+		});
+
 		AddToggle(content, rpl::single(u"Скрыть стрелку пересылки рядом с сообщением"_q), cfg.hideSideShareButton, [](bool val) {
 			CurrentConfig().hideSideShareButton = val;
 			SaveConfig();
@@ -588,6 +626,22 @@ private:
 		addMenuCycle(u"Скрыть локально"_q, cfg.menuHideLocally);
 		addMenuCycle(u"Сообщения автора"_q, cfg.menuUserMessages);
 
+		Ui::AddSkip(content, 8);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Строка ввода сообщения"_q));
+
+		AddToggle(content, rpl::single(u"Отображать кнопку подарка"_q), cfg.showGiftButton, [](bool val) {
+			CurrentConfig().showGiftButton = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Отображать кнопку записи голоса"_q), cfg.showVoiceButton, [](bool val) {
+			CurrentConfig().showVoiceButton = val;
+			SaveConfig();
+		});
+
 		Ui::AddSkip(content, 16);
 		Ui::ResizeFitChild(this, content);
 	}
@@ -637,6 +691,161 @@ private:
 		AddToggle(content, rpl::single(u"Размытие фона медиавьювера"_q), cfg.blurMediaBackground, [](bool val) {
 			CurrentConfig().blurMediaBackground = val;
 			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Отображать Peer ID в профиле"_q), cfg.showPeerId, [](bool val) {
+			CurrentConfig().showPeerId = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 12);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Подтверждение отправки"_q));
+
+		AddToggle(content, rpl::single(u"Подтверждать отправку стикеров"_q), cfg.stickerConfirmation, [](bool val) {
+			CurrentConfig().stickerConfirmation = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Подтверждать отправку голосовых сообщений"_q), cfg.voiceConfirmation, [](bool val) {
+			CurrentConfig().voiceConfirmation = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Подтверждать отправку видеосообщений (кружков)"_q), cfg.roundConfirmation, [](bool val) {
+			CurrentConfig().roundConfirmation = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 12);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Мини-приложения (Webview)"_q));
+
+		AddToggle(content, rpl::single(u"Маскировать Webview под Android"_q), cfg.spoofWebviewAsAndroid, [](bool val) {
+			CurrentConfig().spoofWebviewAsAndroid = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Увеличенная высота окна Webview"_q), cfg.increaseWebviewHeight, [](bool val) {
+			CurrentConfig().increaseWebviewHeight = val;
+			SaveConfig();
+		});
+
+		AddToggle(content, rpl::single(u"Увеличенная ширина окна Webview"_q), cfg.increaseWebviewWidth, [](bool val) {
+			CurrentConfig().increaseWebviewWidth = val;
+			SaveConfig();
+		});
+
+		Ui::AddSkip(content, 12);
+		Ui::AddDivider(content);
+		Ui::AddSkip(content, 8);
+
+		Ui::AddSubsectionTitle(content, rpl::single(u"Локальный прокси (WS-Proxy)"_q));
+
+		AddToggle(content, rpl::single(u"Встроенный TG WS-Proxy"_q), cfg.wsProxyEnabled, [](bool val) {
+			CurrentConfig().wsProxyEnabled = val;
+			SaveConfig();
+			if (val) {
+				PixelGram::WsProxy::Start();
+			} else {
+				PixelGram::WsProxy::Stop();
+			}
+		});
+
+		AddToggle(content, rpl::single(u"Отключить TLS для CF-прокси"_q), cfg.wsProxyDisableTls, [](bool val) {
+			CurrentConfig().wsProxyDisableTls = val;
+			SaveConfig();
+			if (CurrentConfig().wsProxyEnabled) {
+				PixelGram::WsProxy::Restart();
+			}
+		});
+
+		AddButtonWithLabel(
+			content,
+			rpl::single(u"Статус"_q),
+			PixelGram::WsProxy::StatusValue(),
+			st::settingsButton,
+			{});
+
+		AddButtonWithLabel(
+			content,
+			rpl::single(u"Тип прокси"_q),
+			rpl::single(u"MTProto"_q),
+			st::settingsButton,
+			{});
+
+		auto portValue = content->lifetime().make_state<rpl::variable<QString>>(
+			QString::number(cfg.wsProxyPort));
+
+		const auto portBtn = AddButtonWithLabel(
+			content,
+			rpl::single(u"Адрес и порт"_q),
+			portValue->value() | rpl::map([](const QString &p) { return u"127.0.0.1:"_q + p; }),
+			st::settingsButton,
+			{});
+
+		portBtn->setClickedCallback([=] {
+			controller()->show(Box([=](not_null<Ui::GenericBox*> box) {
+				box->setTitle(rpl::single(u"Порт локального прокси"_q));
+				const auto input = box->addRow(object_ptr<Ui::InputField>(
+					box,
+					st::defaultInputField,
+					rpl::single(u"Порт (1-65535)"_q),
+					QString::number(CurrentConfig().wsProxyPort)));
+				box->addButton(rpl::single(u"Сохранить"_q), [=] {
+					const auto text = input->getLastText().trimmed();
+					bool ok = false;
+					int port = text.toInt(&ok);
+					if (ok && port > 0 && port < 65536) {
+						CurrentConfig().wsProxyPort = port;
+						SaveConfig();
+						*portValue = QString::number(port);
+						if (CurrentConfig().wsProxyEnabled) {
+							PixelGram::WsProxy::Restart();
+						}
+						controller()->showToast(u"Порт изменён на %1"_q.arg(port));
+					}
+					box->closeBox();
+				});
+				box->addButton(rpl::single(u"Отмена"_q), [=] { box->closeBox(); });
+			}));
+		});
+
+		const auto fullSecret = PixelGram::WsProxy::FullSecret();
+		const auto shortSecret = (fullSecret.size() > 16)
+			? (fullSecret.left(8) + u"..."_q + fullSecret.right(8))
+			: fullSecret;
+		const auto secretBtn = AddButtonWithLabel(
+			content,
+			rpl::single(u"Секрет"_q),
+			rpl::single(shortSecret),
+			st::settingsButton,
+			{});
+		secretBtn->setClickedCallback([=] {
+			QGuiApplication::clipboard()->setText(fullSecret);
+			controller()->showToast(u"Секрет скопирован в буфер"_q);
+		});
+
+		const auto applyBtn = AddButtonWithIcon(
+			content,
+			rpl::single(u"Применить прокси в Telegram"_q),
+			st::settingsButton);
+		applyBtn->setClickedCallback([=] {
+			UrlClickHandler::Open(PixelGram::WsProxy::ProxyLink());
+		});
+
+		const auto copyLinkBtn = AddButtonWithIcon(
+			content,
+			rpl::single(u"Скопировать ссылку tg://proxy"_q),
+			st::settingsButton);
+		copyLinkBtn->setClickedCallback([=] {
+			const auto link = PixelGram::WsProxy::ProxyLink();
+			QGuiApplication::clipboard()->setText(link);
+			controller()->showToast(u"Ссылка tg://proxy скопирована"_q);
 		});
 
 		Ui::AddSkip(content, 16);

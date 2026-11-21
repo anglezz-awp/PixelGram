@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_chat_section.h"
 
+#include "settings/pixelgram_settings.h"
+
 #include "history/admin_log/history_admin_log_section.h"
 #include "history/view/controls/history_view_top_controls.h"
 #include "history/view/controls/history_view_bottom_controls.h"
@@ -3066,6 +3068,14 @@ void ChatWidget::joinGroupAction() {
 }
 
 void ChatWidget::toggleMuteUnmute() {
+	if (PixelGram::CurrentConfig().channelBottomAction == PixelGram::ChannelBottomAction::Discuss) {
+		if (const auto channel = _peer->asChannel()) {
+			if (const auto linked = channel->discussionLink()) {
+				controller()->showPeerHistory(linked);
+				return;
+			}
+		}
+	}
 	const auto wasMuted = _history->muted();
 	const auto muteForSeconds = Data::MuteValue{
 		.unmute = wasMuted,

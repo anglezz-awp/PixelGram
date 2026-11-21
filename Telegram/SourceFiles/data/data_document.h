@@ -325,6 +325,7 @@ public:
 	[[nodiscard]] bool inappPlaybackFailed() const;
 	[[nodiscard]] int videoPreloadPrefix() const;
 	[[nodiscard]] StorageFileLocation videoPreloadLocation() const;
+	[[nodiscard]] int32 getDC() const { return _dc; }
 
 	DocumentId id = 0;
 	int64 size = 0;

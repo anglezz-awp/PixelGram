@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/controls/history_view_bottom_controls.h"
 
+#include "settings/pixelgram_settings.h"
+
 #include "apiwrap.h"
 #include "boxes/star_gift_box.h"
 #include "chat_helpers/message_field.h"
@@ -495,6 +497,14 @@ void BottomControls::refreshMuteUnmuteText() {
 	if (!_muteUnmute) {
 		return;
 	}
+	if (PixelGram::CurrentConfig().channelBottomAction == PixelGram::ChannelBottomAction::Discuss) {
+		if (const auto channel = _peer->asChannel()) {
+			if (channel->discussionLink()) {
+				_muteUnmute->setText(tr::lng_profile_action_short_discuss(tr::now).toUpper());
+				return;
+			}
+		}
+	}
 	_muteUnmute->setText((_history->muted()
 		? tr::lng_channel_unmute(tr::now)
 		: tr::lng_channel_mute(tr::now)).toUpper());
@@ -593,6 +603,9 @@ bool BottomControls::isJoinGroup() const {
 
 bool BottomControls::isMuteUnmute() const {
 	if (_mode != BottomControlsMode::History) {
+		return false;
+	}
+	if (PixelGram::CurrentConfig().channelBottomAction == PixelGram::ChannelBottomAction::Hide) {
 		return false;
 	}
 	return (_peer->isBroadcast() && !_peer->asChannel()->canPostMessages())

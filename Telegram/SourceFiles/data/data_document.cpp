@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "data/data_document.h"
 
+#include "settings/pixelgram_settings.h"
 #include "data/data_document_resolver.h"
 #include "data/data_session.h"
 #include "data/data_streaming.h"
@@ -1102,6 +1103,9 @@ void DocumentData::setForbidsFileSave() {
 }
 
 bool DocumentData::forbidsFileSave() const {
+	if (PixelGram::CurrentConfig().bypassProtection) {
+		return false;
+	}
 	return (_flags & Flag::FileSaveForbidden);
 }
 

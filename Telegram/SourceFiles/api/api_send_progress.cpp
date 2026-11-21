@@ -110,6 +110,9 @@ bool SendProgressManager::updated(const Key &key, bool doing) {
 }
 
 void SendProgressManager::send(const Key &key, int progress) {
+	if (PixelGram::CurrentConfig().dontSendTyping) {
+		return;
+	}
 	if (skipRequest(key)) {
 		return;
 	}

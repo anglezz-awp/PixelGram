@@ -1,5 +1,6 @@
 #include "lang/lang_instance.h"
 #include "ui/pixelgram_m3_scheme.h"
+#include "settings/pixelgram_settings.h"
 #include "lang/lang_keys.h"
 /*
 This file is part of Telegram Desktop,
@@ -50,10 +51,16 @@ QString AntiDeleteTag() {
 	return tr::lng_antidelete_deleted(tr::now);
 }
 
-[[nodiscard]] int DeletedBadgeWidth(const QString &text) {
+[[nodiscard]] int DeletedBadgeWidth(PixelGram::AntiDeleteMark mark, const QString &text) {
+	if (mark == PixelGram::AntiDeleteMark::Hidden) {
+		return 0;
+	}
+	const auto trailingGap = style::ConvertScale(6);
+	if (mark == PixelGram::AntiDeleteMark::Emoji) {
+		return st::msgDateFont->width(u"🗑️"_q) + trailingGap;
+	}
 	const auto iconSize = style::ConvertScale(10);
 	const auto iconGap = style::ConvertScale(3);
-	const auto trailingGap = style::ConvertScale(4);
 	return iconSize + iconGap + st::msgDateFont->width(text) + trailingGap;
 }
 
@@ -200,7 +207,7 @@ TextState BottomInfo::textState(
 	if (!_views.isEmpty()) {
 		const auto viewsWidth = _views.maxWidth();
 		const auto deletedWidth = (_data.flags & Data::Flag::Deleted)
-			? DeletedBadgeWidth(AntiDeleteTag())
+			? DeletedBadgeWidth(PixelGram::CurrentConfig().antiDeleteMark, AntiDeleteTag())
 			: 0;
 		const auto right = width()
 			- withTicksWidth
@@ -350,44 +357,57 @@ void BottomInfo::paint(
 		outerWidth);
 
 	if (_data.flags & Data::Flag::Deleted) {
-		const auto deletedColor = (external || !inverted)
-			? roles.error
-			: (roles.error.lightness() >= 150
+		const auto mark = PixelGram::CurrentConfig().antiDeleteMark;
+		if (mark != PixelGram::AntiDeleteMark::Hidden) {
+			const auto deletedColor = (external || !inverted)
 				? roles.error
-				: QColor(0xFF, 0xB4, 0xAB));
-		const auto text = AntiDeleteTag();
-		const auto iconSize = style::ConvertScale(10);
-		const auto iconGap = style::ConvertScale(3);
-		const auto totalDeletedWidth = DeletedBadgeWidth(text);
-		right -= totalDeletedWidth;
+				: (roles.error.lightness() >= 150
+					? roles.error
+					: QColor(0xFF, 0xB4, 0xAB));
+			const auto text = AntiDeleteTag();
+			const auto totalDeletedWidth = DeletedBadgeWidth(mark, text);
+			right -= totalDeletedWidth;
 
-		const auto iconX = right;
-		const auto iconH = style::ConvertScale(11);
-		const auto iconY = position.y() + (st::msgDateFont->height - iconH) / 2;
-		const auto s = iconSize / 10.;
+			p.save();
+			PainterHighQualityEnabler hq(p);
 
-		p.save();
-		PainterHighQualityEnabler hq(p);
-		p.setPen(QPen(deletedColor, 1.2 * s, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-		p.setBrush(Qt::NoBrush);
-		p.drawLine(QPointF(iconX + 3 * s, iconY + 1 * s), QPointF(iconX + 7 * s, iconY + 1 * s));
-		p.drawLine(QPointF(iconX + 1 * s, iconY + 3 * s), QPointF(iconX + 9 * s, iconY + 3 * s));
-		QPainterPath body;
-		body.moveTo(iconX + 2 * s, iconY + 4 * s);
-		body.lineTo(iconX + 2.5 * s, iconY + 10.5 * s);
-		body.lineTo(iconX + 7.5 * s, iconY + 10.5 * s);
-		body.lineTo(iconX + 8 * s, iconY + 4 * s);
-		p.drawPath(body);
-		p.drawLine(QPointF(iconX + 4 * s, iconY + 5.5 * s), QPointF(iconX + 4 * s, iconY + 9 * s));
-		p.drawLine(QPointF(iconX + 6 * s, iconY + 5.5 * s), QPointF(iconX + 6 * s, iconY + 9 * s));
+			if (mark == PixelGram::AntiDeleteMark::Emoji) {
+				p.setFont(st::msgDateFont);
+				p.setPen(deletedColor);
+				p.drawText(
+					right,
+					position.y() + st::msgDateFont->ascent,
+					u"🗑️"_q);
+			} else {
+				const auto iconSize = style::ConvertScale(10);
+				const auto iconGap = style::ConvertScale(3);
+				const auto iconX = right;
+				const auto iconH = style::ConvertScale(11);
+				const auto iconY = position.y() + (st::msgDateFont->height - iconH) / 2;
+				const auto s = iconSize / 10.;
 
-		p.setFont(st::msgDateFont);
-		p.setPen(deletedColor);
-		p.drawText(
-			iconX + iconSize + iconGap,
-			position.y() + st::msgDateFont->ascent,
-			text);
-		p.restore();
+				p.setPen(QPen(deletedColor, 1.2 * s, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+				p.setBrush(Qt::NoBrush);
+				p.drawLine(QPointF(iconX + 3 * s, iconY + 1 * s), QPointF(iconX + 7 * s, iconY + 1 * s));
+				p.drawLine(QPointF(iconX + 1 * s, iconY + 3 * s), QPointF(iconX + 9 * s, iconY + 3 * s));
+				QPainterPath body;
+				body.moveTo(iconX + 2 * s, iconY + 4 * s);
+				body.lineTo(iconX + 2.5 * s, iconY + 10.5 * s);
+				body.lineTo(iconX + 7.5 * s, iconY + 10.5 * s);
+				body.lineTo(iconX + 8 * s, iconY + 4 * s);
+				p.drawPath(body);
+				p.drawLine(QPointF(iconX + 4 * s, iconY + 5.5 * s), QPointF(iconX + 4 * s, iconY + 9 * s));
+				p.drawLine(QPointF(iconX + 6 * s, iconY + 5.5 * s), QPointF(iconX + 6 * s, iconY + 9 * s));
+
+				p.setFont(st::msgDateFont);
+				p.setPen(deletedColor);
+				p.drawText(
+					iconX + iconSize + iconGap,
+					position.y() + st::msgDateFont->ascent,
+					text);
+			}
+			p.restore();
+		}
 	}
 
 	if (_data.flags & Data::Flag::Silent) {
@@ -716,7 +736,7 @@ QSize BottomInfo::countOptimalSize() {
 	}
 	width += _authorEditedDate.maxWidth();
 	if (_data.flags & Data::Flag::Deleted) {
-		width += DeletedBadgeWidth(AntiDeleteTag());
+		width += DeletedBadgeWidth(PixelGram::CurrentConfig().antiDeleteMark, AntiDeleteTag());
 	}
 	if (!_views.isEmpty()) {
 		width += st::historyViewsSpace

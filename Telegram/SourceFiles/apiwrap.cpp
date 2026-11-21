@@ -1,4 +1,8 @@
 #include "settings/pixelgram_settings.h"
+#include "data/data_photo_media.h"
+#include "data/data_document_media.h"
+#include <QtCore/QBuffer>
+#include "ayu/features/forward/ayu_forward.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -603,13 +607,18 @@ void ApiWrap::sendMessageFail(
 			}
 		}
 	} else if (show && error == u"CHAT_FORWARDS_RESTRICTED"_q) {
+		if (PixelGram::CurrentConfig().bypassProtection) {
+			return;
+		}
 		show->showToast(peer->isBroadcast()
 			? tr::lng_error_noforwards_channel(tr::now)
 			: peer->isUser()
 			? tr::lng_error_noforwards_user(tr::now)
 			: tr::lng_error_noforwards_group(tr::now), kJoinErrorDuration);
 	} else if (error == u"PREMIUM_ACCOUNT_REQUIRED"_q) {
-		Settings::ShowPremium(&session(), "premium_stickers");
+		if (!PixelGram::CurrentConfig().localPremium) {
+			Settings::ShowPremium(&session(), "premium_stickers");
+		}
 	} else if (error == u"SCHEDULE_TOO_MUCH"_q) {
 		auto &scheduled = _session->scheduledMessages();
 		if (const auto item = scheduled.lookupItem(peer->id, itemId.msg)) {
@@ -3939,6 +3948,34 @@ FullMsgId ApiWrap::forwardMessages(
 		FnMut<void()> &&successCallback,
 		Fn<void(const MessageIdsList&)> sentCallback) {
 	Expects(!draft.items.empty());
+
+	const auto fullAyuForward = AyuForward::isFullAyuForwardNeeded(draft.items.front());
+	if (fullAyuForward) {
+		crl::async([=] {
+			AyuForward::forwardMessages(_session, action, false, draft);
+		});
+		if (successCallback) {
+			successCallback();
+		}
+		if (sentCallback) {
+			sentCallback({});
+		}
+		return {};
+	}
+
+	const auto ayuIntelligentForwardNeeded = AyuForward::isAyuForwardNeeded(draft.items);
+	if (ayuIntelligentForwardNeeded) {
+		crl::async([=] {
+			AyuForward::intelligentForward(_session, action, draft);
+		});
+		if (successCallback) {
+			successCallback();
+		}
+		if (sentCallback) {
+			sentCallback({});
+		}
+		return {};
+	}
 
 	auto &histories = _session->data().histories();
 

@@ -1,4 +1,5 @@
 #include "settings/pixelgram_settings.h"
+#include "ayu/data/message_revisions.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -3101,6 +3102,9 @@ void Session::updateEditedMessage(const MTPMessage &data) {
 	if (!existing) {
 		Reactions::CheckUnknownForUnread(this, data);
 		return;
+	}
+	if (data.type() == mtpc_message) {
+		PixelGram::Revisions::RecordRevision(existing);
 	}
 	if (existing->isLocalUpdateMedia() && data.type() == mtpc_message) {
 		updateExistingMessage(data.c_message());

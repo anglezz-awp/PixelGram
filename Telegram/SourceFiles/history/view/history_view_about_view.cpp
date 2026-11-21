@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_about_view.h"
 
+#include "settings/pixelgram_settings.h"
 #include "api/api_peer_colors.h"
 #include "api/api_premium.h"
 #include "api/api_sending.h"
@@ -302,11 +303,13 @@ auto GenerateChatIntro(
 				.link = std::make_shared<LambdaClickHandler>(send),
 			};
 		};
-		push(std::make_unique<StickerInBubblePart>(
-			parent,
-			replacing,
-			sticker,
-			st::chatIntroStickerPadding));
+		if (!PixelGram::CurrentConfig().disableGreetingSticker) {
+			push(std::make_unique<StickerInBubblePart>(
+				parent,
+				replacing,
+				sticker,
+				st::chatIntroStickerPadding));
+		}
 	};
 }
 

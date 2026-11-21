@@ -465,22 +465,7 @@ bool Options::Option::hasShadow() const {
 }
 
 void Options::Option::createShadow() {
-	Expects(_content != nullptr);
-
-	if (_shadow) {
-		return;
-	}
-	_shadow.reset(Ui::CreateChild<Ui::PlainShadow>(field().get()));
-	_shadow->show();
-	field()->sizeValue(
-	) | rpl::on_next([=](QSize size) {
-		const auto left = st::createPollFieldPadding.left();
-		_shadow->setGeometry(
-			left,
-			size.height() - st::lineWidth,
-			size.width() - left,
-			st::lineWidth);
-	}, _shadow->lifetime());
+	_shadow = nullptr;
 }
 
 void Options::Option::destroyShadow() {
@@ -1366,8 +1351,7 @@ not_null<Ui::InputField*> CreatePollBox::setupQuestion(
 			st::createPollField,
 			Ui::InputField::Mode::MultiLine,
 			tr::lng_polls_create_question_placeholder()),
-		st::createPollFieldPadding
-			+ QMargins(0, 0, st::defaultComposeFiles.emoji.inner.width, 0));
+		st::createPollFieldPadding);
 	InitField(
 		getDelegate()->outerContainer(),
 		question,

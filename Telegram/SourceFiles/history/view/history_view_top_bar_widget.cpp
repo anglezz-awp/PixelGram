@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_top_bar_widget.h"
 
+#include "ui/pixelgram_m3_scheme.h"
+
 #include "history/history.h"
 #include "history/view/history_view_send_action.h"
 #include "boxes/add_contact_box.h"
@@ -32,6 +34,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/shadow.h"
 #include "ui/widgets/menu/menu_add_action_callback_factory.h"
 #include "ui/effects/radial_animation.h"
+#include "ui/effects/ripple_animation.h"
 #include "ui/boxes/report_box_graphics.h" // Ui::ReportReason
 #include "ui/text/text.h"
 #include "ui/text/text_options.h"
@@ -100,6 +103,78 @@ QString TopBarNameText(
 	return peer->topBarNameText();
 }
 
+class TopBarM3Button final : public Ui::IconButton {
+public:
+	TopBarM3Button(QWidget *parent, const style::IconButton &st)
+	: Ui::IconButton(parent, st) {
+		const auto s = style::ConvertScale(42);
+		resize(s, s);
+	}
+
+protected:
+	void paintEvent(QPaintEvent *e) override {
+		Painter p(this);
+		PainterHighQualityEnabler hq(p);
+
+		const auto &roles = PixelGram::CurrentM3Roles();
+		const auto baseBg = roles.surfaceContainerHigh.isValid()
+			? roles.surfaceContainerHigh
+			: st::windowBgOver->c;
+		const auto hoverBg = roles.surfaceContainerHighest.isValid()
+			? roles.surfaceContainerHighest
+			: (roles.secondaryContainer.isValid() ? roles.secondaryContainer : st::windowBgOver->c);
+
+		const auto over = iconOverOpacity();
+		const auto bg = anim::color(baseBg, hoverBg, over);
+
+		p.setPen(Qt::NoPen);
+		p.setBrush(bg);
+		p.drawEllipse(rect());
+
+		paintRipple(p, QPoint(0, 0));
+
+		const auto overIcon = [&] {
+			if (iconOverrideOver()) {
+				return iconOverrideOver();
+			} else if (!st().iconOver.empty()) {
+				return &st().iconOver;
+			} else if (iconOverride()) {
+				return iconOverride();
+			}
+			return &st().icon;
+		};
+		const auto justIcon = [&] {
+			if (iconOverride()) {
+				return iconOverride();
+			}
+			return &st().icon;
+		};
+		const auto icon = (over == 1.) ? overIcon() : justIcon();
+		const auto x = (width() - icon->width()) / 2;
+		const auto y = (height() - icon->height()) / 2;
+		icon->paint(p, x, y, width());
+
+		if (over > 0. && over < 1.) {
+			const auto iconO = overIcon();
+			if (iconO != icon) {
+				p.setOpacity(over);
+				iconO->paint(p, x, y, width());
+			}
+		}
+	}
+
+	QImage prepareRippleMask() const override {
+		return Ui::RippleAnimation::EllipseMask(size());
+	}
+
+	QPoint prepareRippleStartPosition() const override {
+		auto result = mapFromGlobal(QCursor::pos());
+		return rect().contains(result)
+			? result
+			: DisabledRippleStartPosition();
+	}
+};
+
 } // namespace
 
 struct TopBarWidget::EmojiInteractionSeenAnimation {
@@ -125,11 +200,11 @@ TopBarWidget::TopBarWidget(
 , _delete(this, tr::lng_selected_delete(), st::defaultActiveButton)
 , _back(this, st::historyTopBarBack)
 , _cancelChoose(this, st::topBarCloseChoose)
-, _call(this, st::topBarCall)
-, _groupCall(this, st::topBarGroupCall)
-, _search(this, st::topBarSearch)
-, _infoToggle(this, st::topBarInfo)
-, _menuToggle(this, st::topBarMenuToggle)
+, _call(object_ptr<TopBarM3Button>(this, st::topBarCall))
+, _groupCall(object_ptr<TopBarM3Button>(this, st::topBarGroupCall))
+, _search(object_ptr<TopBarM3Button>(this, st::topBarSearch))
+, _infoToggle(object_ptr<TopBarM3Button>(this, st::topBarInfo))
+, _menuToggle(object_ptr<TopBarM3Button>(this, st::topBarMenuToggle))
 , _titlePeerText(st::windowMinWidth / 3)
 , _onlineUpdater([=] { updateOnlineDisplay(); }) {
 	setAttribute(Qt::WA_OpaquePaintEvent);
@@ -1279,38 +1354,41 @@ void TopBarWidget::updateControlsGeometry() {
 		updateSearchJumpToDateVisibility();
 	}
 
-	_rightTaken = 0;
+	const auto buttonSize = style::ConvertScale(42);
+	const auto buttonGap = style::ConvertScale(6);
+	const auto m3ButtonsTop = otherButtonsTop + (height() - buttonSize) / 2;
+	_rightTaken = style::ConvertScale(8);
+
+	for (const auto &b : { _call.data(), _groupCall.data(), _search.data(), _infoToggle.data(), _menuToggle.data() }) {
+		if (b) {
+			b->resize(buttonSize, buttonSize);
+		}
+	}
 	if (rootChatsListBar() && _activeChat.key.folder()) {
-		const auto &toggle = st::topBarMenuToggle;
-		const auto narrowLeft = (_narrowWidth - toggle.icon.width()) / 2
-			- toggle.iconPosition.x();
+		const auto narrowLeft = (_narrowWidth - buttonSize) / 2;
 		_menuToggle->moveToLeft(
 			anim::interpolate(
-				width() - _menuToggle->width(),
+				width() - _rightTaken - buttonSize,
 				narrowLeft,
 				_narrowRatio),
-			otherButtonsTop);
-	} else {
-		_menuToggle->moveToRight(_rightTaken, otherButtonsTop);
+			m3ButtonsTop);
+		_rightTaken += buttonSize + buttonGap;
+	} else if (!_menuToggle->isHidden()) {
+		_menuToggle->moveToRight(_rightTaken, m3ButtonsTop);
+		_rightTaken += buttonSize + buttonGap;
 	}
-	if (_menuToggle->isHidden()) {
-		_rightTaken += (_menuToggle->width() - _search->width());
-	} else {
-		_rightTaken += _menuToggle->width() + st::topBarSkip;
-	}
-	_infoToggle->moveToRight(_rightTaken, otherButtonsTop);
 	if (!_infoToggle->isHidden()) {
-		_infoToggle->moveToRight(_rightTaken, otherButtonsTop);
-		_rightTaken += _infoToggle->width();
+		_infoToggle->moveToRight(_rightTaken, m3ButtonsTop);
+		_rightTaken += buttonSize + buttonGap;
 	}
 	if (!_call->isHidden() || !_groupCall->isHidden()) {
-		_call->moveToRight(_rightTaken, otherButtonsTop);
-		_groupCall->moveToRight(_rightTaken, otherButtonsTop);
-		_rightTaken += _call->width();
+		_call->moveToRight(_rightTaken, m3ButtonsTop);
+		_groupCall->moveToRight(_rightTaken, m3ButtonsTop);
+		_rightTaken += buttonSize + buttonGap;
 	}
-	_search->moveToRight(_rightTaken, otherButtonsTop);
 	if (!_search->isHidden()) {
-		_rightTaken += _search->width() + st::topBarCallSkip;
+		_search->moveToRight(_rightTaken, m3ButtonsTop);
+		_rightTaken += buttonSize + buttonGap;
 	}
 
 	updateMembersShowArea();

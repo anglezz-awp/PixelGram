@@ -907,21 +907,30 @@ void ShowBreakdownDialog(Verdict verdict, not_null<Window::SessionController*> c
 		auto content = box->verticalLayout();
 		Ui::AddSkip(content, 4);
 
+		auto addRow = [&](TextWithEntities text, const style::FlatLabel &st = st::defaultFlatLabel) {
+			auto label = content->add(
+				object_ptr<Ui::FlatLabel>(
+					content,
+					rpl::single(std::move(text)),
+					st),
+				st::boxRowPadding);
+			label->setBreakEverywhere(true);
+			return label;
+		};
+
 		// Domain pill
 		if (!host.isEmpty()) {
-			auto domainLabel = content->add(object_ptr<Ui::FlatLabel>(
-				content,
-				u"<b>Домен:</b> %1"_q.arg(host),
-				st::defaultFlatLabel));
+			auto t = Ui::Text::Bold(u"Домен: "_q);
+			t.append(host);
+			addRow(std::move(t));
 			Ui::AddSkip(content, 4);
 		}
 
 		// Destination if expanded
 		if (!verdict.finalUrl.isEmpty() && verdict.finalUrl != verdict.cleaned) {
-			content->add(object_ptr<Ui::FlatLabel>(
-				content,
-				u"<b>Ведёт на:</b> %1"_q.arg(verdict.finalUrl),
-				st::defaultFlatLabel));
+			auto t = Ui::Text::Bold(u"Ведёт на: "_q);
+			t.append(verdict.finalUrl);
+			addRow(std::move(t));
 			Ui::AddSkip(content, 4);
 		}
 
@@ -929,10 +938,9 @@ void ShowBreakdownDialog(Verdict verdict, not_null<Window::SessionController*> c
 		if (!verdict.removedParams.empty()) {
 			const int count = int(verdict.removedParams.size());
 			const auto unit = PluralForm(count, u"метка"_q, u"метки"_q, u"меток"_q);
-			content->add(object_ptr<Ui::FlatLabel>(
-				content,
-				u"<b>Убрано меток:</b> %1 %2"_q.arg(count).arg(unit),
-				st::defaultFlatLabel));
+			auto t = Ui::Text::Bold(u"Убрано меток: "_q);
+			t.append(u"%1 %2"_q.arg(count).arg(unit));
+			addRow(std::move(t));
 			Ui::AddSkip(content, 4);
 		}
 
@@ -944,10 +952,9 @@ void ShowBreakdownDialog(Verdict verdict, not_null<Window::SessionController*> c
 				: (days < 30)
 				? u"%1 %2"_q.arg(days).arg(PluralForm(days, u"день"_q, u"дня"_q, u"дней"_q))
 				: u"%1 %2"_q.arg(days / 30).arg(PluralForm(days / 30, u"месяц"_q, u"месяца"_q, u"месяцев"_q));
-			content->add(object_ptr<Ui::FlatLabel>(
-				content,
-				u"<b>Возраст домена:</b> %1"_q.arg(ageText),
-				st::defaultFlatLabel));
+			auto t = Ui::Text::Bold(u"Возраст домена: "_q);
+			t.append(ageText);
+			addRow(std::move(t));
 			Ui::AddSkip(content, 4);
 		}
 
@@ -961,10 +968,7 @@ void ShowBreakdownDialog(Verdict verdict, not_null<Window::SessionController*> c
 					: (flag.level == RiskLevel::Medium)
 					? u"⚠️ "_q
 					: u"• "_q;
-				content->add(object_ptr<Ui::FlatLabel>(
-					content,
-					icon + flag.text,
-					st::defaultFlatLabel));
+				addRow(Ui::Text::WithEntities(icon + flag.text));
 				Ui::AddSkip(content, 2);
 			}
 			Ui::AddSkip(content, 6);
@@ -973,10 +977,8 @@ void ShowBreakdownDialog(Verdict verdict, not_null<Window::SessionController*> c
 
 		// Full URL preview
 		Ui::AddSkip(content, 6);
-		auto urlLabel = content->add(object_ptr<Ui::FlatLabel>(
-			content,
-			targetUrl.length() > 200 ? (targetUrl.left(200) + u"…"_q) : targetUrl,
-			st::boxLabel));
+		const auto urlText = targetUrl.length() > 200 ? (targetUrl.left(200) + u"…"_q) : targetUrl;
+		auto urlLabel = addRow(Ui::Text::WithEntities(urlText), st::boxLabel);
 		urlLabel->setTextColorOverride(st::windowSubTextFg->c);
 		Ui::AddSkip(content, 8);
 
@@ -1166,23 +1168,26 @@ void ShowReportBox(
 			const auto icon = (risk == RiskLevel::High) ? u"⛔ "_q : (risk == RiskLevel::Medium) ? u"⚠️ "_q : u"✓ "_q;
 
 			Ui::AddSkip(content, 4);
-			content->add(object_ptr<Ui::FlatLabel>(
+			auto titleLabel = content->add(object_ptr<Ui::FlatLabel>(
 				content,
 				icon + (verdict.displayHost.isEmpty() ? verdict.host : verdict.displayHost),
-				st::boxTitle));
+				st::boxTitle), st::boxRowPadding);
+			titleLabel->setBreakEverywhere(true);
 
 			if (!verdict.flags.empty()) {
 				for (const auto &f : verdict.flags) {
-					content->add(object_ptr<Ui::FlatLabel>(
+					auto flagLabel = content->add(object_ptr<Ui::FlatLabel>(
 						content,
 						u"  • "_q + f.text,
-						st::defaultFlatLabel));
+						st::defaultFlatLabel), st::boxRowPadding);
+					flagLabel->setBreakEverywhere(true);
 				}
 			} else {
-				content->add(object_ptr<Ui::FlatLabel>(
+				auto okLabel = content->add(object_ptr<Ui::FlatLabel>(
 					content,
 					u"  • Угроз не обнаружено"_q,
-					st::boxLabel));
+					st::boxLabel), st::boxRowPadding);
+				okLabel->setBreakEverywhere(true);
 			}
 			Ui::AddSkip(content, 4);
 			Ui::AddDivider(content);

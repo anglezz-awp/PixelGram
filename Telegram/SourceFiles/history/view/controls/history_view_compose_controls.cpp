@@ -39,6 +39,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/click_handler_types.h"
 #include "core/core_settings.h"
 #include "core/shortcuts.h"
+#include "settings/pixelgram_settings.h"
 #include "core/ui_integration.h"
 #include "data/components/ephemeral_messages.h"
 #include "data/notify/data_notify_settings.h"
@@ -1318,6 +1319,9 @@ ComposeControls::ComposeControls(
 	) | rpl::on_next([=] {
 		updateFieldPlaceholder();
 	}, _wrap->lifetime());
+	const auto initialFont = _st.field.style.font;
+	const auto initialVMargin = std::max((_st.field.heightMin - initialFont->height) / 2 - style::ConvertScale(4), 0);
+	_field->setTextMargins({ 0, initialVMargin, 0, 0 });
 	if (descriptor.stickerOrEmojiChosen) {
 		std::move(
 			descriptor.stickerOrEmojiChosen
@@ -3105,6 +3109,7 @@ void ComposeControls::orderControls() {
 
 bool ComposeControls::showRecordButton() const {
 	return _features.recordMediaMessage
+		&& PixelGram::CurrentConfig().showVoiceButton
 		&& (_recordAvailability != Webrtc::RecordAvailability::None)
 		&& !_voiceRecordBar->isListenState()
 		&& !_voiceRecordBar->isRecordingByAnotherBar()
@@ -4046,6 +4051,15 @@ void ComposeControls::initTabbedSelector() {
 		} else {
 			toggleTabbedSelectorMode();
 		}
+	});
+
+	base::install_event_filter(_tabbedSelectorToggle, [=](not_null<QEvent*> e) {
+		if (e->type() == QEvent::Enter && PixelGram::CurrentConfig().openEmojiOnHover) {
+			if (_tabbedPanel && _tabbedPanel->isHidden()) {
+				_tabbedPanel->showAnimated();
+			}
+		}
+		return base::EventFilterResult::Continue;
 	});
 
 	const auto wrap = _wrap.get();
@@ -5201,6 +5215,12 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 		_sendAs->moveToLeft(left, buttonsTop);
 		left += _sendAs->width();
 	}
+	const auto multiline = (composeFieldHeight() > _st.field.heightMin + 4);
+	const auto vMargin = multiline
+		? style::ConvertScale(4)
+		: std::max((_st.field.heightMin - _st.field.style.font->height) / 2 - style::ConvertScale(4), 0);
+	const auto bottomMargin = multiline ? style::ConvertScale(4) : 0;
+	_field->setTextMargins({ 0, vMargin, 0, bottomMargin });
 	const auto fieldHeight = composeFieldHeight();
 	const auto fieldTop = pillBottom - _st.padding.bottom() - fieldHeight;
 	_field->moveToLeft(left, fieldTop);
@@ -5321,8 +5341,9 @@ void ComposeControls::updateControlsVisibility() {
 		|| isEditingMessage()
 		|| textExceedsMaxSize();
 	const auto showGiftToUser = (_mode == Mode::Normal) && !hide;
+	const auto &cfg = PixelGram::CurrentConfig();
 	if (_botCommandStart) {
-		_botCommandStart->setVisible(_botCommandShown);
+		_botCommandStart->setVisible(_botCommandShown && cfg.showCommandsButton);
 	}
 	if (_silent) {
 		_silent->setVisible(!hide);
@@ -5334,7 +5355,7 @@ void ComposeControls::updateControlsVisibility() {
 		_editStars->show();
 	}
 	if (_ttlInfo) {
-		_ttlInfo->setVisible(!hide);
+		_ttlInfo->setVisible(!hide && cfg.showTtlButton);
 	}
 	if (_sendAs) {
 		_sendAs->show();
@@ -5346,13 +5367,16 @@ void ComposeControls::updateControlsVisibility() {
 		_botMenu->show();
 	}
 	if (_attachToggle) {
-		_attachToggle->setVisible(!_replaceMedia);
+		_attachToggle->setVisible(!_replaceMedia && cfg.showAttachButton);
+	}
+	if (_tabbedSelectorToggle) {
+		_tabbedSelectorToggle->setVisible(!_botKeyboardHide && cfg.showEmojiButton);
 	}
 	if (_scheduled) {
 		_scheduled->setVisible(!hide);
 	}
 	if (_giftToUser) {
-		_giftToUser->setVisible(showGiftToUser);
+		_giftToUser->setVisible(showGiftToUser && cfg.showGiftButton);
 	}
 	if (_toggleSuggestPost) {
 		_toggleSuggestPost->setVisible(!_suggestPostActive);
@@ -5851,7 +5875,7 @@ void ComposeControls::updateAttachBotsMenu() {
 	}
 	_attachBotsMenu->setOrigin(
 		Ui::PanelAnimation::Origin::BottomLeft);
-	if (!ChatHelpers::ShowPanelOnClick()) {
+	if (!ChatHelpers::ShowPanelOnClick() || PixelGram::CurrentConfig().openAttachOnHover) {
 		_attachToggle->installEventFilter(_attachBotsMenu.get());
 	}
 	_attachBotsMenu->heightValue(
@@ -5870,12 +5894,14 @@ void ComposeControls::updatePillRadius() {
 	const auto target = multiline ? kFloatingPillRadiusExtraLarge : fullRadius;
 	if (_pillMultiline != multiline) {
 		_pillMultiline = multiline;
+		const auto from = _pillRadiusAnim.value(_pillRadiusCurrent);
 		_pillRadiusAnim.start(
 			[=] { _wrap->update(); },
-			_pillRadiusCurrent,
+			from,
 			target,
 			180,
 			anim::easeOutCubic);
+		_pillRadiusCurrent = target;
 	} else if (!_pillRadiusAnim.animating()) {
 		_pillRadiusCurrent = target;
 	}

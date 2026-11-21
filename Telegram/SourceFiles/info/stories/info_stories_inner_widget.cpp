@@ -23,6 +23,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "info/profile/info_profile_section_stack.h"
 #include "info/profile/info_profile_top_bar.h"
 #include "info/profile/info_profile_values.h"
+#include "ui/pixelgram_m3_scheme.h"
 #include "info/profile/info_profile_widget.h"
 #include "info/saved/info_saved_music_widget.h"
 #include "info/stories/info_stories_albums.h"
@@ -723,6 +724,14 @@ void InnerWidget::refreshEmpty() {
 				st::collectionEmptyButton),
 			st::collectionEmptyAddMargin,
 			style::al_top);
+		button->setFullRadius(true);
+		const auto &roles = PixelGram::CurrentM3Roles();
+		if (roles.secondaryContainer.isValid()) {
+			button->setBrushOverride(roles.secondaryContainer);
+		}
+		if (roles.onSecondaryContainer.isValid()) {
+			button->setTextFgOverride(roles.onSecondaryContainer);
+		}
 		button->setText(tr::lng_stories_album_add_button(
 		) | rpl::map([](const QString &text) {
 			return Ui::Text::IconEmoji(&st::collectionAddIcon).append(text);

@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "boxes/peers/edit_peer_color_box.h"
 
+#include "settings/pixelgram_settings.h"
 #include "apiwrap.h"
 #include "api/api_peer_colors.h"
 #include "api/api_peer_photo.h"
@@ -570,6 +571,35 @@ void Set(
 		).done(done).fail(fail).send();
 	};
 	if (peer->isSelf()) {
+		const auto realPremium = peer->asUser() && peer->asUser()->hasRealServerPremium();
+		if (!realPremium) {
+			auto &cfg = PixelGram::CurrentConfig();
+			if (values.forProfile) {
+				cfg.localProfileColorIndex = (values.colorIndex != kUnsetColorIndex)
+					? int(values.colorIndex)
+					: -1;
+				cfg.localProfileBackgroundEmojiId = values.backgroundEmojiId;
+			} else {
+				cfg.localColorIndex = (values.colorIndex != kUnsetColorIndex)
+					? int(values.colorIndex)
+					: -1;
+				cfg.localBackgroundEmojiId = values.backgroundEmojiId;
+			}
+			PixelGram::SaveConfig();
+			if (values.statusChanged
+				&& (values.statusId || peer->emojiStatusId())) {
+				peer->owner().emojiStatuses().set(
+					peer,
+					values.statusId,
+					values.statusUntil);
+			}
+			setLocal(
+				values.colorIndex,
+				values.backgroundEmojiId,
+				values.colorCollectible);
+			done();
+			return;
+		}
 		using Flag = MTPaccount_UpdateColor::Flag;
 		using ColorFlag = MTPDpeerColor::Flag;
 		send(MTPaccount_UpdateColor(

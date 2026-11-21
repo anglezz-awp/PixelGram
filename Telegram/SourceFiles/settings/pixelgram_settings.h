@@ -36,9 +36,16 @@ enum class ChannelBottomAction : int {
 	Hide = 2,
 };
 
+enum class AntiDeleteMark : int {
+	Text = 0,
+	Emoji = 1,
+	Hidden = 2,
+};
+
 struct Config {
 	// Base
 	bool antiDelete = true;
+	AntiDeleteMark antiDeleteMark = AntiDeleteMark::Text;
 	bool bypassProtection = true;
 	bool blurMediaBackground = true;
 
@@ -55,6 +62,11 @@ struct Config {
 	// Other (Block 3)
 	bool localPremium = false;
 	bool disableAds = true;
+	int localColorIndex = -1;
+	uint64 localBackgroundEmojiId = 0;
+	int localProfileColorIndex = -1;
+	uint64 localProfileBackgroundEmojiId = 0;
+	uint64 localEmojiStatusId = 0;
 
 	// Appearance & M3 Avatar Shapes (Block 4)
 	AvatarShape avatarShape = AvatarShape::Circle;
@@ -108,6 +120,22 @@ struct Config {
 	bool openAttachOnHover = false;
 	bool openEmojiOnHover = false;
 
+	// Webview Tweaks
+	bool spoofWebviewAsAndroid = true;
+	bool increaseWebviewHeight = true;
+	bool increaseWebviewWidth = true;
+
+	// Ghost Extensions
+	bool markReadAfterAction = true;
+
+	// Profile & UI
+	bool showPeerId = true;
+
+	// Confirmations
+	bool stickerConfirmation = false;
+	bool voiceConfirmation = false;
+	bool roundConfirmation = false;
+
 	// Link Guard
 	bool linkGuardCheckEnabled = true;
 	int linkGuardShowMode = 0; // 0 = Suspicious, 1 = Always
@@ -128,6 +156,12 @@ struct Config {
 	uint32 m3SeedColor = 0xFF917BBD;
 	int m3SchemeVariant = 0;
 	double m3ContrastLevel = 0.0;
+
+	// WS-Proxy (Local MTProto -> WebSocket Proxy)
+	bool wsProxyEnabled = true;
+	int wsProxyPort = 1443;
+	QString wsProxySecret;
+	bool wsProxyDisableTls = true;
 
 	[[nodiscard]] int activeGhostCount() const {
 		return (dontReadMessages ? 1 : 0)
@@ -152,11 +186,16 @@ struct Config {
 inline Config &ModifyConfig() { return CurrentConfig(); }
 void SaveConfig();
 void LoadConfig();
+[[nodiscard]] QString GenerateRandomSecret();
 
 void CheckGoOffline(not_null<Main::Session*> session);
 bool MaybeShowStoryGhostAlert(
 	not_null<Window::SessionController*> controller,
 	Fn<void()> callback);
+
+[[nodiscard]] bool AreDeletedMessagesHidden();
+void SetDeletedMessagesHidden(bool hidden);
+void ToggleDeletedMessagesHidden(Window::SessionController *controller = nullptr);
 
 void ShowSettingsBox(Window::SessionController *controller);
 

@@ -581,6 +581,16 @@ PRIVATE
     core/proxy_rotation_manager.h
     core/pixelgram_link_guard.cpp
     core/pixelgram_link_guard.h
+    core/pixelgram_ws_proxy.cpp
+    core/pixelgram_ws_proxy.h
+    ayu/features/forward/ayu_forward.cpp
+    ayu/features/forward/ayu_forward.h
+    ayu/features/forward/ayu_sync.cpp
+    ayu/features/forward/ayu_sync.h
+    ayu/utils/telegram_helpers.cpp
+    ayu/utils/telegram_helpers.h
+    ayu/data/message_revisions.cpp
+    ayu/data/message_revisions.h
     core/cached_webview_availability.h
     core/bank_card_click_handler.cpp
     core/bank_card_click_handler.h

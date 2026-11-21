@@ -1,105 +1,85 @@
-# [Telegram Desktop][telegram_desktop] – Official Messenger
+# <p align="center"><img src="Telegram/Resources/art/icon256.png" width="96" height="96" alt="PixelGram Logo"><br>PixelGram Desktop</p>
 
-This is the complete source code and the build instructions for the official [Telegram][telegram] messenger desktop client, based on the [Telegram API][telegram_api] and the [MTProto][telegram_proto] secure protocol.
+<p align="center">
+  <b>A modern, beautiful, and privacy-focused Telegram Desktop client powered by Google Material You (Material 3 Expressive).</b>
+</p>
 
-[![Version](https://badge.fury.io/gh/telegramdesktop%2Ftdesktop.svg)](https://github.com/telegramdesktop/tdesktop/releases)
-[![Build Status](https://github.com/telegramdesktop/tdesktop/workflows/Windows./badge.svg)](https://github.com/telegramdesktop/tdesktop/actions)
-[![Build Status](https://github.com/telegramdesktop/tdesktop/workflows/MacOS./badge.svg)](https://github.com/telegramdesktop/tdesktop/actions)
-[![Build Status](https://github.com/telegramdesktop/tdesktop/workflows/Linux./badge.svg)](https://github.com/telegramdesktop/tdesktop/actions)
-[![Built with Depot](https://img.shields.io/badge/Built%20with-Depot.dev-46A75A)](https://depot.dev)
+<p align="center">
+  <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPLv3">
+  <img src="https://img.shields.io/badge/Style-Material%203%20Expressive-purple.svg" alt="Material 3">
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-informational.svg" alt="Platforms">
+  <img src="https://img.shields.io/badge/C%2B%2B-20-brightgreen.svg" alt="C++20">
+</p>
 
-[![Preview of Telegram Desktop][preview_image]][preview_image_url]
+---
 
-The source code is published under GPLv3 with OpenSSL exception, the license is available [here][license].
+## ✨ Features Overview
 
-## Supported systems
+### 🎨 Google Material You & Material 3 Expressive Design
+* **Dynamic M3 Algorithmic Color Schemes**: Fully integrated Google [`material-color-utilities`](https://github.com/material-foundation/material-color-utilities) generating expressive tonal palettes (`surfaceContainer`, `onSurface`, `primaryContainer`, `secondaryContainer`, `outlineVariant`) dynamically from your chosen seed accent color.
+* **M3 Expressive Avatar Shapes**: Choose between standard Circle, Squircle (Superellipse), 8-petal Scalloped Cookie, 12-petal Sunflower, 4-leaf Clover, and Rounded Hexagon.
+* **Modern M3 Capsules & Pills**: Redesigned chat compose bar, interactive profile status pills, and fluid adaptive geometry.
+* **Google Material Symbols Rounded**: Official clean vector icons (`google/material-design-icons`) for menus, settings, and navigation.
 
-The latest version is available for
+### 👻 Advanced Stealth & Ghost Mode
+* **Typing & Activity Suppression**: Completely silences outgoing typing, audio/video recording, choosing sticker, and file/photo upload progress packets.
+* **Stealth Stories Viewing**: Watch stories without sending read receipts or bumping viewer counters.
+* **Mark Read On Action**: Chats remain unread while you read and browse them, and automatically mark as read only when you send a message, reaction, or vote.
+* **Quick Drawer Toggle**: Fast one-click Ghost Mode switch right in the main side menu.
 
-* [Windows 7 and above (64 bit)](https://telegram.org/dl/desktop/win64) ([portable](https://telegram.org/dl/desktop/win64_portable))
-* [Windows 7 and above (32 bit)](https://telegram.org/dl/desktop/win) ([portable](https://telegram.org/dl/desktop/win_portable))
-* [macOS 10.13 and above](https://telegram.org/dl/desktop/mac)
-* [Linux static build for 64 bit](https://telegram.org/dl/desktop/linux)
-* [Snap](https://snapcraft.io/telegram-desktop)
-* [Flatpak](https://flathub.org/apps/details/org.telegram.desktop)
+### 🛡️ LinkGuard Protection System
+* **Anti-Tracking & Cleaner**: Automatically strips tracking parameters (`utm_*`, `fbclid`, `gclid`, `yclid`, referral tags) before opening links.
+* **Short Link Expansion**: Resolves shorteners (`t.co`, `bit.ly`, `tinyurl`, etc.) safely to show the final destination.
+* **Domain Age & Phishing Detection**: Warns against suspicious, newly-registered, or punycode phishing links.
 
-## Old system versions
+### 🌐 Built-in MTProto WebSocket Proxy (WS-Proxy)
+* Local embedded WebSocket proxy server (`pixelgram_ws_proxy`) that converts native Telegram MTProto traffic into secure WebSocket streams to bypass DPI, ISP filtering, and restrictive firewalls.
+* Configurable port, secret key, and automatic fallback.
 
-Version **4.9.9** was the last that supports older systems
+### 📱 Mini-Apps (Webview) Supercharger
+* **Android Platform Spoofing**: Spoofs the platform identifier as `android` across all Bot Mini-App RPCs (`RequestAppWebView`, `RequestMainWebView`, etc.), allowing you to access mobile-exclusive games and webapps on desktop.
+* **Enlarged Canvas**: Expanded modal window dimensions (up to 512×782px) for comfortable bot interaction without horizontal scrolling.
 
-* [macOS 10.12](https://updates.tdesktop.com/tmac/tsetup.4.9.9.dmg)
-* [Linux with glibc < 2.28 static build](https://updates.tdesktop.com/tlinux/tsetup.4.9.9.tar.xz)
+### 🛠️ Chat Productivity & Utility
+* **Peer ID Display**: Displays formatted Telegram Bot API Peer IDs in profile cards with one-click clipboard copying.
+* **Compose Bar Cleanup**: Toggles to hide the Gift button or Voice/Video record button.
+* **Accidental Send Prevention**: Confirmation dialogs for stickers, voice notes, and round video messages.
+* **Message Shot**: Generates high-resolution quote cards with gradient M3 container backgrounds and crisp borders, ready to paste.
+* **Message Revision History**: Local audit log of incoming message revisions (`PixelGram::Revisions`), showing past versions, timestamps, and edit history.
+* **Intelligent Forwarding**: Seamless re-sending of protected/restricted content without forward restrictions.
 
-Version **2.4.4** was the last that supports older systems
+---
 
-* [OS X 10.10 and 10.11](https://updates.tdesktop.com/tosx/tsetup-osx.2.4.4.dmg)
-* [Linux static build for 32 bit](https://updates.tdesktop.com/tlinux32/tsetup32.2.4.4.tar.xz)
+## 🛠️ Building from Source
 
-Version **1.8.15** was the last that supports older systems
+### Prerequisites (Windows)
+1. **Visual Studio 2022** (v143 toolset with C++ Desktop development).
+2. **CMake 3.25+** and **Git**.
+3. **Qt 6.11+** statically built with bundled libraries.
+4. Windows 10/11 SDK (10.0.22621.0 or newer).
 
-* [Windows XP and Vista](https://updates.tdesktop.com/tsetup/tsetup.1.8.15.exe) ([portable](https://updates.tdesktop.com/tsetup/tportable.1.8.15.zip))
-* [OS X 10.8 and 10.9](https://updates.tdesktop.com/tmac/tsetup.1.8.15.dmg)
-* [OS X 10.6 and 10.7](https://updates.tdesktop.com/tmac32/tsetup32.1.8.15.dmg)
+### Build Command
+```powershell
+# Generate CMake build files
+cmake -B out -S . -DCMAKE_BUILD_TYPE=Release
 
-## Third-party
+# Compile Telegram executable
+cmake --build out --target Telegram --config Release -- /p:PreferredToolArchitecture=x64 /m:12
+```
 
-* Qt 6 ([LGPL](http://doc.qt.io/qt-6/lgpl.html)) and Qt 5.15 ([LGPL](http://doc.qt.io/qt-5/lgpl.html)) slightly patched
-* OpenSSL 3.2.1 ([Apache License 2.0](https://openssl-library.org/source/license/apache-license-2.0.txt))
-* WebRTC ([New BSD License](https://github.com/desktop-app/tg_owt/blob/master/LICENSE))
-* zlib ([zlib License](http://www.zlib.net/zlib_license.html))
-* LZMA SDK 9.20 ([public domain](http://www.7-zip.org/sdk.html))
-* liblzma ([public domain](http://tukaani.org/xz/))
-* Google Breakpad ([License](https://chromium.googlesource.com/breakpad/breakpad/+/master/LICENSE))
-* Google Crashpad ([Apache License 2.0](https://chromium.googlesource.com/crashpad/crashpad/+/master/LICENSE))
-* GYP ([BSD License](https://github.com/bnoordhuis/gyp/blob/master/LICENSE))
-* Ninja ([Apache License 2.0](https://github.com/ninja-build/ninja/blob/master/COPYING))
-* OpenAL Soft ([LGPL](https://github.com/kcat/openal-soft/blob/master/COPYING))
-* Opus codec ([BSD License](http://www.opus-codec.org/license/))
-* FFmpeg ([LGPL](https://www.ffmpeg.org/legal.html))
-* Guideline Support Library ([MIT License](https://github.com/Microsoft/GSL/blob/master/LICENSE))
-* Range-v3 ([Boost License](https://github.com/ericniebler/range-v3/blob/master/LICENSE.txt))
-* Open Sans font ([Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0.html))
-* Vazirmatn font ([SIL Open Font License 1.1](https://github.com/rastikerdar/vazirmatn/blob/master/OFL.txt))
-* Emoji alpha codes ([MIT License](https://github.com/emojione/emojione/blob/master/extras/alpha-codes/LICENSE.md))
-* xxHash ([BSD License](https://github.com/Cyan4973/xxHash/blob/dev/LICENSE))
-* QR Code generator ([MIT License](https://github.com/nayuki/QR-Code-generator#license))
-* CMake ([New BSD License](https://github.com/Kitware/CMake/blob/master/Copyright.txt))
-* Hunspell ([LGPL](https://github.com/hunspell/hunspell/blob/master/COPYING.LESSER))
-* Ada ([Apache License 2.0](https://github.com/ada-url/ada/blob/main/LICENSE-APACHE))
-* zxcvbn-c ([MIT License](https://github.com/tsyrogit/zxcvbn-c/blob/master/LICENSE.txt))
-* twidget ([BSD 3-Clause License](https://github.com/TelegramMessenger/twidget/blob/main/LICENSE))
-* litehtml ([BSD 3-Clause License](https://github.com/litehtml/litehtml/blob/master/LICENSE))
-* Gumbo ([Apache License 2.0](https://github.com/google/gumbo-parser/blob/master/COPYING))
-* QuickJS-ng ([MIT License](https://github.com/quickjs-ng/quickjs/blob/master/LICENSE))
-* FrequencyWords by Hermit Dave ([Creative Commons Attribution-ShareAlike 4.0](https://creativecommons.org/licenses/by-sa/4.0/))
+---
 
-## Build instructions
+## ❤️ Credits & Acknowledgements
 
-* [Windows (32-bit and 64-bit)][win]
-* [macOS][mac]
-* [GNU/Linux using Docker][linux]
+PixelGram is made possible thanks to the following open-source projects:
 
-[//]: # (LINKS)
-[telegram]: https://telegram.org
-[telegram_desktop]: https://desktop.telegram.org
-[telegram_api]: https://core.telegram.org
-[telegram_proto]: https://core.telegram.org/mtproto
-[license]: LICENSE
-[win]: docs/building-win.md
-[mac]: docs/building-mac.md
-[linux]: docs/building-linux.md
-[preview_image]: https://github.com/telegramdesktop/tdesktop/blob/dev/docs/assets/preview.png "Preview of Telegram Desktop"
-[preview_image_url]: https://raw.githubusercontent.com/telegramdesktop/tdesktop/dev/docs/assets/preview.png
+* **[Telegram Desktop](https://github.com/telegramdesktop/tdesktop)** — The official desktop client for Telegram (GPLv3).
+* **[AyuGram Desktop](https://github.com/AyuGram/AyuGramDesktop)** by **@Radolyn** — Research, forward mechanics, and ghost mode inspirations.
+* **[Material Foundation](https://github.com/material-foundation/material-color-utilities)** — Google Material 3 color system algorithms.
+* **[Google Material Design Icons](https://github.com/google/material-design-icons)** — Google Material Symbols Rounded vector icons.
 
-## Thanks to
+---
 
-<a href="https://depot.dev">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://depot.dev/assets/brand/1693758816/depot-logo-horizontal-on-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://depot.dev/assets/brand/1693758816/depot-logo-horizontal-on-light.svg">
-    <img alt="Depot" src="https://depot.dev/assets/brand/1693758816/depot-logo-horizontal-on-light.svg" width="150">
-  </picture>
-</a>
+## 📄 License
 
-CI infrastructure sponsored by [Depot](https://depot.dev) — fast GitHub Actions runners.
-
+This project is licensed under the **GNU General Public License v3.0 (GPLv3)** with OpenSSL exception. See [LICENSE](LICENSE) for details.

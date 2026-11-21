@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "settings/pixelgram_settings.h"
+#include "base/random.h"
 #include "apiwrap.h"
 #include "core/application.h"
 #include "core/core_settings.h"
@@ -33,6 +34,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat.h"
 #include "styles/style_settings.h"
 #include "storage/localstorage.h"
+#include "history/history.h"
+#include "history/history_item.h"
+#include "history/view/history_view_element.h"
+#include "mainwindow.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QJsonDocument>
@@ -292,6 +297,7 @@ void SaveConfig() {
 
 	// Base
 	root["antiDelete"] = cfg.antiDelete;
+	root["antiDeleteMark"] = static_cast<int>(cfg.antiDeleteMark);
 	root["bypassProtection"] = cfg.bypassProtection;
 	root["blurMediaBackground"] = cfg.blurMediaBackground;
 
@@ -308,6 +314,11 @@ void SaveConfig() {
 	// Other
 	root["localPremium"] = cfg.localPremium;
 	root["disableAds"] = cfg.disableAds;
+	root["localColorIndex"] = cfg.localColorIndex;
+	root["localBackgroundEmojiId"] = qint64(cfg.localBackgroundEmojiId);
+	root["localProfileColorIndex"] = cfg.localProfileColorIndex;
+	root["localProfileBackgroundEmojiId"] = qint64(cfg.localProfileBackgroundEmojiId);
+	root["localEmojiStatusId"] = qint64(cfg.localEmojiStatusId);
 
 	// Appearance & M3
 	root["avatarShape"] = static_cast<int>(cfg.avatarShape);
@@ -362,6 +373,22 @@ void SaveConfig() {
 	root["openAttachOnHover"] = cfg.openAttachOnHover;
 	root["openEmojiOnHover"] = cfg.openEmojiOnHover;
 
+	// Webview
+	root["spoofWebviewAsAndroid"] = cfg.spoofWebviewAsAndroid;
+	root["increaseWebviewHeight"] = cfg.increaseWebviewHeight;
+	root["increaseWebviewWidth"] = cfg.increaseWebviewWidth;
+
+	// Ghost Extensions
+	root["markReadAfterAction"] = cfg.markReadAfterAction;
+
+	// Profile & UI
+	root["showPeerId"] = cfg.showPeerId;
+
+	// Confirmations
+	root["stickerConfirmation"] = cfg.stickerConfirmation;
+	root["voiceConfirmation"] = cfg.voiceConfirmation;
+	root["roundConfirmation"] = cfg.roundConfirmation;
+
 	// Link Guard
 	root["linkGuardCheckEnabled"] = cfg.linkGuardCheckEnabled;
 	root["linkGuardShowMode"] = cfg.linkGuardShowMode;
@@ -386,10 +413,21 @@ void SaveConfig() {
 	root["m3SchemeVariant"] = cfg.m3SchemeVariant;
 	root["m3ContrastLevel"] = cfg.m3ContrastLevel;
 
+	root["wsProxyEnabled"] = cfg.wsProxyEnabled;
+	root["wsProxyPort"] = cfg.wsProxyPort;
+	root["wsProxySecret"] = cfg.wsProxySecret;
+	root["wsProxyDisableTls"] = cfg.wsProxyDisableTls;
+
 	QFile file(ConfigFilePath());
 	if (file.open(QIODevice::WriteOnly)) {
 		file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
 	}
+}
+
+QString GenerateRandomSecret() {
+	auto bytes = std::array<uint8_t, 16>();
+	base::RandomFill(bytes.data(), bytes.size());
+	return QString::fromLatin1(QByteArray(reinterpret_cast<const char*>(bytes.data()), int(bytes.size())).toHex().toLower());
 }
 
 void LoadConfig() {
@@ -406,6 +444,7 @@ void LoadConfig() {
 	auto &cfg = globalConfig;
 
 	if (root.contains("antiDelete")) cfg.antiDelete = root["antiDelete"].toBool();
+	if (root.contains("antiDeleteMark")) cfg.antiDeleteMark = static_cast<AntiDeleteMark>(root["antiDeleteMark"].toInt());
 	if (root.contains("bypassProtection")) cfg.bypassProtection = root["bypassProtection"].toBool();
 	if (root.contains("blurMediaBackground")) cfg.blurMediaBackground = root["blurMediaBackground"].toBool();
 
@@ -420,13 +459,23 @@ void LoadConfig() {
 
 	if (root.contains("localPremium")) cfg.localPremium = root["localPremium"].toBool();
 	if (root.contains("disableAds")) cfg.disableAds = root["disableAds"].toBool();
+	if (root.contains("localColorIndex")) cfg.localColorIndex = root["localColorIndex"].toInt();
+	if (root.contains("localBackgroundEmojiId")) cfg.localBackgroundEmojiId = uint64(root["localBackgroundEmojiId"].toVariant().toLongLong());
+	if (root.contains("localProfileColorIndex")) cfg.localProfileColorIndex = root["localProfileColorIndex"].toInt();
+	if (root.contains("localProfileBackgroundEmojiId")) cfg.localProfileBackgroundEmojiId = uint64(root["localProfileBackgroundEmojiId"].toVariant().toLongLong());
+	if (root.contains("localEmojiStatusId")) cfg.localEmojiStatusId = uint64(root["localEmojiStatusId"].toVariant().toLongLong());
 
 	if (root.contains("avatarShape")) cfg.avatarShape = static_cast<AvatarShape>(root["avatarShape"].toInt());
 	if (root.contains("avatarCornerRadius")) cfg.avatarCornerRadius = root["avatarCornerRadius"].toInt();
 	if (root.contains("singleCornerRadius")) cfg.singleCornerRadius = root["singleCornerRadius"].toBool();
 	if (root.contains("disableCustomBackgrounds")) cfg.disableCustomBackgrounds = root["disableCustomBackgrounds"].toBool();
 	if (root.contains("hidePremiumStatuses")) cfg.hidePremiumStatuses = root["hidePremiumStatuses"].toBool();
-	if (root.contains("monospaceFont")) cfg.monospaceFont = root["monospaceFont"].toString();
+	if (root.contains("monospaceFont")) {
+		cfg.monospaceFont = root["monospaceFont"].toString();
+		if (!cfg.monospaceFont.isEmpty()) {
+			style::SetCustomMonospaceFont(cfg.monospaceFont);
+		}
+	}
 	if (root.contains("hideAllChatsTab")) cfg.hideAllChatsTab = root["hideAllChatsTab"].toBool();
 	if (root.contains("trayGhostMode")) cfg.trayGhostMode = root["trayGhostMode"].toBool();
 	if (root.contains("monochromeTrayIcon")) cfg.trayGhostMode = root["monochromeTrayIcon"].toBool();
@@ -473,6 +522,22 @@ void LoadConfig() {
 	if (root.contains("openAttachOnHover")) cfg.openAttachOnHover = root["openAttachOnHover"].toBool();
 	if (root.contains("openEmojiOnHover")) cfg.openEmojiOnHover = root["openEmojiOnHover"].toBool();
 
+	// Webview
+	if (root.contains("spoofWebviewAsAndroid")) cfg.spoofWebviewAsAndroid = root["spoofWebviewAsAndroid"].toBool();
+	if (root.contains("increaseWebviewHeight")) cfg.increaseWebviewHeight = root["increaseWebviewHeight"].toBool();
+	if (root.contains("increaseWebviewWidth")) cfg.increaseWebviewWidth = root["increaseWebviewWidth"].toBool();
+
+	// Ghost Extensions
+	if (root.contains("markReadAfterAction")) cfg.markReadAfterAction = root["markReadAfterAction"].toBool();
+
+	// Profile & UI
+	if (root.contains("showPeerId")) cfg.showPeerId = root["showPeerId"].toBool();
+
+	// Confirmations
+	if (root.contains("stickerConfirmation")) cfg.stickerConfirmation = root["stickerConfirmation"].toBool();
+	if (root.contains("voiceConfirmation")) cfg.voiceConfirmation = root["voiceConfirmation"].toBool();
+	if (root.contains("roundConfirmation")) cfg.roundConfirmation = root["roundConfirmation"].toBool();
+
 	// Link Guard
 	if (root.contains("linkGuardCheckEnabled")) cfg.linkGuardCheckEnabled = root["linkGuardCheckEnabled"].toBool();
 	if (root.contains("linkGuardShowMode")) cfg.linkGuardShowMode = root["linkGuardShowMode"].toInt();
@@ -497,6 +562,23 @@ void LoadConfig() {
 	if (root.contains("m3SeedColor")) cfg.m3SeedColor = static_cast<uint32>(root["m3SeedColor"].toDouble());
 	if (root.contains("m3SchemeVariant")) cfg.m3SchemeVariant = root["m3SchemeVariant"].toInt();
 	if (root.contains("m3ContrastLevel")) cfg.m3ContrastLevel = root["m3ContrastLevel"].toDouble();
+
+	if (root.contains("wsProxyEnabled")) cfg.wsProxyEnabled = root["wsProxyEnabled"].toBool();
+	if (root.contains("wsProxyDisableTls")) cfg.wsProxyDisableTls = root["wsProxyDisableTls"].toBool();
+	if (root.contains("wsProxyPort")) {
+		const auto p = root["wsProxyPort"].toInt();
+		cfg.wsProxyPort = (p == 443 || p <= 0) ? 1443 : p;
+	}
+	if (root.contains("wsProxySecret")) {
+		cfg.wsProxySecret = root["wsProxySecret"].toString().trimmed().toLower();
+	}
+	const auto isBadSecret = (cfg.wsProxySecret.size() != 32)
+		|| (cfg.wsProxySecret == u"00000000000000000000000000000001"_q)
+		|| (cfg.wsProxySecret == u"00000000000000000000000000000000"_q);
+	if (isBadSecret) {
+		cfg.wsProxySecret = GenerateRandomSecret();
+		SaveConfig();
+	}
 
 	if (!cfg.monospaceFont.isEmpty()) {
 		style::SetCustomMonospaceFont(cfg.monospaceFont);
@@ -1007,6 +1089,38 @@ void ShowSettingsBox(Window::SessionController *controller) {
 
 		box->addButton(tr::lng_close(), [=] { box->closeBox(); });
 	}));
+}
+
+static bool g_deletedMessagesHidden = false;
+
+bool AreDeletedMessagesHidden() {
+	return g_deletedMessagesHidden;
+}
+
+void SetDeletedMessagesHidden(bool hidden) {
+	g_deletedMessagesHidden = hidden;
+}
+
+void ToggleDeletedMessagesHidden(Window::SessionController *controller) {
+	SetDeletedMessagesHidden(!AreDeletedMessagesHidden());
+	if (controller) {
+		auto &owner = controller->session().data();
+		const auto history = controller->activeChatCurrent().history();
+		const auto migrated = history ? history->migrateFrom() : nullptr;
+		for (const auto h : { history, migrated }) {
+			if (!h) continue;
+			for (const auto &block : h->blocks) {
+				for (const auto &view : block->messages) {
+					if (view->data()->isDeletedByAntiDelete()) {
+						owner.requestViewResize(view.get());
+					}
+				}
+			}
+			owner.notifyHistoryChangeDelayed(h);
+		}
+		owner.sendHistoryChangeNotifications();
+		controller->widget()->update();
+	}
 }
 
 } // namespace PixelGram

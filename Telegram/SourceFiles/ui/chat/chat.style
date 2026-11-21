@@ -1151,8 +1151,8 @@ swipeBackSize: 150px;
 chatTabsToggle: IconButton(defaultIconButton) {
 	width: 64px;
 	height: 36px;
-	icon: icon {{ "top_bar_profile-flip_horizontal", menuIconFg }};
-	iconOver: icon {{ "top_bar_profile-flip_horizontal", menuIconFgOver }};
+	icon: icon {{ "top_bar_profile_left", menuIconFg }};
+	iconOver: icon {{ "top_bar_profile_left", menuIconFgOver }};
 	ripple: emptyRippleAnimation;
 }
 chatTabsToggleIconTop: icon {{ "chat/menu_sidebar2-24x24", menuIconFg }};

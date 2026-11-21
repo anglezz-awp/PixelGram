@@ -17,6 +17,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history_item_helpers.h"
 #include "history/history_item_text.h"
 #include "history/history_streamed_drafts.h"
+#include "settings/pixelgram_settings.h"
 #include "history/view/media/history_view_gram_transfer.h"
 #include "history/view/media/history_view_media.h"
 #include "history/view/media/history_view_sticker.h"
@@ -5359,7 +5360,7 @@ Reactions::ButtonParameters ListWidget::reactionButtonParameters(
 		not_null<const Element*> view,
 		QPoint position,
 		const TextState &reactionState) const {
-	if (!_useCornerReaction) {
+	if (!_useCornerReaction || PixelGram::CurrentConfig().hideReactionsBar) {
 		return {};
 	}
 	const auto top = itemTop(view);

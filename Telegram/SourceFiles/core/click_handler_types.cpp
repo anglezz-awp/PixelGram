@@ -19,6 +19,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_domain.h"
 #include "main/main_session.h"
 #include "ui/boxes/confirm_box.h"
+#include "core/pixelgram_link_guard.h"
 #include "ui/text/text_utilities.h"
 #include "ui/toast/toast.h"
 #include "ui/widgets/popup_menu.h"
@@ -543,6 +544,11 @@ void HiddenUrlClickHandler::Open(QString url, QVariant context) {
 		if (!isEmail) {
 			url = QString::fromUtf8(parsedUrl.toEncoded());
 		}
+
+		if (PixelGram::LinkGuard::HandleUrlClick(url, context)) {
+			return;
+		}
+
 		auto openContext = context;
 		const auto forceConfirmation = my.forceExternalUrlConfirmation
 			&& my.ignoreIv;

@@ -473,6 +473,9 @@ public:
 	[[nodiscard]] Api::Communities &communities();
 	[[nodiscard]] Api::UnreadThings &unreadThings();
 	[[nodiscard]] Api::Ringtones &ringtones();
+	[[nodiscard]] std::unique_ptr<TaskQueue> &fileLoader() {
+		return _fileLoader;
+	}
 	[[nodiscard]] Api::ComposeWithAi &composeWithAi();
 	[[nodiscard]] Api::Transcribes &transcribes();
 	[[nodiscard]] Api::Premium &premium();

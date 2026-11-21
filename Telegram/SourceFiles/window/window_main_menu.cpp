@@ -364,7 +364,9 @@ MainMenu::MainMenu(
 	}, shadow->lifetime());
 
 	_nightThemeSwitch.setCallback([this] {
-		Expects(_nightThemeToggle != nullptr);
+		if (!_nightThemeToggle) {
+			return;
+		}
 
 		const auto nightMode = Window::Theme::IsNightMode();
 		if (_nightThemeToggle->toggled() != nightMode) {
@@ -669,16 +671,18 @@ void MainMenu::setupMenu() {
 			std::move(descriptor));
 	};
 	if (!_controller->session().supportMode()) {
-		_menu->add(
-			CreateButtonWithIcon(
-				_menu,
-				tr::lng_menu_my_profile(),
-				st::mainMenuButton,
-				{ &st::menuIconProfile })
-		)->setClickedCallback([=] {
-			controller->showSection(
-				Info::Stories::MakeMyProfile(controller->session().user()));
-		});
+		if (PixelGram::CurrentConfig().drawerMyProfile) {
+			_menu->add(
+				CreateButtonWithIcon(
+					_menu,
+					tr::lng_menu_my_profile(),
+					st::mainMenuButton,
+					{ &st::menuIconProfile })
+			)->setClickedCallback([=] {
+				controller->showSection(
+					Info::Stories::MakeMyProfile(controller->session().user()));
+			});
+		}
 
 		SetupMenuBots(_menu, controller);
 
@@ -805,44 +809,46 @@ void MainMenu::setupMenu() {
 		}, _menu->lifetime());
 	}
 
-	_nightThemeToggle = addAction(
-		tr::lng_menu_night_mode(),
-		{ &st::menuIconNightMode }
-	)->toggleOn(_nightThemeSwitches.events_starting_with(
-		Window::Theme::IsNightMode()
-	));
-	_nightThemeToggle->toggledChanges(
-	) | rpl::filter([=](bool night) {
-		return (night != Window::Theme::IsNightMode());
-	}) | rpl::on_next([=](bool night) {
-		if (Window::Theme::Background()->editingTheme()) {
-			_nightThemeSwitches.fire(!night);
-			controller->show(Ui::MakeInformBox(
-				tr::lng_theme_editor_cant_change_theme()));
-			return;
-		}
-		const auto weak = base::make_weak(this);
-		const auto toggle = [=] {
-			if (!weak) {
-				Window::Theme::ToggleNightMode();
-				Window::Theme::KeepApplied();
-			} else {
-				_nightThemeSwitch.callOnce(st::mainMenu.itemToggle.duration);
+	if (PixelGram::CurrentConfig().drawerNightMode) {
+		_nightThemeToggle = addAction(
+			tr::lng_menu_night_mode(),
+			{ &st::menuIconNightMode }
+		)->toggleOn(_nightThemeSwitches.events_starting_with(
+			Window::Theme::IsNightMode()
+		));
+		_nightThemeToggle->toggledChanges(
+		) | rpl::filter([=](bool night) {
+			return (night != Window::Theme::IsNightMode());
+		}) | rpl::on_next([=](bool night) {
+			if (Window::Theme::Background()->editingTheme()) {
+				_nightThemeSwitches.fire(!night);
+				controller->show(Ui::MakeInformBox(
+					tr::lng_theme_editor_cant_change_theme()));
+				return;
 			}
-		};
-		Window::Theme::ToggleNightModeWithConfirmation(
-			&_controller->window(),
-			toggle);
-	}, _nightThemeToggle->lifetime());
+			const auto weak = base::make_weak(this);
+			const auto toggle = [=] {
+				if (!weak) {
+					Window::Theme::ToggleNightMode();
+					Window::Theme::KeepApplied();
+				} else {
+					_nightThemeSwitch.callOnce(st::mainMenu.itemToggle.duration);
+				}
+			};
+			Window::Theme::ToggleNightModeWithConfirmation(
+				&_controller->window(),
+				toggle);
+		}, _nightThemeToggle->lifetime());
 
-	Core::App().settings().systemDarkModeValue(
-	) | rpl::on_next([=](std::optional<bool> darkMode) {
-		const auto darkModeEnabled
-			= Core::App().settings().systemDarkModeEnabled();
-		if (darkModeEnabled && darkMode.has_value()) {
-			_nightThemeSwitches.fire_copy(*darkMode);
-		}
-	}, _nightThemeToggle->lifetime());
+		Core::App().settings().systemDarkModeValue(
+		) | rpl::on_next([=](std::optional<bool> darkMode) {
+			const auto darkModeEnabled
+				= Core::App().settings().systemDarkModeEnabled();
+			if (darkModeEnabled && darkMode.has_value()) {
+				_nightThemeSwitches.fire_copy(*darkMode);
+			}
+		}, _nightThemeToggle->lifetime());
+	}
 }
 
 void MainMenu::resizeEvent(QResizeEvent *e) {

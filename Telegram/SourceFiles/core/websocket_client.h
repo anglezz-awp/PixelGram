@@ -24,7 +24,8 @@ public:
 		const QString &host,
 		int port,
 		const QString &requestTarget,
-		const QString &subprotocol);
+		const QString &subprotocol,
+		bool secure = true);
 	void sendText(const QByteArray &message);
 	void sendBinary(const QByteArray &message);
 	void close();
@@ -34,15 +35,18 @@ public:
 	std::function<void(QByteArray)> onBinary;
 	std::function<void()> onClosed;
 	std::function<void()> onActivity;
+	std::function<void(QString)> onError;
+	[[nodiscard]] QString errorString() const { return _lastError; }
+	[[nodiscard]] QString lastRequest() const { return _lastRequest; }
 
 private:
-	void onSslConnected();
+	void onSocketConnected();
 	void onReadyRead();
 	void sendUpgradeRequest();
 	[[nodiscard]] bool readUpgradeResponse();
 	[[nodiscard]] bool parseFrames();
 	void writeFrame(const QByteArray &payload, quint8 opcode);
-	void fail();
+	void fail(const QString &reason = QString());
 
 	enum class State {
 		Idle,
@@ -56,10 +60,13 @@ private:
 	QString _host;
 	QString _target;
 	QString _subprotocol;
+	QString _lastError;
+	QString _lastRequest;
 	QByteArray _key;
 	QByteArray _incoming;
 	State _state = State::Idle;
 	int _port = 0;
+	bool _secure = true;
 	bool _failed = false;
 
 };

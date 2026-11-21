@@ -1230,6 +1230,9 @@ void Stories::loadAround(FullStoryId id, StoriesContext context) {
 }
 
 void Stories::markAsRead(FullStoryId id, bool viewed) {
+	if (PixelGram::CurrentConfig().dontReadStories) {
+		return;
+	}
 	if (id.peer == _owner->session().userPeerId()) {
 		return;
 	}

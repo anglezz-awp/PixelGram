@@ -1055,6 +1055,12 @@ bool PeerData::changeColorCollectible(
 
 bool PeerData::changeColor(
 		const tl::conditional<MTPPeerColor> &cloudColor) {
+	if (isSelf() && asUser() && !asUser()->hasRealServerPremium()) {
+		if (PixelGram::CurrentConfig().localColorIndex >= 0
+			|| PixelGram::CurrentConfig().localBackgroundEmojiId > 0) {
+			return false;
+		}
+	}
 	const auto maybeColorIndex = Data::ColorIndexFromColor(cloudColor);
 	const auto changed1 = maybeColorIndex
 		? changeColorIndex(*maybeColorIndex)
@@ -1067,6 +1073,12 @@ bool PeerData::changeColor(
 
 bool PeerData::changeColorProfile(
 		const tl::conditional<MTPPeerColor> &cloudColor) {
+	if (isSelf() && asUser() && !asUser()->hasRealServerPremium()) {
+		if (PixelGram::CurrentConfig().localProfileColorIndex >= 0
+			|| PixelGram::CurrentConfig().localProfileBackgroundEmojiId > 0) {
+			return false;
+		}
+	}
 	const auto maybeColorIndex = Data::ColorIndexFromColor(cloudColor);
 	const auto changed1 = maybeColorIndex
 		? changeColorProfileIndex(*maybeColorIndex)
@@ -1424,7 +1436,23 @@ bool PeerData::clearColorIndex() {
 	return true;
 }
 
+uint8 PeerData::colorIndex() const {
+	if (isSelf()) {
+		const auto idx = PixelGram::CurrentConfig().localColorIndex;
+		if (idx >= 0) {
+			return uint8(idx);
+		}
+	}
+	return _colorIndex;
+}
+
 DocumentId PeerData::backgroundEmojiId() const {
+	if (isSelf()) {
+		const auto id = PixelGram::CurrentConfig().localBackgroundEmojiId;
+		if (id > 0) {
+			return id;
+		}
+	}
 	return _backgroundEmojiId;
 }
 
@@ -1467,6 +1495,16 @@ bool PeerData::clearColorProfileCollectible() {
 	return true;
 }
 
+std::optional<uint8> PeerData::colorProfileIndex() const {
+	if (isSelf()) {
+		const auto idx = PixelGram::CurrentConfig().localProfileColorIndex;
+		if (idx >= 0) {
+			return uint8(idx);
+		}
+	}
+	return _colorProfileIndex;
+}
+
 bool PeerData::changeColorProfileIndex(uint8 index) {
 	index %= Ui::kColorIndexCount;
 	if (_colorProfileIndex == index) {
@@ -1485,6 +1523,12 @@ bool PeerData::clearColorProfileIndex() {
 }
 
 DocumentId PeerData::profileBackgroundEmojiId() const {
+	if (isSelf()) {
+		const auto id = PixelGram::CurrentConfig().localProfileBackgroundEmojiId;
+		if (id > 0) {
+			return id;
+		}
+	}
 	return _profileBackgroundEmojiId;
 }
 
@@ -1497,6 +1541,11 @@ bool PeerData::changeProfileBackgroundEmojiId(DocumentId id) {
 }
 
 void PeerData::setEmojiStatus(const MTPEmojiStatus &status) {
+	if (isSelf() && asUser() && !asUser()->hasRealServerPremium()) {
+		if (PixelGram::CurrentConfig().localEmojiStatusId > 0) {
+			return;
+		}
+	}
 	const auto parsed = owner().emojiStatuses().parse(status);
 	setEmojiStatus(parsed.id, parsed.until);
 }
@@ -1512,6 +1561,12 @@ void PeerData::setEmojiStatus(EmojiStatusId emojiStatusId, TimeId until) {
 EmojiStatusId PeerData::emojiStatusId() const {
 	if (PixelGram::CurrentConfig().hidePremiumStatuses) {
 		return {};
+	}
+	if (isSelf() && PixelGram::CurrentConfig().localPremium) {
+		const auto docId = PixelGram::CurrentConfig().localEmojiStatusId;
+		if (docId > 0) {
+			return EmojiStatusId{ .documentId = docId };
+		}
 	}
 	return _emojiStatusId;
 }
@@ -1738,8 +1793,22 @@ void PeerData::processTopics(const MTPVector<MTPForumTopic> &topics) {
 	}
 }
 
+bool PeerData::realAllowsForwarding() const {
+	if (const auto user = asUser()) {
+		return user->allowsForwarding();
+	} else if (const auto channel = asChannel()) {
+		return channel->allowsForwarding();
+	} else if (const auto chat = asChat()) {
+		return chat->allowsForwarding();
+	}
+	return false;
+}
+
 bool PeerData::allowsForwarding() const {
-	return true; // PixelGram bypass
+	if (PixelGram::CurrentConfig().bypassProtection) {
+		return true;
+	}
+	return realAllowsForwarding();
 }
 
 Data::RestrictionCheckResult PeerData::amRestricted(

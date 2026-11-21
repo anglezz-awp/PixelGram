@@ -14,6 +14,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat_helpers.h"
 #include "styles/style_credits.h"
 #include "styles/style_info.h"
+#include "ui/pixelgram_m3_scheme.h"
 
 #include <QApplication>
 
@@ -345,14 +346,25 @@ void SubTabs::paintEvent(QPaintEvent *e) {
 		const auto shiftedGeometry = geometry.translated(
 			base::SafeRound(button.shift),
 			0);
-		if (button.active) {
-			p.setBrush(st::giftBoxTabBgActive);
+		const auto &roles = PixelGram::CurrentM3Roles();
+		const auto isAddTab = (button.tab.id == u"add"_q);
+		if (button.active || isAddTab) {
+			const auto bg = roles.secondaryContainer.isValid()
+				? roles.secondaryContainer
+				: st::giftBoxTabBgActive->c;
+			const auto fg = roles.onSecondaryContainer.isValid()
+				? roles.onSecondaryContainer
+				: st::giftBoxTabFgActive->c;
+			p.setBrush(bg);
 			p.setPen(Qt::NoPen);
 			const auto radius = shiftedGeometry.height() / 2.;
 			p.drawRoundedRect(shiftedGeometry, radius, radius);
-			p.setPen(st::giftBoxTabFgActive);
+			p.setPen(fg);
 		} else {
-			p.setPen(st::giftBoxTabFg);
+			const auto fg = roles.onSurfaceVariant.isValid()
+				? roles.onSurfaceVariant
+				: st::giftBoxTabFg->c;
+			p.setPen(fg);
 		}
 		button.text.draw(p, {
 			.position = shiftedGeometry.marginsRemoved(padding).topLeft(),

@@ -466,7 +466,8 @@ SemanticIconStyle GetSemanticIconStyle(const style::icon *icon) {
 		|| icon == &st::menuIconWinHello
 		|| icon == &st::menuIconAddAccount
 		|| icon == &st::menuIconDevices
-		|| icon == &st::menuIconRecoveryEmail) {
+		|| icon == &st::menuIconRecoveryEmail
+		|| icon == &st::menuIconTune) {
 		return { roles.primaryContainer, roles.onPrimaryContainer };
 	}
 
@@ -502,7 +503,8 @@ SemanticIconStyle GetSemanticIconStyle(const style::icon *icon) {
 		|| icon == &st::menuIconBoosts
 		|| icon == &st::menuIconEarn
 		|| icon == &st::menuIconPayment
-		|| icon == &st::menuIconRatingGifts) {
+		|| icon == &st::menuIconRatingGifts
+		|| icon == &st::settingsIconChatAutomation) {
 		return { roles.tertiaryContainer, roles.onTertiaryContainer };
 	}
 
@@ -530,13 +532,16 @@ void AddButtonIcon(
 		button,
 		std::move(descriptor));
 	icon->widget.setAttribute(Qt::WA_TransparentForMouseEvents);
-	icon->widget.resize(40, 40);
+	const auto initialCircleSize = style::ConvertScale(28);
+	icon->widget.resize(initialCircleSize, initialCircleSize);
 	icon->widget.show();
 	button->sizeValue(
 	) | rpl::on_next([=, left = st.iconLeft](QSize size) {
+		const auto iconCircleSize = style::ConvertScale(28);
+		icon->widget.resize(iconCircleSize, iconCircleSize);
 		icon->widget.moveToLeft(
 			left,
-			(size.height() - 40) / 2,
+			(size.height() - iconCircleSize) / 2,
 			size.width());
 	}, icon->widget.lifetime());
 
@@ -547,9 +552,10 @@ void AddButtonIcon(
 		p.setRenderHint(QPainter::Antialiasing, true);
 		p.setPen(Qt::NoPen);
 		p.setBrush(semantic.container);
-		p.drawEllipse(0, 0, 40, 40);
+		const auto r = icon->widget.rect();
+		p.drawEllipse(r);
 		if (icon->rawIcon) {
-			icon->rawIcon->paintInCenter(p, QRect(0, 0, 40, 40), semantic.onContainer);
+			icon->rawIcon->paintInCenter(p, r, semantic.onContainer);
 		}
 	}, icon->widget.lifetime());
 }
@@ -620,14 +626,19 @@ void CreateRightLabel(
 		} else {
 			padding.setBottom(padding.bottom() + name->height());
 		}
+		const auto oldHeight = button->height();
 		button->setPaddingOverride(padding);
-		const auto single = st.padding.top()
-			+ st.height
-			+ st.padding.bottom();
+		if (button->height() != oldHeight) {
+			for (auto p = button->parentWidget(); p; p = p->parentWidget()) {
+				if (const auto vl = dynamic_cast<Ui::VerticalLayout*>(p)) {
+					vl->resizeToWidth(vl->width());
+				}
+			}
+		}
 		name->moveToRight(
 			st::settingsButtonRightSkip,
 			(sideBySide
-				? (st.padding.top() + (button->height() - single) / 2)
+				? ((button->height() - name->height()) / 2)
 				: (button->height() - st.padding.bottom() - name->height())));
 	};
 	if (v::text::is_plain(label)) {

@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/chat/attach/attach_bot_webview.h"
 
+#include "settings/pixelgram_settings.h"
 #include "ui/chat/attach/attach_bot_downloads.h"
 #include "ui/chat/attach/attach_bot_webview_linux_shell.h"
 #include "ui/effects/radial_animation.h"
@@ -389,6 +390,18 @@ void LogNativeMessageRejected(
 
 [[nodiscard]] bool UseExternalBotWebApps() {
 	return ::Platform::IsWayland();
+}
+
+[[nodiscard]] QSize PanelInnerSize() {
+	const auto &cfg = PixelGram::CurrentConfig();
+	auto size = QSize(st::botWebViewPanelSize);
+	if (cfg.increaseWebviewHeight) {
+		size.setHeight(style::ConvertScale(782));
+	}
+	if (cfg.increaseWebviewWidth) {
+		size.setWidth(style::ConvertScale(512));
+	}
+	return size;
 }
 
 [[nodiscard]] QString MiniAppWindowTitle(const QString &title) {
@@ -1256,7 +1269,7 @@ Panel::Panel(Args &&args)
 		}, _widget->lifetime());
 	}
 	_widget->setWindowFlag(Qt::WindowStaysOnTopHint, false);
-	_widget->setInnerSize(st::botWebViewPanelSize, true);
+	_widget->setInnerSize(PanelInnerSize(), true);
 
 	const auto panel = _widget.get();
 	rpl::duplicate(
@@ -2238,7 +2251,7 @@ bool Panel::createWebview(const Webview::ThemeParams &params) {
 				? LinuxShell::Unscaled(st::botWebViewShellShadowPadding)
 				: QMargins(),
 			.initialSize = _externalShell
-				? LinuxShell::WindowSize(st::botWebViewPanelSize)
+				? LinuxShell::WindowSize(PanelInnerSize())
 				: QSize(),
 			.shellMessageToken = _externalShell
 				? _externalShellToken

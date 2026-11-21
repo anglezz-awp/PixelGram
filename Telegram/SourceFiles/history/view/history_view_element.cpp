@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_element.h"
 
+#include "settings/pixelgram_settings.h"
+
 #include "apiwrap.h"
 #include "api/api_transcribes.h"
 #include "history/view/history_view_service_message.h"
@@ -1632,6 +1634,9 @@ bool Element::isHiddenByGroup() const {
 }
 
 bool Element::isHidden() const {
+	if (PixelGram::AreDeletedMessagesHidden() && data()->isDeletedByAntiDelete()) {
+		return true;
+	}
 	return isHiddenByGroup();
 }
 
@@ -2967,7 +2972,7 @@ void Element::setupReactions(Element *replacing) {
 		: base::flat_map<
 		Data::ReactionId,
 		std::unique_ptr<Ui::ReactionFlyAnimation>>();
-	if (!animations.empty()) {
+	if (!animations.empty() && !PixelGram::CurrentConfig().hideReactionsAnimations) {
 		const auto repainter = [=] { repaint(); };
 		for (const auto &[id, animation] : animations) {
 			animation->setRepaintCallback(repainter);
@@ -2982,7 +2987,8 @@ void Element::refreshReactions() {
 	using namespace Reactions;
 	auto reactionsData = InlineListDataFromMessage(this);
 	if (reactionsData.reactions.empty()
-		|| context() == Context::MediaEditor) {
+		|| context() == Context::MediaEditor
+		|| PixelGram::CurrentConfig().hideReactionsUnderMessage) {
 		setReactions(nullptr);
 		return;
 	}

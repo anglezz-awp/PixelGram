@@ -8,6 +8,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/history_view_context_menu.h"
 #include "core/pixelgram_link_guard.h"
 #include "settings/pixelgram_settings.h"
+#include "ayu/data/message_revisions.h"
+#include "ui/pixelgram_m3_scheme.h"
+#include "data/data_histories.h"
 #include "ui/boxes/confirm_box.h"
 #include <QtGui/QGuiApplication>
 #include <QtGui/QClipboard>
@@ -1383,6 +1386,15 @@ bool AddViewStatisticsAction(
 	return true;
 }
 
+[[nodiscard]] bool ShouldShowContextMenuAction(PixelGram::ContextMenuDisplay display) {
+	if (display == PixelGram::ContextMenuDisplay::Hidden) {
+		return false;
+	} else if (display == PixelGram::ContextMenuDisplay::Extended) {
+		return (QGuiApplication::keyboardModifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) != 0;
+	}
+	return true;
+}
+
 void AddTopMessageActions(
 		not_null<Ui::PopupMenu*> menu,
 		const ContextMenuRequest &request,
@@ -1395,7 +1407,9 @@ void AddTopMessageActions(
 	AddEditMessageAction(menu, request, list);
 	AddFactcheckAction(menu, request, list);
 	AddPinMessageAction(menu, request, list);
-	AddViewStatisticsAction(menu, request, list);
+	if (ShouldShowContextMenuAction(PixelGram::CurrentConfig().menuViews)) {
+		AddViewStatisticsAction(menu, request, list);
+	}
 }
 
 void AddMessageActions(
@@ -1853,19 +1867,62 @@ void AddPixelGramActions(
 	// 4. Show Message Shot
 	if (shouldShow(cfg.menuMessageShot)) {
 		result->addAction(
-			QString::fromUtf8("Скриншот сообщения"),
+			QString::fromUtf8("Снимок сообщения"),
 			[=] {
 				if (const auto view = request.view) {
 					const auto g = list->elementGlobalRect(view);
 					const auto local = QRect(list->mapFromGlobal(g.topLeft()), g.size());
 					if (local.width() > 0 && local.height() > 0) {
-						const auto image = list->grab(local).toImage();
-						QGuiApplication::clipboard()->setImage(image);
-						list->controller()->showToast(QString::fromUtf8("Скриншот скопирован в буфер!"));
+						const auto original = list->grab(local).toImage();
+						if (!original.isNull()) {
+							const auto paddingH = style::ConvertScale(28);
+							const auto paddingV = style::ConvertScale(24);
+							const auto cardRadius = style::ConvertScale(18);
+							const auto cardWidth = original.width() + paddingH * 2;
+							const auto cardHeight = original.height() + paddingV * 2;
+
+							QImage card(cardWidth, cardHeight, QImage::Format_ARGB32_Premultiplied);
+							card.setDevicePixelRatio(original.devicePixelRatio());
+							card.fill(Qt::transparent);
+
+							Painter p(&card);
+							PainterHighQualityEnabler hq(p);
+
+							const auto &roles = PixelGram::CurrentM3Roles();
+							const auto topCol = roles.surfaceContainerHigh.isValid() ? roles.surfaceContainerHigh : QColor(32, 33, 36);
+							const auto botCol = roles.surfaceContainerLow.isValid() ? roles.surfaceContainerLow : QColor(24, 24, 27);
+							QLinearGradient bg(0, 0, cardWidth, cardHeight);
+							bg.setColorAt(0.0, topCol);
+							bg.setColorAt(1.0, botCol);
+
+							p.setPen(Qt::NoPen);
+							p.setBrush(bg);
+							p.drawRoundedRect(QRectF(0, 0, cardWidth, cardHeight), cardRadius, cardRadius);
+
+							const auto borderCol = roles.outlineVariant.isValid() ? roles.outlineVariant : QColor(255, 255, 255, 30);
+							p.setPen(QPen(borderCol, style::ConvertScale(1)));
+							p.setBrush(Qt::NoBrush);
+							p.drawRoundedRect(QRectF(0.5, 0.5, cardWidth - 1, cardHeight - 1), cardRadius, cardRadius);
+
+							p.drawImage(paddingH, paddingV, original);
+
+							QGuiApplication::clipboard()->setImage(card);
+							list->controller()->showToast(QString::fromUtf8("Снимок сообщения скопирован!"));
+						}
 					}
 				}
 			},
 			&st::menuIconCopy);
+	}
+
+	// 4b. Show Message Edit History
+	if (item && (PixelGram::Revisions::HasRevisions(item) || item->Get<HistoryMessageEdited>())) {
+		result->addAction(
+			QString::fromUtf8("История изменений"),
+			[=] {
+				PixelGram::Revisions::ShowHistoryBox(list->controller(), item);
+			},
+			&st::menuIconEdit);
 	}
 
 	// 5. Hide Message Locally
@@ -1876,6 +1933,22 @@ void AddPixelGramActions(
 				item->destroy();
 			},
 			&st::menuIconCancel);
+	}
+
+	// 6. Quick Admin Shortcuts
+	if (cfg.quickAdminShortcuts && item && item->canDelete()) {
+		result->addAction(
+			QString::fromUtf8("Быстро удалить (Admin)"),
+			[=] {
+				list->controller()->session().data().histories().deleteMessages(
+					{ item->fullId() },
+					true);
+			},
+			&st::menuIconDelete);
+	}
+
+	if (cfg.replaceWithIcons) {
+		// Reserved for icon-only action bar mode in context menus
 	}
 }
 
@@ -2069,7 +2142,7 @@ void FillContextMenuItems(
 		const auto added = (result->actions().size() > wasAmount);
 		AddSelectRestrictionAction(result, item, !added);
 	}
-	if (!skipWhoReacted) {
+	if (!skipWhoReacted && ShouldShowContextMenuAction(PixelGram::CurrentConfig().menuReactions)) {
 		if (hasWhoReactedItem) {
 			AddWhoReactedAction(result, list, item, list->controller());
 		} else if (item) {

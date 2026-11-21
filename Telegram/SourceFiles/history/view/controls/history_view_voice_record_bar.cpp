@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/controls/history_view_voice_record_bar.h"
 
+#include "settings/pixelgram_settings.h"
 #include "api/api_send_progress.h"
 #include "base/event_filter.h"
 #include "base/random.h"
@@ -3036,12 +3037,23 @@ void VoiceRecordBar::stopRecording(StopType type, bool ttlBeforeHide) {
 					? std::numeric_limits<int>::max()
 					: 0),
 			};
-			_sendVoiceRequests.fire({
-				.bytes = _data.content,
-				.waveform = _data.waveform,
-				.duration = _data.duration,
-				.options = options,
+			auto sendVoiceCallback = crl::guard(this, [=, this] {
+				_sendVoiceRequests.fire({
+					.bytes = _data.content,
+					.waveform = _data.waveform,
+					.duration = _data.duration,
+					.options = options,
+				});
 			});
+			if (PixelGram::CurrentConfig().voiceConfirmation) {
+				_show->showBox(Ui::MakeConfirmBox({
+					.text = QString::fromUtf8("Отправить голосовое сообщение?"),
+					.confirmed = std::move(sendVoiceCallback),
+					.confirmText = tr::lng_send_button(),
+				}));
+			} else {
+				sendVoiceCallback();
+			}
 		}));
 	}
 }
@@ -3107,13 +3119,30 @@ void VoiceRecordBar::requestToSendWithOptions(Api::SendOptions options) {
 			_listen->prepareForSendAnimation();
 			_listen->applyTrimBeforeSend();
 		}
-		_sendVoiceRequests.fire({
-			.bytes = _data.content,
-			.waveform = _data.waveform,
-			.duration = _data.duration,
-			.options = options,
-			.video = !_data.minithumbs.isNull(),
+		const auto video = !_data.minithumbs.isNull();
+		const auto needConfirm = video
+			? PixelGram::CurrentConfig().roundConfirmation
+			: PixelGram::CurrentConfig().voiceConfirmation;
+		auto sendVoiceCallback = crl::guard(this, [=, this] {
+			_sendVoiceRequests.fire({
+				.bytes = _data.content,
+				.waveform = _data.waveform,
+				.duration = _data.duration,
+				.options = options,
+				.video = video,
+			});
 		});
+		if (needConfirm) {
+			_show->showBox(Ui::MakeConfirmBox({
+				.text = (video
+					? QString::fromUtf8("Отправить видеосообщение?")
+					: QString::fromUtf8("Отправить голосовое сообщение?")),
+				.confirmed = std::move(sendVoiceCallback),
+				.confirmText = tr::lng_send_button(),
+			}));
+		} else {
+			sendVoiceCallback();
+		}
 	}
 }
 

@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/history_widget.h"
 
+#include "settings/pixelgram_settings.h"
 #include "api/api_compose_with_ai.h"
 #include "api/api_editing.h"
 #include "api/api_bot.h"
@@ -484,6 +485,9 @@ HistoryWidget::HistoryWidget(
 	setupGiftToChannelButton();
 	setupDirectMessageButton();
 	_reportMessages->addClickHandler([=] { reportSelectedMessages(); });
+	const auto initialFont = st::historyComposeField.style.font;
+	const auto initialVMargin = std::max((st::historyComposeField.heightMin - initialFont->height) / 2 - style::ConvertScale(4), 0);
+	_field->setTextMargins({ 0, initialVMargin, 0, 0 });
 	_field->submits(
 	) | rpl::on_next([=](Qt::KeyboardModifiers modifiers) {
 		sendWithModifiers(modifiers);
@@ -617,7 +621,7 @@ HistoryWidget::HistoryWidget(
 			_ttlInfo->setVisible(!hide);
 		}
 		if (_giftToUser) {
-			_giftToUser->setVisible(!hide);
+			_giftToUser->setVisible(!hide && PixelGram::CurrentConfig().showGiftButton);
 		}
 		if (_scheduled) {
 			_scheduled->setVisible(!hide);
@@ -4560,7 +4564,7 @@ void HistoryWidget::updateControlsVisibility() {
 			}
 			if (_giftToUser) {
 				const auto was = _giftToUser->isVisible();
-				const auto now = (!_editMsgId) && (!hideExtra);
+				const auto now = (!_editMsgId) && (!hideExtra) && PixelGram::CurrentConfig().showGiftButton;
 				if (was != now) {
 					_giftToUser->setVisible(now);
 					rightButtonsChanged = true;
@@ -7011,7 +7015,8 @@ bool HistoryWidget::isSearching() const {
 }
 
 bool HistoryWidget::showRecordButton() const {
-	return (_recordAvailability != Webrtc::RecordAvailability::None)
+	return PixelGram::CurrentConfig().showVoiceButton
+		&& (_recordAvailability != Webrtc::RecordAvailability::None)
 		&& !_voiceRecordBar->isListenState()
 		&& !_voiceRecordBar->isRecordingByAnotherBar()
 		&& !hasSendableContent()
@@ -7717,12 +7722,14 @@ void HistoryWidget::updateComposePillRadius() {
 		: fullRadius;
 	if (_composePillMultiline != multiline) {
 		_composePillMultiline = multiline;
+		const auto from = _composePillRadiusAnim.value(_composePillRadiusCurrent);
 		_composePillRadiusAnim.start(
 			[=] { updateField(); },
-			_composePillRadiusCurrent,
+			from,
 			target,
 			180,
 			anim::easeOutCubic);
+		_composePillRadiusCurrent = target;
 	} else if (!_composePillRadiusAnim.animating()) {
 		_composePillRadiusCurrent = target;
 	}
@@ -7781,6 +7788,12 @@ void HistoryWidget::moveFieldControls() {
 		_sendAs->moveToLeft(left, buttonsBottom);
 		left += _sendAs->width();
 	}
+	const auto multiline = (fieldHeight() > st::historyComposeField.heightMin + 4);
+	const auto vMargin = multiline
+		? style::ConvertScale(4)
+		: std::max((st::historyComposeField.heightMin - st::historyComposeField.style.font->height) / 2 - style::ConvertScale(4), 0);
+	const auto bottomMargin = multiline ? style::ConvertScale(4) : 0;
+	_field->setTextMargins({ 0, vMargin, 0, bottomMargin });
 	const auto fieldTop = pillBottom - fieldHeight() - st::historySendPadding;
 	_field->moveToLeft(left, fieldTop);
 	_richDraftPreview->moveToLeft(left, fieldTop);

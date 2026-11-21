@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "mainwidget.h"
 
+#include "ayu/features/forward/ayu_forward.h"
+
 #include "api/api_updates.h"
 #include "api/api_views.h"
 #include "data/components/scheduled_messages.h"
@@ -601,7 +603,7 @@ bool MainWidget::setForwardDraft(
 			.forward = &items,
 			.ignoreSlowmodeCountdown = true,
 		});
-	if (error) {
+	if (error && !AyuForward::isForwarding(history->peer->id)) {
 		Data::ShowSendErrorToast(_controller, history->peer, error);
 		return false;
 	}

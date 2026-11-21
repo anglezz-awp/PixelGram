@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "data/data_emoji_statuses.h"
 
+#include "settings/pixelgram_settings.h"
 #include "main/main_session.h"
 #include "data/data_channel.h"
 #include "data/data_user.h"
@@ -532,7 +533,12 @@ void EmojiStatuses::set(
 			MTP_long(id.documentId),
 			MTP_int(until));
 	if (peer->isSelf()) {
-		send(MTPaccount_UpdateEmojiStatus(status));
+		if (PixelGram::CurrentConfig().localPremium && !_owner->session().user()->hasRealServerPremium()) {
+			PixelGram::CurrentConfig().localEmojiStatusId = id.documentId;
+			PixelGram::SaveConfig();
+		} else {
+			send(MTPaccount_UpdateEmojiStatus(status));
+		}
 	} else if (const auto channel = peer->asChannel()) {
 		send(MTPchannels_UpdateEmojiStatus(channel->inputChannel(), status));
 	}

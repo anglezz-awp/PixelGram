@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "chat_helpers/stickers_list_widget.h"
 
+#include "settings/pixelgram_settings.h"
+#include "ui/boxes/confirm_box.h"
 #include "base/options.h"
 #include "base/timer_rpl.h"
 #include "core/application.h"
@@ -2970,13 +2972,24 @@ void StickersListWidget::mouseReleaseEvent(QMouseEvent *e) {
 				&& (e->modifiers() & Qt::ControlModifier)) {
 				showStickerSetBox(document, set.id);
 			} else {
-				_chosen.fire({
-					.document = document,
-					.messageSendingFrom = messageSentAnimationInfo(
-						sticker->section,
-						sticker->index,
-						document),
-				});
+				auto sendStickerCallback = [=, this] {
+					_chosen.fire({
+						.document = document,
+						.messageSendingFrom = messageSentAnimationInfo(
+							sticker->section,
+							sticker->index,
+							document),
+					});
+				};
+				if (PixelGram::CurrentConfig().stickerConfirmation) {
+					_show->showBox(Ui::MakeConfirmBox({
+						.text = QString::fromUtf8("Отправить выбранный стикер?"),
+						.confirmed = sendStickerCallback,
+						.confirmText = tr::lng_send_button(),
+					}));
+				} else {
+					sendStickerCallback();
+				}
 			}
 		} else if (auto set = std::get_if<OverSet>(&pressed)) {
 			Assert(set->section >= 0 && set->section < sets.size());

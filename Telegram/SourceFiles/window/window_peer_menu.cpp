@@ -66,6 +66,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_app_config.h"
 #include "main/main_session.h"
 #include "main/main_session_settings.h"
+#include "settings/pixelgram_settings.h"
 #include "menu/menu_mute.h"
 #include "menu/menu_ttl_validator.h"
 #include "apiwrap.h"
@@ -332,6 +333,7 @@ private:
 	void addToggleTopicClosed();
 	void addExportChat();
 	void addTranslate();
+	void addToggleHideDeleted();
 	void addReport();
 	void addNewContact();
 	void addShareContact();
@@ -1096,6 +1098,17 @@ void Filler::addTranslate() {
 	_addAction(tr::lng_context_translate(tr::now), [=] {
 		history->peer->saveTranslationDisabled(false);
 	}, &st::menuIconTranslate);
+}
+
+void Filler::addToggleHideDeleted() {
+	if (!PixelGram::CurrentConfig().antiDelete) {
+		return;
+	}
+	const auto hidden = PixelGram::AreDeletedMessagesHidden();
+	const auto text = hidden ? u"Показать удалённые"_q : u"Скрыть удалённые"_q;
+	_addAction(text, [controller = _controller] {
+		PixelGram::ToggleDeletedMessagesHidden(controller);
+	}, &st::menuIconClear);
 }
 
 void Filler::addReport() {
@@ -1952,6 +1965,7 @@ void Filler::fillHistoryActions() {
 	addDirectMessages();
 	addExportChat();
 	addTranslate();
+	addToggleHideDeleted();
 	addReport();
 	addClearHistory();
 	addDeleteChat();

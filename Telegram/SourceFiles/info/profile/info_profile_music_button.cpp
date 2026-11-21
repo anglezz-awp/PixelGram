@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "info/profile/info_profile_music_button.h"
+#include "ui/pixelgram_m3_scheme.h"
 
 #include "ui/effects/animation_value.h"
 #include "ui/color_contrast.h"
@@ -25,13 +26,23 @@ namespace {
 } // namespace
 
 PillColors ComputePillColors(std::optional<QColor> edge) {
+	const auto &roles = PixelGram::CurrentM3Roles();
 	if (!edge) {
-		return {
-			.fill = anim::with_alpha(
+		const auto fill = roles.surfaceContainerHigh.isValid()
+			? roles.surfaceContainerHigh
+			: anim::with_alpha(
 				st::boxBg->c,
-				1. - st::infoProfileTopBarActionButtonBgOpacity),
-			.primary = st::windowBoldFg->c,
-			.secondary = st::windowSubTextFg->c,
+				1. - st::infoProfileTopBarActionButtonBgOpacity);
+		const auto primary = roles.onSurface.isValid()
+			? roles.onSurface
+			: st::windowBoldFg->c;
+		const auto secondary = roles.onSurfaceVariant.isValid()
+			? roles.onSurfaceVariant
+			: st::windowSubTextFg->c;
+		return {
+			.fill = fill,
+			.primary = primary,
+			.secondary = secondary,
 		};
 	}
 	const auto light = Ui::IsLightBackground(*edge);

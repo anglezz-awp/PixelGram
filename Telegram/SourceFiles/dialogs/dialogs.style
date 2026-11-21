@@ -314,7 +314,7 @@ dialogsSearchFrom: IconButton(dialogsCalendar) {
 dialogsFilter: InputField(defaultInputField) {
 	textBg: filterInputInactiveBg;
 	textBgActive: filterInputActiveBg;
-	textMargins: margins(12px, 8px, 30px, 5px);
+	textMargins: margins(12px, 9px, 30px, 0px);
 
 	placeholderFg: placeholderFg;
 	placeholderFgActive: placeholderFgActive;

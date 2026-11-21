@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "info/profile/info_profile_actions.h"
 
+#include "settings/pixelgram_settings.h"
 #include "api/api_blocked_peers.h"
 #include "api/api_chat_participants.h"
 #include "api/api_credits.h"
@@ -114,6 +115,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_menu_icons.h"
 #include "styles/style_settings.h" // settingsButtonRightSkip.
 #include "styles/style_window.h" // mainMenuToggleFourStrokes.
+#include "ui/pixelgram_m3_scheme.h"
+#include "ui/style/style_core_scale.h"
 
 #include <QtGui/QGuiApplication>
 #include <QtGui/QClipboard>
@@ -124,6 +127,40 @@ namespace {
 
 constexpr auto kDay = Data::WorkingInterval::kDay;
 constexpr auto kPeerIdLinkIndex = uint16(1);
+
+class MiniTileIconButton final : public Ui::IconButton {
+public:
+	MiniTileIconButton(QWidget *parent, const style::IconButton &st)
+	: Ui::IconButton(parent, st) {
+	}
+
+protected:
+	void paintEvent(QPaintEvent *e) override {
+		Painter p(this);
+		PainterHighQualityEnabler hq(p);
+		const auto &roles = PixelGram::CurrentM3Roles();
+		const auto isHover = isOver() || isDown();
+		const auto bg = isHover
+			? (roles.surfaceContainerHighest.isValid() ? roles.surfaceContainerHighest : st::windowBgOver->c)
+			: (roles.surfaceContainerHigh.isValid() ? roles.surfaceContainerHigh : st::windowBgOver->c);
+		const auto radius = style::ConvertScale(8);
+		const auto r = rect().toRectF();
+		p.setPen(Qt::NoPen);
+		p.setBrush(bg);
+		p.drawRoundedRect(r, radius, radius);
+
+		paintRipple(p, 0, 0);
+
+		const auto &icon = (isOver() && !st().iconOver.empty()) ? st().iconOver : st().icon;
+		const auto ix = (width() - icon.width()) / 2;
+		const auto iy = (height() - icon.height()) / 2;
+		icon.paint(p, ix, iy, width());
+	}
+
+	QImage prepareRippleMask() const override {
+		return Ui::RippleAnimation::RoundRectMask(size(), style::ConvertScale(8));
+	}
+};
 
 class DraggableUrlClickHandler final : public UrlClickHandler {
 public:
@@ -1418,6 +1455,26 @@ Section DetailsFiller::makeInfo() {
 	const auto result = raw->entity();
 	auto tracker = Ui::MultiSlideTracker();
 
+	raw->paintRequest(
+	) | rpl::on_next([=] {
+		if (raw->height() <= style::ConvertScale(8)) {
+			return;
+		}
+		Painter p(raw);
+		PainterHighQualityEnabler hq(p);
+		const auto &roles = PixelGram::CurrentM3Roles();
+		const auto bg = roles.surfaceContainerLow.isValid()
+			? roles.surfaceContainerLow
+			: st::windowBgOver->c;
+		const auto hMargin = style::ConvertScale(12);
+		const auto vMargin = style::ConvertScale(4);
+		const auto cardRect = raw->rect().adjusted(hMargin, vMargin, -hMargin, -vMargin);
+		const auto radius = style::ConvertScale(16);
+		p.setPen(Qt::NoPen);
+		p.setBrush(bg);
+		p.drawRoundedRect(cardRect, radius, radius);
+	}, raw->lifetime());
+
 	// Fill context for a mention / hashtag / bot command link.
 	const auto infoClickFilter = [=,
 		peer = _peer.get(),
@@ -1747,17 +1804,17 @@ Section DetailsFiller::makeInfo() {
 				user->session().createInternalLinkFull(username)));
 		}, usernameLine.text->lifetime());
 
-		const auto qrButton = Ui::CreateChild<Ui::IconButton>(
+		const auto qrButton = Ui::CreateChild<MiniTileIconButton>(
 			usernameLine.text->parentWidget(),
 			st::infoProfileLabeledButtonQr);
 		qrButton->setAccessibleName(tr::lng_group_invite_context_qr(tr::now));
-		const auto rightSkip = st::infoProfileLabeledButtonQrRightSkip;
+		const auto rightSkip = style::ConvertScale(16);
 		const auto showQr = [=, show = controller->uiShow()] {
 			Ui::DefaultShowFillPeerQrBoxCallback(show, user);
 			return false;
 		};
 		if (user->isSelf()) {
-			const auto phoneQr = Ui::CreateChild<Ui::IconButton>(
+			const auto phoneQr = Ui::CreateChild<MiniTileIconButton>(
 				phoneLine.text->parentWidget(),
 				st::infoProfileLabeledButtonQr);
 			phoneQr->setAccessibleName(tr::lng_group_invite_context_qr(tr::now));
@@ -1810,6 +1867,22 @@ Section DetailsFiller::makeInfo() {
 				QString()
 			).text->setLinksTrusted();
 		}
+
+		if (PixelGram::CurrentConfig().showPeerId) {
+			const auto idText = QString::number(peerToUser(user->id).bare);
+			auto idInfo = addInfoOneLine(
+				u"ID"_q,
+				rpl::single(TextWithEntities{ idText }),
+				tr::lng_profile_copy_phone(tr::now)
+			);
+			idInfo.text->setClickHandlerFilter([=](const ClickHandlerPtr &, Qt::MouseButton) -> bool {
+				TextUtilities::SetClipboardText({ idText });
+				if (const auto strong = weak.get()) {
+					strong->showToast(TextWithEntities{ u"ID copied to clipboard."_q });
+				}
+				return false;
+			});
+		}
 	} else {
 		const auto topicRootId = _topic ? _topic->rootId() : 0;
 		const auto addToLink = topicRootId
@@ -1857,14 +1930,14 @@ Section DetailsFiller::makeInfo() {
 				link.text + addToLink));
 		}, linkLine.text->lifetime());
 		if (!topicRootId || !_peer->username().isEmpty()) {
-			const auto qr = Ui::CreateChild<Ui::IconButton>(
+			const auto qr = Ui::CreateChild<MiniTileIconButton>(
 				linkLine.text->parentWidget(),
 				st::infoProfileLabeledButtonQr);
 			qr->setAccessibleName(tr::lng_group_invite_context_qr(tr::now));
 			UsernamesValue(_peer) | rpl::on_next([=](const auto &u) {
 				qr->setVisible(!u.empty());
 			}, qr->lifetime());
-			const auto rightSkip = st::infoProfileLabeledButtonQrRightSkip;
+			const auto rightSkip = style::ConvertScale(16);
 			fitLabelToButton(qr, linkLine.text, rightSkip);
 			fitLabelToButton(qr, linkLine.subtext, rightSkip);
 			const auto peer = _peer;
@@ -1889,6 +1962,31 @@ Section DetailsFiller::makeInfo() {
 				std::move(locationText),
 				QString()
 			).text->setLinksTrusted();
+		}
+
+		if (PixelGram::CurrentConfig().showPeerId) {
+			const auto idText = [&]() -> QString {
+				if (_topic) {
+					return QString::number(topicRootId.bare);
+				} else if (_peer->isChannel()) {
+					return QString::number(peerToChannel(_peer->id).bare - 1000000000000LL).prepend("-");
+				} else if (_peer->isChat()) {
+					return QString::number(peerToChat(_peer->id).bare).prepend("-");
+				}
+				return QString::number(_peer->id.value);
+			}();
+			auto idInfo = addInfoOneLine(
+				u"ID"_q,
+				rpl::single(TextWithEntities{ idText }),
+				tr::lng_profile_copy_phone(tr::now)
+			);
+			idInfo.text->setClickHandlerFilter([=](const ClickHandlerPtr &, Qt::MouseButton) -> bool {
+				TextUtilities::SetClipboardText({ idText });
+				if (const auto strong = weak.get()) {
+					strong->showToast(TextWithEntities{ u"ID copied to clipboard."_q });
+				}
+				return false;
+			});
 		}
 
 		const auto about = addInfoLine(tr::lng_info_about_label(), _topic

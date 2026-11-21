@@ -57,6 +57,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat_style.h"
 #include "styles/style_overview.h"
 
+#include <QtGui/QPainterPath>
+
 namespace Overview::Layout {
 namespace {
 
@@ -456,6 +458,14 @@ int32 Photo::resizeGetHeight(int32 width) {
 }
 
 void Photo::paint(Painter &p, const QRect &clip, TextSelection selection, const PaintContext *context) {
+	const auto radius = style::ConvertScale(14);
+	const auto margin = style::ConvertScale(2);
+	const auto itemRect = QRect(margin, margin, _width - 2 * margin, _height - 2 * margin);
+	p.save();
+	auto path = QPainterPath();
+	path.addRoundedRect(itemRect, radius, radius);
+	p.setClipPath(path);
+
 	const auto selected = (selection == FullSelection);
 	const auto widthChanged = (_pix.width()
 		!= (_width * style::DevicePixelRatio()));
@@ -530,6 +540,7 @@ void Photo::paint(Painter &p, const QRect &clip, TextSelection selection, const 
 	const auto checkLeft = _width - checkDelta;
 	const auto checkTop = _height - checkDelta;
 	paintCheckbox(p, { checkLeft, checkTop }, selected, context);
+	p.restore();
 }
 
 bool Photo::elementsAnimating() const {
@@ -722,6 +733,14 @@ void Video::paint(
 		const QRect &clip,
 		TextSelection selection,
 		const PaintContext *context) {
+	const auto radius = style::ConvertScale(14);
+	const auto margin = style::ConvertScale(2);
+	const auto itemRect = QRect(margin, margin, _width - 2 * margin, _height - 2 * margin);
+	p.save();
+	auto path = QPainterPath();
+	path.addRoundedRect(itemRect, radius, radius);
+	p.setClipPath(path);
+
 	ensureDataMediaCreated();
 
 	const auto selected = (selection == FullSelection);
@@ -875,6 +894,7 @@ void Video::paint(
 	const auto checkLeft = _width - checkDelta;
 	const auto checkTop = _height - checkDelta;
 	paintCheckbox(p, { checkLeft, checkTop }, selected, context);
+	p.restore();
 }
 
 bool Video::elementsAnimating() const {

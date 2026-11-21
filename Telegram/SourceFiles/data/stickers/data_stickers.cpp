@@ -28,6 +28,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session.h"
 #include "main/main_app_config.h"
 #include "mtproto/mtproto_config.h"
+#include "settings/pixelgram_settings.h"
 #include "ui/toast/toast.h"
 #include "ui/image/image_location_factory.h"
 #include "window/window_controller.h"
@@ -372,6 +373,7 @@ void Stickers::incrementSticker(not_null<DocumentData*> document) {
 		}
 	}
 	while (!recent.isEmpty()
+		&& !PixelGram::CurrentConfig().unlimitedRecentStickers
 		&& (set->stickers.size() + recent.size()
 			> session().serverConfig().stickersRecentLimit)) {
 		writeOldRecent = true;
@@ -1422,7 +1424,8 @@ std::vector<not_null<DocumentData*>> Stickers::getListByEmoji(
 		session().api().requestStickerSets();
 	}
 
-	if (forceAllResults || Core::App().settings().suggestStickersByEmoji()) {
+	if ((forceAllResults || Core::App().settings().suggestStickersByEmoji())
+		&& !PixelGram::CurrentConfig().showOnlyAddedStickers) {
 		const auto key = ranges::accumulate(
 			all,
 			QString(),

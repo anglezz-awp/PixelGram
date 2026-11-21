@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "core/application.h"
 #include "core/pixelgram_link_guard.h"
+#include "core/pixelgram_ws_proxy.h"
+#include "settings/pixelgram_settings.h"
 
 #include "data/data_abstract_structure.h"
 #include "data/data_channel.h"
@@ -264,6 +266,7 @@ void Application::closeAdditionalWindows() {
 }
 
 Application::~Application() {
+	PixelGram::WsProxy::Stop();
 	if (_savedWindows) {
 		_savedWindows->writeNow();
 	}
@@ -319,6 +322,9 @@ void Application::run() {
 	startLocalStorage();
 
 	style::SetCustomFont(settings().customFontFamily());
+	if (!PixelGram::CurrentConfig().monospaceFont.isEmpty()) {
+		style::SetCustomMonospaceFont(PixelGram::CurrentConfig().monospaceFont);
+	}
 	style::internal::StartFonts();
 
 	Test::ApplyStartupOverrides();
@@ -566,6 +572,11 @@ void Application::startSettingsAndBackground() {
 	checkSystemDarkMode();
 	Ui::SetScreenReaderModeDisabled(
 		settings().readPref<bool>(kScreenReaderModeDisabledKey));
+	crl::on_main([=] {
+		if (PixelGram::CurrentConfig().wsProxyEnabled) {
+			PixelGram::WsProxy::Start();
+		}
+	});
 }
 
 void Application::checkSystemDarkMode() {

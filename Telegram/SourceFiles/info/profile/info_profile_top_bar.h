@@ -151,6 +151,7 @@ public:
 	rpl::producer<int> desiredHeightValue() const override;
 
 protected:
+	void showEvent(QShowEvent *e) override;
 	void resizeEvent(QResizeEvent *e) override;
 	void paintEvent(QPaintEvent *e) override;
 

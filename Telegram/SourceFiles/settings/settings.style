@@ -510,8 +510,8 @@ settingsPremiumMoveLeft: IconButton(settingsPremiumLayerTopBarBack) {
 	height: 56px;
 	iconPosition: point(-1px, -1px);
 }
-settingsPremiumMoveRightIcon: icon {{ "info/info_back-flip_horizontal", premiumButtonFg }};
-settingsPremiumMoveRightIconOver: icon {{ "info/info_back-flip_horizontal", premiumButtonFg }};
+settingsPremiumMoveRightIcon: icon {{ "info/info_forward", premiumButtonFg }};
+settingsPremiumMoveRightIconOver: icon {{ "info/info_forward", premiumButtonFg }};
 settingsPremiumMoveRight: IconButton(settingsPremiumMoveLeft) {
 	icon: settingsPremiumMoveRightIcon;
 	iconOver: settingsPremiumMoveRightIconOver;

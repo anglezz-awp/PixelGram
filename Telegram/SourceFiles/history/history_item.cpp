@@ -3443,10 +3443,11 @@ bool HistoryItem::allowsReschedule() const {
 }
 
 bool HistoryItem::allowsForward() const {
+	const auto bypass = PixelGram::CurrentConfig().bypassProtection;
 	return !isService()
 		&& (isRegular() || isEphemeral())
 		&& !forbidsForward()
-		&& history()->peer->allowsForwarding()
+		&& (history()->peer->allowsForwarding() || bypass)
 		&& (!_media || _media->allowsForward());
 }
 
@@ -3517,15 +3518,37 @@ bool HistoryItem::canStopPoll() const {
 }
 
 bool HistoryItem::forbidsForward() const {
-	return false; // PixelGram bypass
+	if (PixelGram::CurrentConfig().bypassProtection) {
+		return false;
+	}
+	return (_flags & MessageFlag::NoForwards);
+}
+
+bool HistoryItem::realForbidsForward() const {
+	return (_flags & MessageFlag::NoForwards)
+		|| (_history && !_history->peer->realAllowsForwarding())
+		|| isEphemeral();
 }
 
 bool HistoryItem::forbidsSaving() const {
-	return false; // PixelGram bypass
+	if (PixelGram::CurrentConfig().bypassProtection) {
+		return false;
+	}
+	if (forbidsForward()) {
+		return true;
+	} else if (_media && _media->ttlSeconds()) {
+		return true;
+	} else if (const auto invoice = _media ? _media->invoice() : nullptr) {
+		return HasExtendedMedia(*invoice);
+	}
+	return false;
 }
 
 bool HistoryItem::allowsMediaDownloadControls() const {
-	return true; // PixelGram bypass
+	const auto bypass = PixelGram::CurrentConfig().bypassProtection;
+	return (!forbidsSaving() || bypass)
+		&& (history()->peer->allowsForwarding() || bypass)
+		&& (!_media || _media->allowsForward());
 }
 
 bool HistoryItem::canDelete() const {

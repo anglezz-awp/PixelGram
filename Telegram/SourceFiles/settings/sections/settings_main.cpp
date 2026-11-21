@@ -390,7 +390,7 @@ void BuildSectionButtons(SectionBuilder &builder) {
 		.description = u"Ghost Mode, внешний вид, чаты, другое"_q,
 		.groupPosition = Ui::GroupPosition::Single,
 		.targetSection = PixelGramId(),
-		.icon = { &st::menuIconManage },
+		.icon = { &st::menuIconTune },
 		.keywords = { u"pixelgram"_q, u"ghost"_q, u"anti-delete"_q, u"bypass"_q },
 	});
 	builder.addSkip(14);
