@@ -4,6 +4,9 @@ the official desktop application for the Telegram messaging service.
 
 For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
+
+Based on the protocol and architecture of tg-ws-proxy by Flowseal
+https://github.com/Flowseal/tg-ws-proxy
 */
 #include "core/pixelgram_ws_proxy.h"
 

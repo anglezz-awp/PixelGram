@@ -33,7 +33,7 @@
 * **Domain Age & Phishing Detection**: Warns against suspicious, newly-registered, or punycode phishing links.
 
 ### 🌐 Built-in MTProto WebSocket Proxy (WS-Proxy)
-* Local embedded WebSocket proxy server (`pixelgram_ws_proxy`) that converts native Telegram MTProto traffic into secure WebSocket streams to bypass DPI, ISP filtering, and restrictive firewalls.
+* Local embedded WebSocket proxy server (`pixelgram_ws_proxy`), powered by the protocol and architecture of **[tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy)** by **@Flowseal**, that encapsulates native Telegram MTProto traffic into secure WebSocket streams to bypass DPI, ISP filtering, and restrictive firewalls.
 * Configurable port, secret key, and automatic fallback.
 
 ### 📱 Mini-Apps (Webview) Supercharger
@@ -75,6 +75,7 @@ PixelGram is made possible thanks to the following open-source projects:
 
 * **[Telegram Desktop](https://github.com/telegramdesktop/tdesktop)** — The official desktop client for Telegram (GPLv3).
 * **[AyuGram Desktop](https://github.com/AyuGram/AyuGramDesktop)** by **@Radolyn** — Research, forward mechanics, and ghost mode inspirations.
+* **[tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy)** by **@Flowseal** — The embedded MTProto WebSocket proxy protocol & architecture.
 * **[Material Foundation](https://github.com/material-foundation/material-color-utilities)** — Google Material 3 color system algorithms.
 * **[Google Material Design Icons](https://github.com/google/material-design-icons)** — Google Material Symbols Rounded vector icons.
 
