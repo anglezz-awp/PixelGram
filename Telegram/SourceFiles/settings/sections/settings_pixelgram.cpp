@@ -96,11 +96,11 @@ protected:
 			p.drawImage(iconRect, logo);
 		}
 
-		// Title: PixelGram Desktop v1.1 (v{AppVersionStr})
+		// Title: PixelGram Desktop v1.2 (v{AppVersionStr})
 		const auto titleTop = iconTop + iconSize + style::ConvertScale(14);
 		p.setFont(st::boxTitleFont);
 		p.setPen(roles.onSurface.isValid() ? roles.onSurface : st::windowFg->c);
-		const auto versionStr = QString("PixelGram Desktop v1.1 (v") + QString::fromLatin1(AppVersionStr) + QString(")");
+		const auto versionStr = QString("PixelGram Desktop v1.2 (v") + QString::fromLatin1(AppVersionStr) + QString(")");
 		p.drawText(QRect(0, titleTop, width(), style::ConvertScale(26)), Qt::AlignCenter, versionStr);
 
 		// Subtitle
