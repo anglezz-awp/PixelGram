@@ -125,14 +125,22 @@ void VoiceRecordButton::init() {
 
 		const auto &config = PixelGram::CurrentConfig();
 		if (config.dynamicVoiceMorph && radius > 0.1) {
-			const auto angleOffset = _rotationAngle;
-			const int steps = 64;
+			if (!_animation.animating()) {
+				const_cast<VoiceRecordButton*>(this)->_animation.start();
+			}
+			const auto now = crl::now();
+			const auto phase = (now % 360000) * (2.0 * 3.14159265358979323846 / 2800.0);
+			const auto level = _blobs ? float(_blobs->currentLevel()) : 0.0f;
+			const auto amplitude = 0.15f + 0.08f * std::clamp(level, 0.0f, 1.0f);
+			constexpr int steps = 96;
 			QPainterPath path;
 			for (int i = 0; i <= steps; ++i) {
-				const auto angle = (i * 2.0 * 3.14159265358979323846 / steps) + angleOffset;
-				const auto r = radius * (1.0 + 0.18 * std::cos(8.0 * angle));
-				const auto x = r * std::cos(angle);
-				const auto y = r * std::sin(angle);
+				const auto theta = (i * 2.0 * 3.14159265358979323846 / steps);
+				const auto wave = std::cos(8.0 * theta - phase);
+				const auto subWave = 0.15 * std::cos(16.0 * theta - 2.0 * phase);
+				const auto r = radius * (1.0 + amplitude * (wave + subWave));
+				const auto x = r * std::cos(theta);
+				const auto y = r * std::sin(theta);
 				if (i == 0) {
 					path.moveTo(x, y);
 				} else {
@@ -190,10 +198,6 @@ void VoiceRecordButton::init() {
 			? std::min(now - _lastUpdateTime, crl::time(100))
 			: 16;
 		_lastUpdateTime = now;
-		_rotationAngle += dt * (2.0f * 3.14159265358979323846f / 2400.0f);
-		if (_rotationAngle > 2.0f * 3.14159265358979323846f) {
-			_rotationAngle -= 2.0f * 3.14159265358979323846f;
-		}
 
 		if (const auto &last = _blobsHideLastTime; (last > 0)
 			&& (now - last >= kBlobsScaleEnterDuration)) {

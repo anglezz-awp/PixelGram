@@ -668,11 +668,6 @@ private:
 			SaveConfig();
 		});
 
-		AddToggle(content, rpl::single(u"Размытие в движении (Motion Blur FX - Scroll Blur)"_q), cfg.motionBlurFx, [](bool val) {
-			CurrentConfig().motionBlurFx = val;
-			SaveConfig();
-		});
-
 		Ui::AddSkip(content, 16);
 		Ui::ResizeFitChild(this, content);
 	}
